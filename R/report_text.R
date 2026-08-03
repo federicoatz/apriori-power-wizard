@@ -152,6 +152,17 @@ build_report_text <- function(spec) {
     sprintf("We set alpha = %s%s", format_stat(spec$alpha, 2), tails_paren)
   }
 
+  # Attrition / exclusion inflation (see the shared "Expected attrition"
+  # input in params_step_ui()). Purely a recruitment adjustment applied
+  # AFTER the statistical solve -- it never changes alpha, power, or the
+  # effect size -- so it is disclosed as its own sentence rather than
+  # folded into the design description.
+  has_attr <- !is.null(spec$attrition) && !is.na(spec$attrition) && spec$attrition > 0
+  attrition_txt <- if (has_attr) {
+    sprintf(" Anticipating that %s%% of recruited participants will be lost to attrition or excluded before analysis, we plan to recruit N = %s in order to retain the required analytic sample.",
+            format_stat(spec$attrition * 100, 0), spec$n_recruit)
+  } else ""
+
   lines <- c(
     sprintf("A priori power analysis (%s).", spec$analysis),
     "",
@@ -165,9 +176,10 @@ build_report_text <- function(spec) {
     effect_txt,
     "",
     sprintf(
-      "This yields a required sample size of N = %s (%s), achieving %s%% power (%s).",
+      "This yields a required sample size of N = %s (%s), achieving %s%% power (%s).%s",
       spec$n_total, spec$n_per_group_txt,
-      format_stat(spec$power_achieved * 100, 1), format_stat(spec$power_achieved, 4)
+      format_stat(spec$power_achieved * 100, 1), format_stat(spec$power_achieved, 4),
+      attrition_txt
     ),
     "",
     sprintf("Method: %s", citation)

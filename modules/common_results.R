@@ -89,6 +89,25 @@ results_panel_ui <- function(ns) {
       column(6, uiOutput(ns("sensitivity_result")))
     ),
 
+    uiOutput(ns("attrition_note")),
+
+    hr(),
+    h5(icon("coins"), " Budget (optional)"),
+    p(class = "field-hint",
+      "Experiments cost money per participant. Enter what one participant costs -- show-up fee plus expected average earnings -- to turn the sample size above into a figure you can put in a grant application, and to see what a fixed budget would buy."),
+    fluidRow(
+      column(4, numericInput(ns("cost_per_participant"),
+                help_tip("Cost per participant", "Show-up fee plus the average payment you expect a participant to earn, in whatever currency you work in."),
+                value = NA, min = 0, step = 1)),
+      column(4, numericInput(ns("cost_fixed"),
+                help_tip("Fixed costs (optional)", "Costs that do not scale with the number of participants -- lab or platform fees, research assistant time, software."),
+                value = 0, min = 0, step = 10)),
+      column(4, numericInput(ns("budget_cap"),
+                help_tip("Budget available (optional)", "If you have a fixed budget, enter it to see how many participants it covers and the smallest effect that sample could detect."),
+                value = NA, min = 0, step = 100))
+    ),
+    uiOutput(ns("budget_result")),
+
     hr(),
     div(class = "report-text-header",
         h5(icon("file-lines"), " Paste-ready report / pre-registration text"),
@@ -660,6 +679,76 @@ wire_results_server <- function(input, output, session, family,
                format_stat(out$value, 4)))
   })
 
+  # ---- Attrition / exclusion inflation --------------------------------
+  # Applied AFTER the statistical solve, never inside it: losing
+  # participants doesn't change what the analysis needs, it changes how
+  # many you must recruit to end up with that many. Shared across every
+  # family via the same params-step input, exactly like the Bonferroni
+  # control.
+  attrition_rate <- reactive(safe_numeric(input$attrition, 0, 0.95, 0))
+  n_recruit <- reactive({
+    res <- tryCatch(result_r(), error = function(e) NULL)
+    if (is.null(res) || is.null(res$n_total)) return(NA_integer_)
+    a <- attrition_rate()
+    if (a <= 0) return(res$n_total)
+    round_up_n(res$n_total / (1 - a))
+  })
+
+  output$attrition_note <- renderUI({
+    a <- attrition_rate()
+    if (is.na(a) || a <= 0) return(NULL)
+    res <- tryCatch(result_r(), error = function(e) NULL)
+    if (is.null(res) || is.null(res$n_total)) return(NULL)
+    div(class = "well well-warning", icon("user-minus"),
+        sprintf(" Allowing for %.0f%% attrition/exclusions, recruit N = %d to retain the %d your analysis needs (%d extra).",
+                a * 100, n_recruit(), res$n_total, n_recruit() - res$n_total))
+  })
+
+  # ---- Budget ----------------------------------------------------------
+  # Experimental economics pays its participants, so the sample size a
+  # power analysis produces translates directly into a line in a grant
+  # application. Both directions are offered: N -> cost, and (reusing the
+  # family's own sensitivity_fn) budget -> affordable N -> smallest
+  # detectable effect.
+  output$budget_result <- renderUI({
+    per <- safe_numeric(input$cost_per_participant, 0, 1e6, NA_real_)
+    if (is.na(per) || per <= 0) {
+      return(helpText("Enter what one participant costs to see the total, and what a fixed budget could buy."))
+    }
+    fixed <- safe_numeric(input$cost_fixed, 0, 1e9, 0)
+    cur <- if (is.na(n_recruit())) NA_integer_ else n_recruit()
+    if (is.na(cur)) return(NULL)
+    total <- cur * per + fixed
+    cap <- safe_numeric(input$budget_cap, 0, 1e9, NA_real_)
+
+    afford_txt <- NULL
+    if (!is.na(cap) && cap > fixed) {
+      n_afford <- floor((cap - fixed) / per)
+      # Convert an affordable RECRUITED N back to the analytic N the test
+      # would actually be run on, then ask what effect that supports.
+      n_analytic <- floor(n_afford * (1 - attrition_rate()))
+      det <- if (n_analytic >= 2) tryCatch(sensitivity_fn(n_analytic), error = function(e) NULL) else NULL
+      afford_txt <- tags$p(
+        icon("wallet"),
+        sprintf(" A budget of %s covers %d recruited participants (%d after attrition). ",
+                format_money(cap), n_afford, n_analytic),
+        if (!is.null(det)) {
+          sprintf("At that size the smallest detectable %s is %s.", det$metric, format_stat(det$value, 4))
+        } else {
+          "That is too few participants to compute a detectable effect for this design."
+        }
+      )
+    }
+
+    div(class = "well well-result",
+      tags$p(icon("coins"),
+             sprintf(" Estimated cost for %d participants: %s%s.",
+                     cur, format_money(total),
+                     if (fixed > 0) sprintf(" (%s per participant plus %s fixed)", format_money(per), format_money(fixed)) else "")),
+      afford_txt
+    )
+  })
+
   # Injects the multiple-comparisons disclosure (see the shared
   # "Number of planned comparisons" input in params_step_ui()) into
   # whatever spec the family itself built -- centralized here so no
@@ -669,6 +758,11 @@ wire_results_server <- function(input, output, session, family,
     if (m > 1) {
       spec$n_comparisons <- m
       spec$alpha_nominal <- safe_numeric(input$alpha, 0.0001, 0.5, 0.05)
+    }
+    a <- attrition_rate()
+    if (a > 0) {
+      spec$attrition <- a
+      spec$n_recruit <- n_recruit()
     }
     spec
   }

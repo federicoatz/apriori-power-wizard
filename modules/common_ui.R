@@ -127,6 +127,18 @@ params_step_ui <- function(ns) {
         ),
         fluidRow(
           column(6,
+            numericInput(ns("attrition"),
+                         help_tip("Expected attrition / exclusion rate",
+                           "The proportion of recruited participants you expect to LOSE before analysis -- dropouts in a multi-session or online study, plus anyone excluded for failing comprehension or attention checks. The app reports both the N your analysis needs and the larger N you should actually recruit to end up with it: recruit N = analysis N / (1 - this rate). Leave at 0 if you expect no loss."),
+                         value = 0, min = 0, max = 0.95, step = 0.05)
+          ),
+          column(6,
+            div(class = "field-hint", icon("circle-info"),
+                " Attrition does not change the statistical calculation -- it only tells you how many people to recruit so that enough of them survive to analysis.")
+          )
+        ),
+        fluidRow(
+          column(6,
             numericInput(ns("n_comparisons"),
                          help_tip("Number of planned comparisons",
                            "If this is one of several comparisons planned in the same study (e.g., testing 4 outcomes, or 4 pairwise contrasts), each additional comparison inflates the chance of a false positive somewhere across the whole set. Set this to the TOTAL number of planned comparisons to apply a Bonferroni correction: the alpha above is treated as the family-wise rate, and the per-test alpha actually used below becomes alpha / this number. Leave at 1 if this is your only planned comparison."),
@@ -160,6 +172,7 @@ read_params_step <- function(input) {
     alpha = alpha_nominal / n_comparisons,
     alpha_nominal = alpha_nominal,
     n_comparisons = n_comparisons,
+    attrition = safe_numeric(input$attrition, 0, 0.95, 0),
     power = safe_numeric(input$power, 0.01, 0.999, 0.80),
     tails = input$tails %||% "two.sided",
     allocation_ratio = if (isTRUE(input$balanced)) 1 else safe_numeric(input$alloc_ratio, 0.1, 10, 1)

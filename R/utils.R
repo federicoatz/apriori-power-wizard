@@ -98,3 +98,15 @@ effect_comparison_values <- function(current, kind = c("magnitude", "ratio"),
   keep <- !duplicated(round(values, 6)) & abs(values - current) > 1e-9
   stats::setNames(values[keep], labels[keep])
 }
+
+#' Format a money amount for display
+#'
+#' Deliberately currency-agnostic: the app has users in different
+#' currencies and no way to know which one is meant, so amounts are shown
+#' as plain formatted numbers with thousands separators and no symbol.
+#' @param x numeric
+#' @export
+format_money <- function(x) {
+  if (is.null(x) || length(x) == 0 || is.na(x)) return("NA")
+  formatC(x, format = "f", digits = if (x >= 100) 0 else 2, big.mark = ",")
+}

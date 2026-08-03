@@ -46,7 +46,11 @@ family:
    family-wise rate, with the per-test alpha actually used (alpha /
    n_comparisons) disclosed automatically in the generated report text.
    This one shared input applies to every analysis family with no
-   family-specific wiring.
+   family-specific wiring. The same panel also takes an **expected
+   attrition / exclusion rate**: the app then reports both the N your
+   analysis needs and the larger N you should actually recruit
+   (`analysis N / (1 - rate)`) so enough participants survive dropout and
+   comprehension-check exclusions, and discloses it in the report text.
 4. **Effect size** -- three explicit branches for most families (two
    families, McNemar's test and the TOST equivalence test, use a
    simpler, direct-entry effect-size step instead -- see below):
@@ -72,8 +76,17 @@ family:
 The results step shows total N and per-group/per-cell N (always rounded
 UP), a power-vs-N curve with the solution highlighted, an inverse
 sensitivity analysis (minimum detectable effect for a budget-constrained
-maximum N), and a paste-ready English report/pre-registration text block
-with full method citations. Reports can be exported as HTML or PDF.
+maximum N), an optional **budget** panel, and a paste-ready English
+report/pre-registration text block with full method citations. Reports
+can be exported as HTML or PDF.
+
+The budget panel exists because experiments -- especially in experimental
+economics -- pay their participants, so a sample size is also a line in a
+grant application. Enter the cost of one participant (show-up fee plus
+expected average earnings) and any fixed costs to turn N into a total,
+and optionally a fixed budget to see how many participants it covers and,
+reusing the same sensitivity machinery, the smallest effect that sample
+could still detect. Amounts are deliberately currency-agnostic.
 
 ## Saving, sharing, and resuming a project
 
