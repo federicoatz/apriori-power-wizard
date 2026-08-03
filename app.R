@@ -69,8 +69,8 @@ analysis_choice_names <- list(
   ),
   clustered_rct = div(class = "choice-card",
     icon("sitemap", class = "choice-icon"),
-    div(strong("Clustered / multi-site trial"),
-        p(class = "choice-desc", "Compare two conditions when whole groups -- classrooms, clinics, stores -- rather than individuals are randomized."))
+    div(strong("Clustered: sessions / matching groups"),
+        p(class = "choice-desc", "Compare two conditions when participants interact in fixed groups (matching groups, lab sessions) or when whole groups -- classrooms, clinics, stores -- rather than individuals are randomized."))
   ),
   chisq = div(class = "choice-card",
     icon("chart-pie", class = "choice-icon"),
@@ -143,7 +143,7 @@ family_titles <- list(
   logistic = "Logistic regression",
   proportions = "Two proportions",
   paired_t = "Paired / repeated measures",
-  clustered_rct = "Clustered / multi-site trial",
+  clustered_rct = "Clustered: sessions / matching groups",
   chisq = "Chi-square (goodness-of-fit / independence)",
   correlation = "Bivariate correlation",
   mcnemar = "McNemar's test",
@@ -315,12 +315,12 @@ ui <- page_fluid(
           value = "helper",
           fluidRow(
             column(4,
-              radioButtons("dh_unit", "1. Is condition assigned to individual people, or to whole groups?",
-                choices = c("Individual participants, directly" = "individual",
-                            "Whole groups together (e.g., classrooms, clinics, stores, villages)" = "cluster"),
+              radioButtons("dh_unit", "1. Do participants act independently, or in groups?",
+                choices = c("Independently: each participant's outcome stands alone" = "individual",
+                            "In groups: they interact in matching groups/sessions, or whole groups (classrooms, clinics, stores) are assigned together" = "cluster"),
                 selected = character(0)),
               div(class = "field-hint", icon("circle-info"),
-                  " This matters even before the outcome type: analyzing group-randomized data as if individuals were randomized is one of the most common design mistakes in field experiments.")
+                  " This matters even before the outcome type. If your participants interact with each other -- a public goods game, a market, a bargaining task -- their observations are not independent, and treating them as if they were is one of the most common and most-criticized errors in experimental design.")
             ),
             column(4,
               conditionalPanel("input.dh_unit",
@@ -359,7 +359,7 @@ ui <- page_fluid(
               ),
               conditionalPanel("input.dh_unit == 'cluster' && input.dh_outcome == 'continuous'",
                 div(class = "field-hint", icon("circle-check"),
-                    " A cluster-randomized design with a continuous outcome -- see the recommendation below.")
+                    " A grouped design (matching groups/sessions, or cluster-randomized) with a continuous outcome -- see the recommendation below.")
               ),
               conditionalPanel("input.dh_unit == 'cluster' && (input.dh_outcome == 'binary' || input.dh_outcome == 'categorical' || input.dh_outcome == 'time_to_event')",
                 div(class = "field-hint", icon("triangle-exclamation"),
@@ -385,12 +385,18 @@ ui <- page_fluid(
     p(icon("scale-balanced"), " Released under the ",
       tags$a(href = "https://github.com/federicoatz/power-analysis-app/blob/main/LICENSE",
              target = "_blank", rel = "noopener noreferrer", "MIT license"), "."),
+    # NOTE: the Zenodo DOI is deliberately omitted right now. The previous
+    # records were withdrawn (tombstoned) in August 2026 when the repository
+    # history was rebuilt, and the GitHub-Zenodo integration has not yet been
+    # re-established for the new repository -- so there is currently no live
+    # DOI to point at. Linking the old one would send readers to a dead
+    # record. Restore the DOI link here as soon as a new archive is minted.
     p(icon("quote-left"), " If you use this app in your research, please cite: ",
-      tags$em("Atzori, F. (2026). A Priori Power Analysis Wizard (Version v0.7.1) [Computer software]. Zenodo."),
+      tags$em("Atzori, F. (2026). A Priori Power Analysis Wizard (Version v0.8.0) [Computer software]."),
       " ",
-      tags$a(href = "https://doi.org/10.5281/zenodo.21770801",
+      tags$a(href = "https://github.com/federicoatz/power-analysis-app",
              target = "_blank", rel = "noopener noreferrer",
-             "https://doi.org/10.5281/zenodo.21770801"))
+             "https://github.com/federicoatz/power-analysis-app"))
   ),
 
   # =====================================================================
@@ -955,7 +961,7 @@ server <- function(input, output, session) {
       two_means = "Two independent means", anova_factorial = "Factorial ANOVA (between-subjects)",
       regression = "Multiple linear regression", logistic = "Logistic regression",
       proportions = "Two proportions", paired_t = "Paired / repeated measures",
-      clustered_rct = "Clustered / multi-site trial",
+      clustered_rct = "Clustered: sessions / matching groups",
       chisq = "Chi-square (goodness-of-fit / independence)",
       mcnemar = "McNemar's test",
       ancova = "ANCOVA (with a covariate)",

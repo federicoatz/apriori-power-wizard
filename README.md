@@ -1,6 +1,10 @@
 # A Priori Power Analysis Wizard
 
-[![DOI](https://zenodo.org/badge/1319650644.svg)](https://doi.org/10.5281/zenodo.21750030)
+<!-- Zenodo DOI badge removed for now: the project's earlier Zenodo records were
+     withdrawn in August 2026 when the repository history was rebuilt, so every
+     previous DOI (concept DOI included) resolves to a "record deleted"
+     tombstone. Restore the badge once the GitHub-Zenodo integration is
+     re-established and a new DOI is minted. -->
 
 A step-by-step Shiny application that guides researchers in experimental
 economics and behavioral science through an a priori (before data
@@ -14,7 +18,8 @@ family:
 1. **Main analysis** -- comparison of two independent means, factorial
    between-subjects ANOVA, multiple linear regression, logistic
    regression, comparison of two proportions, a paired/repeated-measures
-   comparison, a two-arm cluster-randomized / multi-site trial, a
+   comparison, a two-arm clustered design (participants interacting in
+   matching groups / lab sessions, or a cluster-randomized field trial), a
    chi-square test (goodness-of-fit or independence) for categorical
    outcomes across two or more groups, a bivariate correlation test,
    McNemar's test for paired binary outcomes, a TOST equivalence test
