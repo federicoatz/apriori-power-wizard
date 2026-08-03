@@ -97,38 +97,73 @@ splash_html <- '
 <style>
   #pw-boot-splash {
     position: fixed; inset: 0; z-index: 99999;
-    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px;
     background: #FFFFFF; color: #16161D;
     font-family: -apple-system, "Segoe UI", sans-serif;
     transition: opacity 0.3s ease;
+  }
+  #pw-boot-splash .pw-icon {
+    color: #5B5BD6;
+    animation: pw-pulse 1.8s ease-in-out infinite;
+  }
+  #pw-boot-splash .pw-title {
+    font-size: 15px; font-weight: 600; margin: 2px 0 4px;
   }
   #pw-boot-splash .pw-bar-track {
     width: 240px; height: 6px; border-radius: 999px;
     background: #E8E8ED; overflow: hidden;
   }
   #pw-boot-splash .pw-bar-fill {
+    position: relative;
     width: 0%; height: 100%; border-radius: 999px;
-    background: #5B5BD6;
+    background: linear-gradient(90deg, #5B5BD6, #8B8BE8);
     transition: width 0.25s ease;
+    overflow: hidden;
+  }
+  #pw-boot-splash .pw-bar-fill::after {
+    content: ""; position: absolute; inset: 0;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.55), transparent);
+    background-size: 60px 100%; background-repeat: no-repeat;
+    animation: pw-shimmer 1.3s linear infinite;
   }
   #pw-boot-splash .pw-pct { font-size: 13px; font-variant-numeric: tabular-nums; color: #52525E; }
-  #pw-boot-splash .pw-msg { font-size: 14px; max-width: 320px; text-align: center; }
+  #pw-boot-splash .pw-msg {
+    font-size: 13px; max-width: 320px; text-align: center; min-height: 2.6em;
+    color: #52525E; transition: opacity 0.3s ease;
+  }
+  @keyframes pw-shimmer {
+    0% { background-position: -60px 0; }
+    100% { background-position: 300px 0; }
+  }
+  @keyframes pw-pulse {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.08); opacity: 0.8; }
+  }
   @media (prefers-color-scheme: dark) {
     #pw-boot-splash { background: #0B0F1A; color: #E8ECF4; }
+    #pw-boot-splash .pw-icon { color: #22D3EE; }
     #pw-boot-splash .pw-bar-track { background: #232C42; }
-    #pw-boot-splash .pw-bar-fill { background: #22D3EE; }
+    #pw-boot-splash .pw-bar-fill { background: linear-gradient(90deg, #22D3EE, #67E4F7); }
     #pw-boot-splash .pw-pct { color: #A8B4C8; }
+    #pw-boot-splash .pw-msg { color: #A8B4C8; }
   }
 </style>
 <div id="pw-boot-splash">
+  <svg class="pw-icon" width="30" height="30" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <rect x="3" y="14" width="4" height="7" rx="1" fill="currentColor"/>
+    <rect x="10" y="9" width="4" height="12" rx="1" fill="currentColor"/>
+    <rect x="17" y="3" width="4" height="18" rx="1" fill="currentColor"/>
+  </svg>
+  <div class="pw-title">A Priori Power Analysis Wizard</div>
   <div class="pw-bar-track"><div class="pw-bar-fill" id="pw-bar-fill"></div></div>
   <div class="pw-pct" id="pw-bar-pct">0%</div>
-  <div class="pw-msg">Loading the app in your browser &mdash; the first visit can take up to a minute while R and its packages download. Later visits are faster (cached).</div>
+  <div class="pw-msg" id="pw-tip">Loading the app in your browser &mdash; the first visit can take up to a minute while R and its packages download. Later visits are faster (cached).</div>
 </div>
 <script>
   (function () {
     var fill = document.getElementById("pw-bar-fill");
     var pct = document.getElementById("pw-bar-pct");
+    var tipEl = document.getElementById("pw-tip");
     var done = false;
     var current = 0;
     var cap = 90;
@@ -138,6 +173,31 @@ splash_html <- '
       if (fill) fill.style.width = p + "%";
       if (pct) pct.textContent = Math.round(p) + "%";
     }
+
+    // Rotating facts to make the (unavoidable) first-visit wait feel less
+    // dead; index 0 is the original explanatory message, shown first.
+    var tips = [
+      "Loading the app in your browser \\u2014 the first visit can take up to a minute while R and its packages download. Later visits are faster (cached).",
+      "Did you know? Smaller effect sizes need disproportionately larger samples to detect reliably.",
+      "Power (1 \\u2212 \\u03b2) and alpha (Type I error rate) are two independent knobs \\u2014 tightening one usually loosens the other unless you also grow the sample.",
+      "Cohen\\u2019s small/medium/large benchmarks are convenient defaults, not universal truths for every field.",
+      "A priori power analysis is meant to be done before collecting data, not after \\u2014 that is what makes it \\"a priori\\".",
+      "Group-randomized (clustered) designs almost always need more participants than individually randomized ones, for the same effect size."
+    ];
+    var tipIdx = 0;
+    function showTip(i) {
+      if (!tipEl) return;
+      tipEl.style.opacity = "0";
+      setTimeout(function () {
+        tipEl.textContent = tips[i];
+        tipEl.style.opacity = "1";
+      }, 280);
+    }
+    var tipRotator = setInterval(function () {
+      if (done) return;
+      tipIdx = (tipIdx + 1) % tips.length;
+      showTip(tipIdx);
+    }, 4500);
 
     // The real app runs inside a same-origin <iframe class="app-frame">
     // that shinylive creates dynamically (not in this top-level document),
@@ -176,6 +236,7 @@ splash_html <- '
       if (done) return;
       done = true;
       clearInterval(tick);
+      clearInterval(tipRotator);
       setPct(100);
       setTimeout(hide, 250);
     }
