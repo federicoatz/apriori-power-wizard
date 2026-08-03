@@ -19,7 +19,8 @@ sensitivity_min_effect <- function(family = c("two_means", "anova_factorial",
                                                "proportions", "paired_t",
                                                "clustered_rct", "chisq",
                                                "correlation", "mcnemar", "tost",
-                                               "ancova", "survival", "wilcoxon"),
+                                               "ancova", "survival", "wilcoxon",
+                                               "rm_anova"),
                                     n_max, ...) {
   family <- match.arg(family)
   extra <- list(...)
@@ -80,6 +81,10 @@ sensitivity_min_effect <- function(family = c("two_means", "anova_factorial",
     wilcoxon = list(
       metric = "P(X < Y) (probability of superiority)",
       value = do.call(power_wilcoxon_min_p, c(list(n1 = n_max), extra))
+    ),
+    rm_anova = list(
+      metric = "f",
+      value = do.call(power_rm_anova_min_f, c(list(n_total = n_max), extra))
     )
   )
 }

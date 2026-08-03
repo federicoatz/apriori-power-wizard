@@ -24,7 +24,8 @@ generate_power_curve <- function(family = c("two_means", "anova_factorial",
                                              "proportions", "paired_t",
                                              "clustered_rct", "chisq",
                                              "correlation", "mcnemar", "tost",
-                                             "ancova", "survival", "wilcoxon"),
+                                             "ancova", "survival", "wilcoxon",
+                                             "rm_anova"),
                                   n_solution, n_range = NULL, n_points = 60,
                                   ...) {
   family <- match.arg(family)
@@ -53,7 +54,8 @@ generate_power_curve <- function(family = c("two_means", "anova_factorial",
     tost           = function(n) do.call(power_tost_at_n, c(list(n = n), extra)),
     ancova         = function(n) do.call(power_ancova_at_n, c(list(n_per_group = n), extra)),
     survival       = function(n) do.call(power_survival_at_n, c(list(n_total = n), extra)),
-    wilcoxon       = function(n) do.call(power_wilcoxon_at_n, c(list(n1 = n), extra))
+    wilcoxon       = function(n) do.call(power_wilcoxon_at_n, c(list(n1 = n), extra)),
+    rm_anova       = function(n) do.call(power_rm_anova_at_n, c(list(n_total = n), extra))
   )
 
   powers <- vapply(grid, function(n) {

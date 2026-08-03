@@ -106,6 +106,11 @@ analysis_choice_names <- list(
     icon("ranking-star", class = "choice-icon"),
     div(strong("Mann-Whitney (nonparametric)"),
         p(class = "choice-desc", "Compare two independent groups on a skewed, bounded, or ordinal outcome using ranks instead of means -- the usual choice for contributions, bids, and earnings."))
+  ),
+  rm_anova = div(class = "choice-card",
+    icon("repeat", class = "choice-icon"),
+    div(strong("Repeated-measures ANOVA"),
+        p(class = "choice-desc", "The same participants measured 3+ times -- across conditions, rounds, or time points -- including whether that change differs between groups."))
   )
 )
 
@@ -155,7 +160,8 @@ family_titles <- list(
   tost = "Equivalence test (TOST)",
   ancova = "ANCOVA (with a covariate)",
   survival = "Time-to-event (log-rank test)",
-  wilcoxon = "Mann-Whitney (nonparametric)"
+  wilcoxon = "Mann-Whitney (nonparametric)",
+  rm_anova = "Repeated-measures ANOVA"
 )
 family_ui_fns <- list(
   two_means = mod_two_means_ui, anova_factorial = mod_anova_factorial_ui,
@@ -164,7 +170,7 @@ family_ui_fns <- list(
   clustered_rct = mod_clustered_ui, chisq = mod_chisq_ui,
   correlation = mod_correlation_ui, mcnemar = mod_mcnemar_ui, tost = mod_tost_ui,
   ancova = mod_ancova_ui, survival = mod_survival_ui,
-  wilcoxon = mod_wilcoxon_ui
+  wilcoxon = mod_wilcoxon_ui, rm_anova = mod_rm_anova_ui
 )
 family_server_fns <- list(
   two_means = mod_two_means_server, anova_factorial = mod_anova_factorial_server,
@@ -173,7 +179,7 @@ family_server_fns <- list(
   clustered_rct = mod_clustered_server, chisq = mod_chisq_server,
   correlation = mod_correlation_server, mcnemar = mod_mcnemar_server, tost = mod_tost_server,
   ancova = mod_ancova_server, survival = mod_survival_server,
-  wilcoxon = mod_wilcoxon_server
+  wilcoxon = mod_wilcoxon_server, rm_anova = mod_rm_anova_server
 )
 
 ui <- page_fluid(
@@ -345,6 +351,7 @@ ui <- page_fluid(
                 radioButtons("dh_continuous", "3. How is the outcome explained?",
                   choices = c("Two separate groups (e.g., treatment vs. control)" = "two_groups",
                               "The SAME participants measured twice (e.g., before/after)" = "paired",
+                              "The SAME participants measured 3+ times (conditions, rounds, time points)" = "repeated",
                               "Two or more manipulated factors at once" = "factorial",
                               "A continuous predictor (possibly with other control variables)" = "predictor",
                               "Groups, adjusting for a covariate (e.g., a pre-test/baseline score)" = "ancova",
@@ -401,7 +408,7 @@ ui <- page_fluid(
     # DOI to point at. Linking the old one would send readers to a dead
     # record. Restore the DOI link here as soon as a new archive is minted.
     p(icon("quote-left"), " If you use this app in your research, please cite: ",
-      tags$em("Atzori, F. (2026). A Priori Power Analysis Wizard (Version v0.9.0) [Computer software]."),
+      tags$em("Atzori, F. (2026). A Priori Power Analysis Wizard (Version v0.10.0) [Computer software]."),
       " ",
       tags$a(href = "https://github.com/federicoatz/power-analysis-app",
              target = "_blank", rel = "noopener noreferrer",
@@ -941,7 +948,7 @@ server <- function(input, output, session) {
         switch(input$dh_continuous %||% "",
           two_groups = "two_means", paired = "paired_t", factorial = "anova_factorial",
           predictor = "regression", ancova = "ancova",
-          nonparametric = "wilcoxon", NULL)
+          nonparametric = "wilcoxon", repeated = "rm_anova", NULL)
       } else if (identical(input$dh_outcome, "binary")) {
         switch(input$dh_binary %||% "",
           two_groups = "proportions", paired = "mcnemar", predictor = "logistic", NULL)
@@ -976,7 +983,8 @@ server <- function(input, output, session) {
       mcnemar = "McNemar's test",
       ancova = "ANCOVA (with a covariate)",
       survival = "Time-to-event (log-rank test)",
-      wilcoxon = "Mann-Whitney (nonparametric)")
+      wilcoxon = "Mann-Whitney (nonparametric)",
+      rm_anova = "Repeated-measures ANOVA")
     div(class = "well well-result",
       p(strong("Recommended analysis: "), label),
       actionButton("dh_use_recommendation", tagList(icon("check"), " Use this and start"), class = "btn-success")

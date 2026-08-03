@@ -28,7 +28,9 @@ family:
    time-to-event outcome (a niche tool for this app's audience -- e.g.,
    time-to-decision in a strategic game, or attrition/dropout timing in
    a longitudinal study), or a Wilcoxon-Mann-Whitney rank-sum test for
-   two independent groups with a skewed, bounded, or ordinal outcome.
+   two independent groups with a skewed, bounded, or ordinal outcome, or a
+   repeated-measures ANOVA (the same participants measured three or more
+   times, including the within x between interaction of a mixed design).
 2. **Design structure** -- for factorial ANOVA, the number of factors and
    levels, and (critically) which **focal contrast** power should be
    computed for: a specific main effect or the interaction. The app
@@ -242,6 +244,7 @@ power-analysis-app/
 │   ├── power_ancova.R              # pwr::pwr.f2.test with covariate-adjusted f2 (Cohen 1988; Borm et al. 2007)
 │   ├── power_survival.R            # Schoenfeld (1983) log-rank events formula, base R only
 │   ├── power_wilcoxon.R            # Noether (1987) Mann-Whitney rank-sum formula, base R only
+│   ├── power_rm_anova.R            # Repeated-measures noncentral F with rho and sphericity correction, base R only
 │   ├── project_state.R             # Save/load/share-link JSON (de)serialization
 │   ├── power_curve.R               # Generic power-vs-N curve generator
 │   ├── sensitivity_analysis.R      # Generic inverse/minimum-detectable-effect
@@ -262,7 +265,8 @@ power-analysis-app/
 │   ├── mod_tost.R
 │   ├── mod_ancova.R
 │   ├── mod_survival.R
-│   └── mod_wilcoxon.R
+│   ├── mod_wilcoxon.R
+│   └── mod_rm_anova.R
 ├── www/
 │   └── styles.css
 ├── tests/
@@ -525,6 +529,12 @@ additions -- this was a deliberate design constraint from the start.
   Carlo simulation before implementation; the app's own guided-mode text
   discloses that this formula is somewhat conservative for a strong
   hazard ratio combined with unequal allocation.)
+- Faul, F., Erdfelder, E., Lang, A.-G., & Buchner, A. (2007). G*Power 3: A
+  flexible statistical power analysis program for the social, behavioral, and
+  biomedical sciences. *Behavior Research Methods*, 39(2), 175-191. (Source of
+  the repeated-measures noncentrality/degrees-of-freedom formulation used in
+  `R/power_rm_anova.R`, cross-validated against Monte Carlo simulation and,
+  for the two-measurement case, against `pwr`'s paired t-test exactly.)
 - Noether, G. E. (1987). Sample size determination for some common
   nonparametric tests. *Journal of the American Statistical Association*,
   82(398), 645-647. (Closed-form Wilcoxon-Mann-Whitney sample size used in
