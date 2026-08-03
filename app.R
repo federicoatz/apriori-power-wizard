@@ -386,7 +386,7 @@ ui <- page_fluid(
       tags$a(href = "https://github.com/federicoatz/power-analysis-app/blob/main/LICENSE",
              target = "_blank", rel = "noopener noreferrer", "MIT license"), "."),
     p(icon("quote-left"), " If you use this app in your research, please cite: ",
-      tags$em("Atzori, F. (2026). A Priori Power Analysis Wizard (Version v0.6.0) [Computer software]. Zenodo."),
+      tags$em("Atzori, F. (2026). A Priori Power Analysis Wizard (Version v0.7.0) [Computer software]. Zenodo."),
       " ",
       tags$a(href = "https://doi.org/10.5281/zenodo.21770801",
              target = "_blank", rel = "noopener noreferrer",

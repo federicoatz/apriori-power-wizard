@@ -125,9 +125,10 @@ mod_tost_server <- function(id) {
       power_tost_n(delta_eq = delta_eq_r(), theta = theta_r(), sig_level = p$alpha, power = p$power)
     })
 
-    solve_n_fn <- function(sig_level, power) {
-      power_tost_n(delta_eq = delta_eq_r(), theta = theta_r(), sig_level = sig_level, power = power)
+    solve_n_fn <- function(sig_level, power, effect = NULL) {
+      power_tost_n(delta_eq = effect %||% delta_eq_r(), theta = theta_r(), sig_level = sig_level, power = power)
     }
+    effect_set_r <- reactive(effect_comparison_values(delta_eq_r(), "magnitude"))
 
     n_summary_r <- reactive({
       res <- result_r()
@@ -173,6 +174,6 @@ mod_tost_server <- function(id) {
                          result_r = result_r, curve_extra_args_r = curve_extra_args_r,
                          n_solution_r = n_solution_r, sensitivity_fn = sensitivity_fn,
                          report_spec_r = report_spec_r, n_summary_r = n_summary_r,
-                         solve_n_fn = solve_n_fn)
+                         solve_n_fn = solve_n_fn, effect_set_r = effect_set_r)
   })
 }

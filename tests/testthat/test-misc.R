@@ -58,3 +58,24 @@ test_that("apply_allocation_ratio produces the requested ratio after rounding", 
   expect_equal(out$n1, 50)
   expect_equal(out$n2, 75)
 })
+
+test_that("effect_comparison_values (magnitude) scales by simple multiplication and excludes the current value", {
+  out <- effect_comparison_values(0.5, kind = "magnitude")
+  expect_equal(unname(sort(out)), sort(0.5 * c(0.5, 0.8, 1.2, 1.5)))
+  expect_false(any(abs(out - 0.5) < 1e-9))
+  expect_true(all(grepl("weaker|stronger", names(out))))
+})
+
+test_that("effect_comparison_values (ratio) scales in log space around 1", {
+  out <- effect_comparison_values(0.6, kind = "ratio")
+  expect_equal(unname(sort(out)), sort(exp(log(0.6) * c(0.5, 0.8, 1.2, 1.5))))
+  # A ratio > 1 (harmful direction) should scale symmetrically the same way.
+  out2 <- effect_comparison_values(1.8, kind = "ratio")
+  expect_equal(unname(sort(out2)), sort(exp(log(1.8) * c(0.5, 0.8, 1.2, 1.5))))
+})
+
+test_that("effect_comparison_values returns an empty vector for an invalid current effect", {
+  expect_length(effect_comparison_values(NA_real_), 0)
+  expect_length(effect_comparison_values(0), 0)
+  expect_length(effect_comparison_values(-1), 0)
+})

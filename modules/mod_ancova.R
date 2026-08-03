@@ -177,10 +177,11 @@ mod_ancova_server <- function(id) {
                       sig_level = p$alpha, power = p$power)
     })
 
-    solve_n_fn <- function(sig_level, power) {
-      power_ancova_n(k = k(), f_target = effect_value(), r_cov = r_cov(),
+    solve_n_fn <- function(sig_level, power, effect = NULL) {
+      power_ancova_n(k = k(), f_target = effect %||% effect_value(), r_cov = r_cov(),
                       sig_level = sig_level, power = power)
     }
+    effect_set_r <- reactive(effect_comparison_values(effect_value(), "magnitude"))
 
     n_summary_r <- reactive({
       res <- result_r()
@@ -225,6 +226,6 @@ mod_ancova_server <- function(id) {
                          result_r = result_r, curve_extra_args_r = curve_extra_args_r,
                          n_solution_r = n_solution_r, sensitivity_fn = sensitivity_fn,
                          report_spec_r = report_spec_r, n_summary_r = n_summary_r,
-                         solve_n_fn = solve_n_fn)
+                         solve_n_fn = solve_n_fn, effect_set_r = effect_set_r)
   })
 }

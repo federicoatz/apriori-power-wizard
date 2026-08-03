@@ -192,12 +192,13 @@ mod_survival_server <- function(id) {
                         power = p$power, tails = p$tails)
     })
 
-    solve_n_fn <- function(sig_level, power) {
+    solve_n_fn <- function(sig_level, power, effect = NULL) {
       p <- params()
-      power_survival_n(hr = effect_value(), p_event = p_event_r(),
+      power_survival_n(hr = effect %||% effect_value(), p_event = p_event_r(),
                         alloc_ratio = p$allocation_ratio, sig_level = sig_level,
                         power = power, tails = p$tails)
     }
+    effect_set_r <- reactive(effect_comparison_values(effect_value(), "ratio"))
 
     n_summary_r <- reactive({
       res <- result_r()
@@ -248,6 +249,6 @@ mod_survival_server <- function(id) {
                          result_r = result_r, curve_extra_args_r = curve_extra_args_r,
                          n_solution_r = n_solution_r, sensitivity_fn = sensitivity_fn,
                          report_spec_r = report_spec_r, n_summary_r = n_summary_r,
-                         solve_n_fn = solve_n_fn)
+                         solve_n_fn = solve_n_fn, effect_set_r = effect_set_r)
   })
 }

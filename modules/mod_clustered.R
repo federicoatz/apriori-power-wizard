@@ -168,12 +168,13 @@ mod_clustered_server <- function(id) {
                          allocation_ratio = p$allocation_ratio)
     })
 
-    solve_n_fn <- function(sig_level, power) {
+    solve_n_fn <- function(sig_level, power, effect = NULL) {
       p <- params()
-      power_clustered_n(d = effect_value(), icc = icc(), cluster_size = cluster_size(),
+      power_clustered_n(d = effect %||% effect_value(), icc = icc(), cluster_size = cluster_size(),
                          sig_level = sig_level, power = power, alternative = p$tails,
                          allocation_ratio = p$allocation_ratio)
     }
+    effect_set_r <- reactive(effect_comparison_values(effect_value(), "magnitude"))
 
     n_summary_r <- reactive({
       res <- result_r()
@@ -222,6 +223,6 @@ mod_clustered_server <- function(id) {
                          result_r = result_r, curve_extra_args_r = curve_extra_args_r,
                          n_solution_r = n_solution_r, sensitivity_fn = sensitivity_fn,
                          report_spec_r = report_spec_r, n_summary_r = n_summary_r,
-                         solve_n_fn = solve_n_fn)
+                         solve_n_fn = solve_n_fn, effect_set_r = effect_set_r)
   })
 }

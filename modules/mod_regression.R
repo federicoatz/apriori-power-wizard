@@ -163,10 +163,11 @@ mod_regression_server <- function(id) {
                           n_covariates = n_cov(), sig_level = p$alpha, power = p$power)
     })
 
-    solve_n_fn <- function(sig_level, power) {
-      power_regression_n(f2 = effect_value(), n_predictors_tested = u(),
+    solve_n_fn <- function(sig_level, power, effect = NULL) {
+      power_regression_n(f2 = effect %||% effect_value(), n_predictors_tested = u(),
                           n_covariates = n_cov(), sig_level = sig_level, power = power)
     }
+    effect_set_r <- reactive(effect_comparison_values(effect_value(), "magnitude"))
 
     n_summary_r <- reactive({
       res <- result_r()
@@ -209,6 +210,6 @@ mod_regression_server <- function(id) {
                          result_r = result_r, curve_extra_args_r = curve_extra_args_r,
                          n_solution_r = n_solution_r, sensitivity_fn = sensitivity_fn,
                          report_spec_r = report_spec_r, n_summary_r = n_summary_r,
-                         solve_n_fn = solve_n_fn)
+                         solve_n_fn = solve_n_fn, effect_set_r = effect_set_r)
   })
 }

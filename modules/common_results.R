@@ -41,19 +41,20 @@ results_panel_ui <- function(ns) {
     accordion(
       id = ns("cmp_acc"), open = FALSE,
       accordion_panel(
-        title = tagList(icon("layer-group"), " Compare across alpha / power (optional)"),
+        title = tagList(icon("layer-group"), " Compare across alpha / power / effect size (optional)"),
         value = "compare",
         p(class = "field-hint",
           "Add extra values to see them plotted together with your current settings below.",
-          "Your current alpha and power (from the Statistical parameters step) are always included.",
+          "Your current alpha, power, and effect size (from the previous steps) are always included.",
           "Up to 3 alpha levels can be compared at once."),
         fluidRow(
-          column(6, checkboxGroupInput(ns("cmp_alpha"), "Additional alpha (significance) levels:",
+          column(4, checkboxGroupInput(ns("cmp_alpha"), "Additional alpha (significance) levels:",
             choices = c("0.10" = "0.10", "0.05" = "0.05", "0.01" = "0.01", "0.001" = "0.001"),
             selected = character(0), inline = TRUE)),
-          column(6, checkboxGroupInput(ns("cmp_power"), "Additional power targets:",
+          column(4, checkboxGroupInput(ns("cmp_power"), "Additional power targets:",
             choices = c("0.80" = "0.80", "0.90" = "0.90", "0.99" = "0.99"),
-            selected = character(0), inline = TRUE))
+            selected = character(0), inline = TRUE)),
+          column(4, uiOutput(ns("cmp_effect_ui")))
         )
       )
     ),
@@ -129,16 +130,26 @@ results_panel_ui <- function(ns) {
 #'   [build_report_text()]
 #' @param n_summary_r reactive() returning a `tagList`/HTML describing N
 #'   total and per-group/cell breakdown
-#' @param solve_n_fn optional function(sig_level, power) -> the same list
-#'   shape as `result_r()`, with every other input (effect size, tails,
-#'   design-specific args) held at the family's current values. Powers the
-#'   "Compare across alpha / power" chart controls; if omitted, the chart
-#'   silently falls back to showing only the current single scenario.
+#' @param solve_n_fn optional function(sig_level, power, effect = NULL) -> the
+#'   same list shape as `result_r()`, with every other input (tails,
+#'   design-specific args) held at the family's current values, and
+#'   `effect = NULL` meaning "use the family's current effect size" (its
+#'   existing default behavior). Powers the "Compare across alpha / power /
+#'   effect size" chart controls; if omitted, the chart silently falls back
+#'   to showing only the current single scenario.
+#' @param effect_set_r optional reactive() returning a named numeric vector
+#'   of EXTRA effect-size values to offer for comparison (see
+#'   [effect_comparison_values()]) -- never including the current value,
+#'   the same convention `alpha_set()`/`power_set()` use internally. Omit
+#'   for families whose "effect" isn't a single freely-rescalable scalar
+#'   (McNemar's two discordant-pair probabilities, logistic's p0/p1 pair),
+#'   which silently disables the effect-comparison UI for that family,
+#'   exactly like omitting `solve_n_fn` disables alpha/power comparison.
 #' @export
 wire_results_server <- function(input, output, session, family,
                                  result_r, curve_extra_args_r, n_solution_r,
                                  sensitivity_fn, report_spec_r, n_summary_r,
-                                 solve_n_fn = NULL) {
+                                 solve_n_fn = NULL, effect_set_r = NULL) {
 
   # The x-axis quantity a curve point represents, per family: n1 (per-arm/
   # per-pair N) for every family except ANOVA (n_per_cell) and the two
@@ -179,35 +190,65 @@ wire_results_server <- function(input, output, session, family,
     sort(unique(c(current_power(), extra[!is.na(extra)])), decreasing = TRUE)
   })
 
-  # One row per (alpha, power) combination actually being compared, each
-  # solved independently via the family's own solve_n_fn (everything else
-  # held at the family's current values).
+  # Extra effect-size values beyond the current one, or just NA_real_ (a
+  # sentinel meaning "use the current effect, don't override it") if this
+  # family didn't supply effect_set_r. Values (not the current one) are
+  # rendered as a checkboxGroupInput built dynamically from
+  # effect_set_r(), since unlike alpha/power the sensible choices are
+  # family- and even state-dependent (see effect_comparison_values()).
+  output$cmp_effect_ui <- renderUI({
+    if (is.null(effect_set_r)) return(NULL)
+    extra <- effect_set_r()
+    if (is.null(extra) || length(extra) == 0) return(NULL)
+    formatted <- vapply(unname(extra), format_stat, character(1), digits = 3)
+    choices <- stats::setNames(as.character(unname(extra)),
+                                sprintf("%s (%s)", names(extra), formatted))
+    checkboxGroupInput(session$ns("cmp_effect"), "Additional effect sizes:",
+                        choices = choices, selected = character(0), inline = TRUE)
+  })
+
+  effect_set <- reactive({
+    if (is.null(effect_set_r)) return(NA_real_)
+    extra_all <- effect_set_r()
+    if (is.null(extra_all) || length(extra_all) == 0) return(NA_real_)
+    chosen <- suppressWarnings(as.numeric(input$cmp_effect))
+    chosen <- chosen[!is.na(chosen)]
+    c(NA_real_, chosen)
+  })
+
+  # One row per (alpha, power, effect) combination actually being compared,
+  # each solved independently via the family's own solve_n_fn (everything
+  # else held at the family's current values). `effect = NA` is the
+  # sentinel for "don't override -- use the family's current effect size".
   scenario_grid <- reactive({
-    # result_r() has already solved the CURRENT alpha/power combination --
-    # reuse it (Shiny caches the reactive, so this is free) rather than
-    # asking solve_n_fn() to redo the exact same solve a second time. This
-    # matters even when no extra alpha/power is being compared: without
-    # this, every single results render would silently pay for the
+    # result_r() has already solved the CURRENT alpha/power/effect
+    # combination -- reuse it (Shiny caches the reactive, so this is free)
+    # rather than asking solve_n_fn() to redo the exact same solve a second
+    # time. This matters even when no extra scenario is being compared:
+    # without this, every single results render would silently pay for the
     # (potentially expensive -- e.g. ANOVA's or an unbalanced design's
     # search loop) solver twice for no benefit.
     cur_res <- result_r()
     if (is.null(solve_n_fn)) {
-      return(data.frame(alpha = current_alpha(), power = current_power(),
+      return(data.frame(alpha = current_alpha(), power = current_power(), effect = NA_real_,
                          n = extract_curve_n(cur_res), power_achieved = cur_res$power_achieved,
                          is_current = TRUE))
     }
-    alphas <- alpha_set(); powers <- power_set()
-    grid <- expand.grid(alpha = alphas, power = powers, KEEP.OUT.ATTRS = FALSE)
+    alphas <- alpha_set(); powers <- power_set(); effects <- effect_set()
+    grid <- expand.grid(alpha = alphas, power = powers, effect = effects, KEEP.OUT.ATTRS = FALSE)
     rows <- lapply(seq_len(nrow(grid)), function(i) {
       is_cur <- isTRUE(all.equal(grid$alpha[i], current_alpha())) &&
-                isTRUE(all.equal(grid$power[i], current_power()))
+                isTRUE(all.equal(grid$power[i], current_power())) &&
+                is.na(grid$effect[i])
       res <- if (is_cur) {
         cur_res
-      } else {
+      } else if (is.na(grid$effect[i])) {
         tryCatch(solve_n_fn(grid$alpha[i], grid$power[i]), error = function(e) NULL)
+      } else {
+        tryCatch(solve_n_fn(grid$alpha[i], grid$power[i], effect = grid$effect[i]), error = function(e) NULL)
       }
       data.frame(
-        alpha = grid$alpha[i], power = grid$power[i],
+        alpha = grid$alpha[i], power = grid$power[i], effect = grid$effect[i],
         n = if (is.null(res)) NA_real_ else extract_curve_n(res),
         power_achieved = if (is.null(res)) NA_real_ else res$power_achieved,
         is_current = is_cur

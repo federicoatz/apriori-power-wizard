@@ -62,3 +62,39 @@ format_stat <- function(x, digits = 3) {
   if (is.null(x) || is.na(x)) return("NA")
   formatC(x, digits = digits, format = "f")
 }
+
+#' Extra effect-size values to offer in the "Compare across effect size"
+#' scenario grid, expressed relative to the CURRENT effect (never including
+#' the current value itself -- scenario_grid() always adds that separately,
+#' the same way alpha_set()/power_set() always include the current alpha/
+#' power regardless of which checkboxes are ticked).
+#'
+#' Deliberately framed as "how much weaker/stronger than what you entered"
+#' rather than trying to map every family onto Cohen's (somewhat arbitrary)
+#' small/medium/large convention -- most families here don't have one that
+#' applies (McNemar's two discordant-pair probabilities, TOST's margin, a
+#' hazard ratio), and this framing works identically for all of them.
+#'
+#' @param current numeric, the family's current effect-size value
+#' @param kind "magnitude" for an effect expressed as a distance from zero
+#'   (d, f, f2, h, w, r, dz, an equivalence margin -- scaled by simple
+#'   multiplication), or "ratio" for an effect expressed as a ratio around a
+#'   null value of 1 (a hazard ratio -- scaled in LOG space so "50% weaker"
+#'   means half as far from 1 on the log scale, not literally HR * 0.5)
+#' @param factors numeric vector, multipliers applied to `current` (or to
+#'   log(current) for kind = "ratio")
+#' @return named numeric vector (possibly empty if `current` is invalid)
+#' @export
+effect_comparison_values <- function(current, kind = c("magnitude", "ratio"),
+                                      factors = c(0.5, 0.8, 1.2, 1.5)) {
+  kind <- match.arg(kind)
+  if (is.null(current) || length(current) == 0 || is.na(current) || current <= 0) {
+    return(stats::setNames(numeric(0), character(0)))
+  }
+  values <- if (kind == "magnitude") current * factors else exp(log(current) * factors)
+  labels <- vapply(factors, function(f) {
+    if (f < 1) sprintf("%d%% weaker", round((1 - f) * 100)) else sprintf("%d%% stronger", round((f - 1) * 100))
+  }, character(1))
+  keep <- !duplicated(round(values, 6)) & abs(values - current) > 1e-9
+  stats::setNames(values[keep], labels[keep])
+}

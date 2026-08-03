@@ -172,6 +172,14 @@ module sessions while keeping it isolated per user session. Keep
   WebAssembly package repository, and a missing or ABI-mismatched package
   would otherwise take the whole app down at startup. Worst case here is
   a less fancy chart, not a blank page.
+- **Compare across alpha, power, AND effect size.** Every family's
+  Results step has an optional "Compare across alpha / power / effect
+  size" panel: tick extra significance levels, power targets, or effect
+  sizes (framed as "X% weaker/stronger" than what you entered, since most
+  families here don't have a Cohen's-style small/medium/large convention
+  that applies) to see each scenario's required N plotted together on the
+  same curve. Not offered for McNemar's test or logistic regression,
+  whose effect isn't a single freely-rescalable number.
 - **Animated result counters.** The value-box numbers count up when they
   change. This is decorative only: the DOM holds the final, correct string
   before the animation starts and the animation always terminates on

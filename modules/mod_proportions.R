@@ -140,11 +140,12 @@ mod_proportions_server <- function(id) {
                            alternative = p$tails, allocation_ratio = p$allocation_ratio)
     })
 
-    solve_n_fn <- function(sig_level, power) {
+    solve_n_fn <- function(sig_level, power, effect = NULL) {
       p <- params()
-      power_proportions_n(h = effect_value(), sig_level = sig_level, power = power,
+      power_proportions_n(h = effect %||% effect_value(), sig_level = sig_level, power = power,
                            alternative = p$tails, allocation_ratio = p$allocation_ratio)
     }
+    effect_set_r <- reactive(effect_comparison_values(effect_value(), "magnitude"))
 
     n_summary_r <- reactive({
       res <- result_r()
@@ -187,6 +188,6 @@ mod_proportions_server <- function(id) {
                          result_r = result_r, curve_extra_args_r = curve_extra_args_r,
                          n_solution_r = n_solution_r, sensitivity_fn = sensitivity_fn,
                          report_spec_r = report_spec_r, n_summary_r = n_summary_r,
-                         solve_n_fn = solve_n_fn)
+                         solve_n_fn = solve_n_fn, effect_set_r = effect_set_r)
   })
 }
