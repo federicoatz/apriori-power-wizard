@@ -17,8 +17,9 @@ family:
    comparison, a two-arm cluster-randomized / multi-site trial, a
    chi-square test (goodness-of-fit or independence) for categorical
    outcomes across two or more groups, a bivariate correlation test,
-   McNemar's test for paired binary outcomes, or a TOST equivalence test
-   for two independent means.
+   McNemar's test for paired binary outcomes, a TOST equivalence test
+   for two independent means, or a one-way ANCOVA (group comparison
+   adjusting for one covariate).
 2. **Design structure** -- for factorial ANOVA, the number of factors and
    levels, and (critically) which **focal contrast** power should be
    computed for: a specific main effect or the interaction. The app
@@ -219,6 +220,7 @@ power-analysis-app/
 │   ├── power_correlation.R         # pwr::pwr.r.test (Cohen 1988, ch. 3)
 │   ├── power_mcnemar.R             # Connor (1987), base R only (no external dependency)
 │   ├── power_tost.R                # Exact noncentral-t TOST (Phillips 1990), base R only
+│   ├── power_ancova.R              # pwr::pwr.f2.test with covariate-adjusted f2 (Cohen 1988; Borm et al. 2007)
 │   ├── project_state.R             # Save/load/share-link JSON (de)serialization
 │   ├── power_curve.R               # Generic power-vs-N curve generator
 │   ├── sensitivity_analysis.R      # Generic inverse/minimum-detectable-effect
@@ -236,7 +238,8 @@ power-analysis-app/
 │   ├── mod_chisq.R
 │   ├── mod_correlation.R
 │   ├── mod_mcnemar.R
-│   └── mod_tost.R
+│   ├── mod_tost.R
+│   └── mod_ancova.R
 ├── www/
 │   └── styles.css
 ├── tests/
@@ -489,6 +492,10 @@ additions -- this was a deliberate design constraint from the start.
   18(2), 137-144. (Exact noncentral-t TOST power formula, re-derived and
   cross-validated by Monte Carlo simulation before implementation in
   `R/power_tost.R`.)
+- Borm, G. F., Fransen, J., & Lemmens, W. A. (2007). A simple sample size
+  formula for analysis of covariance in randomized clinical trials.
+  *Journal of Clinical Epidemiology*, 60(12), 1234-1238. (Source of the
+  covariate-adjusted f2 used in `R/power_ancova.R`.)
 
 ## Contributing, issues, and support
 

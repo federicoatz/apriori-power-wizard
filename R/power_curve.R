@@ -23,7 +23,8 @@ generate_power_curve <- function(family = c("two_means", "anova_factorial",
                                              "regression", "logistic",
                                              "proportions", "paired_t",
                                              "clustered_rct", "chisq",
-                                             "correlation", "mcnemar", "tost"),
+                                             "correlation", "mcnemar", "tost",
+                                             "ancova"),
                                   n_solution, n_range = NULL, n_points = 60,
                                   ...) {
   family <- match.arg(family)
@@ -49,7 +50,8 @@ generate_power_curve <- function(family = c("two_means", "anova_factorial",
     chisq          = function(n) do.call(power_chisq_at_n, c(list(n_total = n), extra)),
     correlation    = function(n) do.call(power_correlation_at_n, c(list(n_total = n), extra)),
     mcnemar        = function(n) do.call(power_mcnemar_at_n, c(list(n = n), extra)),
-    tost           = function(n) do.call(power_tost_at_n, c(list(n = n), extra))
+    tost           = function(n) do.call(power_tost_at_n, c(list(n = n), extra)),
+    ancova         = function(n) do.call(power_ancova_at_n, c(list(n_per_group = n), extra))
   )
 
   powers <- vapply(grid, function(n) {

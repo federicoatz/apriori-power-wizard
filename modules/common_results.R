@@ -147,6 +147,7 @@ wire_results_server <- function(input, output, session, family,
   # on the same x-axis meaning as the primary solution.
   extract_curve_n <- function(res) {
     if (family == "anova_factorial") res$n_per_cell
+    else if (family == "ancova") res$n_per_group
     else if (family %in% c("regression", "logistic", "chisq", "correlation")) res$n_total
     else if (family %in% c("mcnemar", "tost")) res$n
     else res$n1
@@ -228,8 +229,12 @@ wire_results_server <- function(input, output, session, family,
   output$value_boxes <- renderUI({
     res <- tryCatch(result_r(), error = function(e) NULL)
     if (is.null(res)) return(NULL)
-    n_label <- if (family == "anova_factorial") "N per cell" else "Total N"
-    n_display <- if (family == "anova_factorial") res$n_per_cell else (res$n_total %||% n_solution_r())
+    n_label <- if (family == "anova_factorial") "N per cell"
+               else if (family == "ancova") "N per group"
+               else "Total N"
+    n_display <- if (family == "anova_factorial") res$n_per_cell
+                 else if (family == "ancova") res$n_per_group
+                 else (res$n_total %||% n_solution_r())
 
     layout_column_wrap(
       width = 1 / 2, class = "value-box-row",

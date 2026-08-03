@@ -18,7 +18,8 @@ sensitivity_min_effect <- function(family = c("two_means", "anova_factorial",
                                                "regression", "logistic",
                                                "proportions", "paired_t",
                                                "clustered_rct", "chisq",
-                                               "correlation", "mcnemar", "tost"),
+                                               "correlation", "mcnemar", "tost",
+                                               "ancova"),
                                     n_max, ...) {
   family <- match.arg(family)
   extra <- list(...)
@@ -67,6 +68,10 @@ sensitivity_min_effect <- function(family = c("two_means", "anova_factorial",
     tost = list(
       metric = "delta_eq (equivalence margin, Cohen's d)",
       value = do.call(power_tost_min_delta_eq, c(list(n = n_max), extra))
+    ),
+    ancova = list(
+      metric = "f (unadjusted, before the covariate)",
+      value = do.call(power_ancova_min_f, c(list(n_per_group = n_max), extra))
     )
   )
 }

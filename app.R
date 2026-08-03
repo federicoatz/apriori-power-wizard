@@ -91,6 +91,11 @@ analysis_choice_names <- list(
     icon("scale-balanced", class = "choice-icon"),
     div(strong("Equivalence test (TOST)"),
         p(class = "choice-desc", "Test whether two independent groups are practically equivalent, rather than whether they differ."))
+  ),
+  ancova = div(class = "choice-card",
+    icon("filter", class = "choice-icon"),
+    div(strong("ANCOVA (with a covariate)"),
+        p(class = "choice-desc", "Compare group means on a continuous outcome while adjusting for a covariate, e.g. a pre-test/baseline score."))
   )
 )
 
@@ -137,21 +142,24 @@ family_titles <- list(
   chisq = "Chi-square (goodness-of-fit / independence)",
   correlation = "Bivariate correlation",
   mcnemar = "McNemar's test",
-  tost = "Equivalence test (TOST)"
+  tost = "Equivalence test (TOST)",
+  ancova = "ANCOVA (with a covariate)"
 )
 family_ui_fns <- list(
   two_means = mod_two_means_ui, anova_factorial = mod_anova_factorial_ui,
   regression = mod_regression_ui, logistic = mod_logistic_ui,
   proportions = mod_proportions_ui, paired_t = mod_paired_t_ui,
   clustered_rct = mod_clustered_ui, chisq = mod_chisq_ui,
-  correlation = mod_correlation_ui, mcnemar = mod_mcnemar_ui, tost = mod_tost_ui
+  correlation = mod_correlation_ui, mcnemar = mod_mcnemar_ui, tost = mod_tost_ui,
+  ancova = mod_ancova_ui
 )
 family_server_fns <- list(
   two_means = mod_two_means_server, anova_factorial = mod_anova_factorial_server,
   regression = mod_regression_server, logistic = mod_logistic_server,
   proportions = mod_proportions_server, paired_t = mod_paired_t_server,
   clustered_rct = mod_clustered_server, chisq = mod_chisq_server,
-  correlation = mod_correlation_server, mcnemar = mod_mcnemar_server, tost = mod_tost_server
+  correlation = mod_correlation_server, mcnemar = mod_mcnemar_server, tost = mod_tost_server,
+  ancova = mod_ancova_server
 )
 
 ui <- page_fluid(
@@ -323,7 +331,8 @@ ui <- page_fluid(
                   choices = c("Two separate groups (e.g., treatment vs. control)" = "two_groups",
                               "The SAME participants measured twice (e.g., before/after)" = "paired",
                               "Two or more manipulated factors at once" = "factorial",
-                              "A continuous predictor (possibly with other control variables)" = "predictor"),
+                              "A continuous predictor (possibly with other control variables)" = "predictor",
+                              "Groups, adjusting for a covariate (e.g., a pre-test/baseline score)" = "ancova"),
                   selected = character(0))
               ),
               conditionalPanel("input.dh_unit == 'individual' && input.dh_outcome == 'binary'",
@@ -366,7 +375,7 @@ ui <- page_fluid(
       tags$a(href = "https://github.com/federicoatz/power-analysis-app/blob/main/LICENSE",
              target = "_blank", rel = "noopener noreferrer", "MIT license"), "."),
     p(icon("quote-left"), " If you use this app in your research, please cite: ",
-      tags$em("Atzori, F. (2026). A Priori Power Analysis Wizard (Version v0.4.7) [Computer software]. Zenodo."),
+      tags$em("Atzori, F. (2026). A Priori Power Analysis Wizard (Version v0.5.0) [Computer software]. Zenodo."),
       " ",
       tags$a(href = "https://doi.org/10.5281/zenodo.21770801",
              target = "_blank", rel = "noopener noreferrer",
@@ -905,7 +914,7 @@ server <- function(input, output, session) {
       if (identical(input$dh_outcome, "continuous")) {
         switch(input$dh_continuous %||% "",
           two_groups = "two_means", paired = "paired_t", factorial = "anova_factorial",
-          predictor = "regression", NULL)
+          predictor = "regression", ancova = "ancova", NULL)
       } else if (identical(input$dh_outcome, "binary")) {
         switch(input$dh_binary %||% "",
           two_groups = "proportions", paired = "mcnemar", predictor = "logistic", NULL)
@@ -935,7 +944,8 @@ server <- function(input, output, session) {
       proportions = "Two proportions", paired_t = "Paired / repeated measures",
       clustered_rct = "Clustered / multi-site trial",
       chisq = "Chi-square (goodness-of-fit / independence)",
-      mcnemar = "McNemar's test")
+      mcnemar = "McNemar's test",
+      ancova = "ANCOVA (with a covariate)")
     div(class = "well well-result",
       p(strong("Recommended analysis: "), label),
       actionButton("dh_use_recommendation", tagList(icon("check"), " Use this and start"), class = "btn-success")

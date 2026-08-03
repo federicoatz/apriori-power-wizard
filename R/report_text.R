@@ -19,7 +19,8 @@ method_citations <- function() {
     chisq = "Cohen, J. (1988). Statistical Power Analysis for the Behavioral Sciences (2nd ed.), ch. 7. Computed with the R package 'pwr' (Champely, 2020), pwr.chisq.test().",
     correlation = "Cohen, J. (1988). Statistical Power Analysis for the Behavioral Sciences (2nd ed.), ch. 3. Computed with the R package 'pwr' (Champely, 2020), pwr.r.test().",
     mcnemar = "Connor, R. J. (1987). Sample size for testing differences in proportions for the paired-sample design. Biometrics, 43(1), 207-211. Large-sample closed-form approximation implemented directly in base R (no external dependency).",
-    tost = "Schuirmann, D. J. (1987). A comparison of the two one-sided tests procedure and the power approach for assessing the equivalence of average bioavailability. Journal of Pharmacokinetics and Biopharmaceutics, 15(6), 657-680. Exact noncentral-t power (Phillips, 1990) implemented directly in base R (no external dependency)."
+    tost = "Schuirmann, D. J. (1987). A comparison of the two one-sided tests procedure and the power approach for assessing the equivalence of average bioavailability. Journal of Pharmacokinetics and Biopharmaceutics, 15(6), 657-680. Exact noncentral-t power (Phillips, 1990) implemented directly in base R (no external dependency).",
+    ancova = "Cohen, J. (1988). Statistical Power Analysis for the Behavioral Sciences (2nd ed.), ch. 9. Computed with the R package 'pwr' (Champely, 2020), pwr.f2.test(), with f2 adjusted for the covariate following Borm, Fransen, & Lemmens (2007)."
   )
 }
 
