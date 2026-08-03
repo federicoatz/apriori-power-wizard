@@ -20,7 +20,8 @@ method_citations <- function() {
     correlation = "Cohen, J. (1988). Statistical Power Analysis for the Behavioral Sciences (2nd ed.), ch. 3. Computed with the R package 'pwr' (Champely, 2020), pwr.r.test().",
     mcnemar = "Connor, R. J. (1987). Sample size for testing differences in proportions for the paired-sample design. Biometrics, 43(1), 207-211. Large-sample closed-form approximation implemented directly in base R (no external dependency).",
     tost = "Schuirmann, D. J. (1987). A comparison of the two one-sided tests procedure and the power approach for assessing the equivalence of average bioavailability. Journal of Pharmacokinetics and Biopharmaceutics, 15(6), 657-680. Exact noncentral-t power (Phillips, 1990) implemented directly in base R (no external dependency).",
-    ancova = "Cohen, J. (1988). Statistical Power Analysis for the Behavioral Sciences (2nd ed.), ch. 9. Computed with the R package 'pwr' (Champely, 2020), pwr.f2.test(), with f2 adjusted for the covariate following Borm, Fransen, & Lemmens (2007)."
+    ancova = "Cohen, J. (1988). Statistical Power Analysis for the Behavioral Sciences (2nd ed.), ch. 9. Computed with the R package 'pwr' (Champely, 2020), pwr.f2.test(), with f2 adjusted for the covariate following Borm, Fransen, & Lemmens (2007).",
+    survival = "Schoenfeld, D. A. (1983). Sample-size formula for the proportional-hazards regression model. Biometrics, 39(2), 499-503. Events-based closed-form power for the two-group log-rank test, implemented directly in base R (no external dependency)."
   )
 }
 
@@ -77,6 +78,25 @@ method_citations <- function() {
             "planning purposes%s."),
       details$delta_eq, details$assumed_theta,
       if (isTRUE(details$theta_is_zero)) " (the conservative default: no true difference at all)" else ""
+    ),
+    hr_direct = sprintf(
+      paste("The effect was specified directly as a hazard ratio of %s",
+            "(arm 2 vs. arm 1)."),
+      details$hr
+    ),
+    hr_safeguard = sprintf(
+      paste("The effect size was derived from a previously published",
+            "hazard ratio (%s, from a study with %s recorded events) using",
+            "the 'safeguard power' procedure of Perugini, Gallucci, and",
+            "Costantini (2014), adapted to the log-hazard-ratio scale. The",
+            "%s%% %s confidence interval around the published log hazard",
+            "ratio was computed, and its bound closer to 1 (%s) was used",
+            "as a conservative input to guard against the inflation of",
+            "published effects by publication bias and the 'winner's",
+            "curse'."),
+      details$published_hr, details$published_events,
+      details$conf_level * 100, if (details$one_sided) "one-sided" else "two-sided",
+      details$safeguard_hr
     )
   )
 }

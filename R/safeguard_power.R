@@ -176,6 +176,53 @@ safeguard_ci_w <- function(w_published, n_published, df, conf_level = 0.80,
   )
 }
 
+#' Safeguard-corrected input for a hazard ratio (log-rank / survival)
+#'
+#' Uses the standard large-sample variance of the log hazard ratio from a
+#' two-group log-rank/Cox analysis, Var(log HR) ~= 1/d1 + 1/d2 (Peto &
+#' Peto, 1972; see also Parmar & Machin, 1995, "Survival Analysis: A
+#' Practical Approach", ch. 8), where d1/d2 are the number of events
+#' observed in each arm. Given only the TOTAL number of events in the
+#' original study (the quantity usually reported, e.g. "with 87 deaths
+#' recorded..."), events are apportioned between arms by the allocation
+#' ratio, giving the same (1+k)^2/k structure used in
+#' [power_survival_n()]'s own required-events formula:
+#'   Var(log HR) = (1+k)^2 / (k * events_published)
+#'
+#' @param hr_published numeric > 0, published hazard ratio
+#' @param events_published integer, TOTAL number of events observed in the
+#'   original study (not its total N -- event count is what determines
+#'   precision in a survival analysis)
+#' @param alloc_ratio numeric > 0, allocation ratio k = n2/n1 assumed for
+#'   the ORIGINAL study (1 = balanced, the usual default absent other info)
+#' @param conf_level numeric, confidence level (default 0.80 one-sided,
+#'   consistent with the safeguard-power default used elsewhere in this app)
+#' @param one_sided logical
+#' @return list(se_log_hr, lower (HR scale), hr_safeguard)
+#' @export
+safeguard_ci_logHR <- function(hr_published, events_published, alloc_ratio = 1,
+                                conf_level = 0.80, one_sided = TRUE) {
+  stopifnot(hr_published > 0, events_published > 0, alloc_ratio > 0)
+  k <- alloc_ratio
+  log_hr <- log(hr_published)
+  se <- sqrt((1 + k)^2 / (k * events_published))
+  z <- if (one_sided) stats::qnorm(conf_level) else stats::qnorm(1 - (1 - conf_level) / 2)
+  # The safeguard bound is the CI edge CLOSER to 1 (the conservative,
+  # less-protective direction), on whichever side of 1 the published HR
+  # falls -- mirroring how every other safeguard_ci_*() here takes the
+  # bound that shrinks the apparent effect, never the one that inflates it.
+  if (hr_published < 1) {
+    bound_log <- log_hr + z * se
+  } else {
+    bound_log <- log_hr - z * se
+  }
+  list(
+    hr_published = hr_published, se_log_hr = se,
+    conf_level = conf_level, one_sided = one_sided,
+    hr_safeguard = exp(bound_log)
+  )
+}
+
 #' Citation string for the safeguard-power method (used in the report text)
 #' @export
 safeguard_power_citation <- function() {

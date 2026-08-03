@@ -96,6 +96,11 @@ analysis_choice_names <- list(
     icon("filter", class = "choice-icon"),
     div(strong("ANCOVA (with a covariate)"),
         p(class = "choice-desc", "Compare group means on a continuous outcome while adjusting for a covariate, e.g. a pre-test/baseline score."))
+  ),
+  survival = div(class = "choice-card",
+    icon("hourglass-half", class = "choice-icon"),
+    div(strong("Time-to-event (log-rank test)"),
+        p(class = "choice-desc", "Compare how quickly two groups reach an event -- e.g., time to exit a market/game, or attrition in a longitudinal study."))
   )
 )
 
@@ -143,7 +148,8 @@ family_titles <- list(
   correlation = "Bivariate correlation",
   mcnemar = "McNemar's test",
   tost = "Equivalence test (TOST)",
-  ancova = "ANCOVA (with a covariate)"
+  ancova = "ANCOVA (with a covariate)",
+  survival = "Time-to-event (log-rank test)"
 )
 family_ui_fns <- list(
   two_means = mod_two_means_ui, anova_factorial = mod_anova_factorial_ui,
@@ -151,7 +157,7 @@ family_ui_fns <- list(
   proportions = mod_proportions_ui, paired_t = mod_paired_t_ui,
   clustered_rct = mod_clustered_ui, chisq = mod_chisq_ui,
   correlation = mod_correlation_ui, mcnemar = mod_mcnemar_ui, tost = mod_tost_ui,
-  ancova = mod_ancova_ui
+  ancova = mod_ancova_ui, survival = mod_survival_ui
 )
 family_server_fns <- list(
   two_means = mod_two_means_server, anova_factorial = mod_anova_factorial_server,
@@ -159,7 +165,7 @@ family_server_fns <- list(
   proportions = mod_proportions_server, paired_t = mod_paired_t_server,
   clustered_rct = mod_clustered_server, chisq = mod_chisq_server,
   correlation = mod_correlation_server, mcnemar = mod_mcnemar_server, tost = mod_tost_server,
-  ancova = mod_ancova_server
+  ancova = mod_ancova_server, survival = mod_survival_server
 )
 
 ui <- page_fluid(
@@ -321,7 +327,8 @@ ui <- page_fluid(
                 radioButtons("dh_outcome", "2. What kind of outcome are you measuring?",
                   choices = c("A number that can take a range of values (e.g., score, time, spending)" = "continuous",
                               "A yes/no or success/failure outcome" = "binary",
-                              "A choice among 3+ categories, or counts spread across groups" = "categorical"),
+                              "A choice among 3+ categories, or counts spread across groups" = "categorical",
+                              "How LONG until something happens (time-to-event)" = "time_to_event"),
                   selected = character(0))
               )
             ),
@@ -346,11 +353,15 @@ ui <- page_fluid(
                 div(class = "field-hint", icon("circle-check"),
                     " A categorical outcome across groups -- see the recommendation below.")
               ),
+              conditionalPanel("input.dh_unit == 'individual' && input.dh_outcome == 'time_to_event'",
+                div(class = "field-hint", icon("circle-check"),
+                    " A time-to-event outcome -- see the recommendation below.")
+              ),
               conditionalPanel("input.dh_unit == 'cluster' && input.dh_outcome == 'continuous'",
                 div(class = "field-hint", icon("circle-check"),
                     " A cluster-randomized design with a continuous outcome -- see the recommendation below.")
               ),
-              conditionalPanel("input.dh_unit == 'cluster' && (input.dh_outcome == 'binary' || input.dh_outcome == 'categorical')",
+              conditionalPanel("input.dh_unit == 'cluster' && (input.dh_outcome == 'binary' || input.dh_outcome == 'categorical' || input.dh_outcome == 'time_to_event')",
                 div(class = "field-hint", icon("triangle-exclamation"),
                     " This combination isn't covered by this wizard yet -- see the note below.")
               )
@@ -375,7 +386,7 @@ ui <- page_fluid(
       tags$a(href = "https://github.com/federicoatz/power-analysis-app/blob/main/LICENSE",
              target = "_blank", rel = "noopener noreferrer", "MIT license"), "."),
     p(icon("quote-left"), " If you use this app in your research, please cite: ",
-      tags$em("Atzori, F. (2026). A Priori Power Analysis Wizard (Version v0.5.0) [Computer software]. Zenodo."),
+      tags$em("Atzori, F. (2026). A Priori Power Analysis Wizard (Version v0.6.0) [Computer software]. Zenodo."),
       " ",
       tags$a(href = "https://doi.org/10.5281/zenodo.21770801",
              target = "_blank", rel = "noopener noreferrer",
@@ -903,7 +914,7 @@ server <- function(input, output, session) {
   # closed-form calculator for a continuous outcome (see clustered_rct).
   dh_unsupported <- reactive({
     identical(input$dh_unit, "cluster") &&
-      (input$dh_outcome %||% "") %in% c("binary", "categorical")
+      (input$dh_outcome %||% "") %in% c("binary", "categorical", "time_to_event")
   })
 
   recommended_family <- reactive({
@@ -920,6 +931,8 @@ server <- function(input, output, session) {
           two_groups = "proportions", paired = "mcnemar", predictor = "logistic", NULL)
       } else if (identical(input$dh_outcome, "categorical")) {
         "chisq"
+      } else if (identical(input$dh_outcome, "time_to_event")) {
+        "survival"
       } else {
         NULL
       }
@@ -932,7 +945,7 @@ server <- function(input, output, session) {
     if (isTRUE(dh_unsupported())) {
       return(div(class = "well well-warning", icon("triangle-exclamation"),
         strong(" Not yet supported: "),
-        "This wizard doesn't currently include a closed-form calculator for a cluster-randomized design with a binary or categorical outcome -- the math is meaningfully more involved than the continuous case implemented here. Consider consulting a statistician, or looking at a dedicated package such as R's clusterPower for this specific scenario."))
+        "This wizard doesn't currently include a closed-form calculator for a cluster-randomized design with a binary, categorical, or time-to-event outcome -- the math is meaningfully more involved than the continuous case implemented here. Consider consulting a statistician, or looking at a dedicated package such as R's clusterPower for this specific scenario."))
     }
     fam <- recommended_family()
     if (is.null(fam)) {
@@ -945,7 +958,8 @@ server <- function(input, output, session) {
       clustered_rct = "Clustered / multi-site trial",
       chisq = "Chi-square (goodness-of-fit / independence)",
       mcnemar = "McNemar's test",
-      ancova = "ANCOVA (with a covariate)")
+      ancova = "ANCOVA (with a covariate)",
+      survival = "Time-to-event (log-rank test)")
     div(class = "well well-result",
       p(strong("Recommended analysis: "), label),
       actionButton("dh_use_recommendation", tagList(icon("check"), " Use this and start"), class = "btn-success")

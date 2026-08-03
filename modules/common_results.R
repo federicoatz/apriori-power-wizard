@@ -148,7 +148,7 @@ wire_results_server <- function(input, output, session, family,
   extract_curve_n <- function(res) {
     if (family == "anova_factorial") res$n_per_cell
     else if (family == "ancova") res$n_per_group
-    else if (family %in% c("regression", "logistic", "chisq", "correlation")) res$n_total
+    else if (family %in% c("regression", "logistic", "chisq", "correlation", "survival")) res$n_total
     else if (family %in% c("mcnemar", "tost")) res$n
     else res$n1
   }

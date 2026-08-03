@@ -18,8 +18,11 @@ family:
    chi-square test (goodness-of-fit or independence) for categorical
    outcomes across two or more groups, a bivariate correlation test,
    McNemar's test for paired binary outcomes, a TOST equivalence test
-   for two independent means, or a one-way ANCOVA (group comparison
-   adjusting for one covariate).
+   for two independent means, a one-way ANCOVA (group comparison
+   adjusting for one covariate), or a two-group log-rank test for a
+   time-to-event outcome (a niche tool for this app's audience -- e.g.,
+   time-to-decision in a strategic game, or attrition/dropout timing in
+   a longitudinal study).
 2. **Design structure** -- for factorial ANOVA, the number of factors and
    levels, and (critically) which **focal contrast** power should be
    computed for: a specific main effect or the interaction. The app
@@ -221,6 +224,7 @@ power-analysis-app/
 │   ├── power_mcnemar.R             # Connor (1987), base R only (no external dependency)
 │   ├── power_tost.R                # Exact noncentral-t TOST (Phillips 1990), base R only
 │   ├── power_ancova.R              # pwr::pwr.f2.test with covariate-adjusted f2 (Cohen 1988; Borm et al. 2007)
+│   ├── power_survival.R            # Schoenfeld (1983) log-rank events formula, base R only
 │   ├── project_state.R             # Save/load/share-link JSON (de)serialization
 │   ├── power_curve.R               # Generic power-vs-N curve generator
 │   ├── sensitivity_analysis.R      # Generic inverse/minimum-detectable-effect
@@ -239,7 +243,8 @@ power-analysis-app/
 │   ├── mod_correlation.R
 │   ├── mod_mcnemar.R
 │   ├── mod_tost.R
-│   └── mod_ancova.R
+│   ├── mod_ancova.R
+│   └── mod_survival.R
 ├── www/
 │   └── styles.css
 ├── tests/
@@ -496,6 +501,16 @@ additions -- this was a deliberate design constraint from the start.
   formula for analysis of covariance in randomized clinical trials.
   *Journal of Clinical Epidemiology*, 60(12), 1234-1238. (Source of the
   covariate-adjusted f2 used in `R/power_ancova.R`.)
+- Schoenfeld, D. A. (1983). Sample-size formula for the proportional-
+  hazards regression model. *Biometrics*, 39(2), 499-503. (Log-rank
+  events formula used in `R/power_survival.R`, cross-validated by Monte
+  Carlo simulation before implementation; the app's own guided-mode text
+  discloses that this formula is somewhat conservative for a strong
+  hazard ratio combined with unequal allocation.)
+- Peto, R., & Peto, J. (1972). Asymptotically efficient rank invariant
+  test procedures. *Journal of the Royal Statistical Society: Series A*,
+  135(2), 185-198. (Source of the log-hazard-ratio variance approximation
+  used in `safeguard_ci_logHR()`, `R/safeguard_power.R`.)
 
 ## Contributing, issues, and support
 
