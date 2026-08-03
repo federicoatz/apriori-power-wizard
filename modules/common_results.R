@@ -71,7 +71,12 @@ results_panel_ui <- function(ns) {
     if (HAS_PLOTLY) {
       plotly::plotlyOutput(ns("power_curve_plotly"), height = "340px")
     } else {
-      plotOutput(ns("power_curve_plot"), height = "340px")
+      tagList(
+        plotOutput(ns("power_curve_plot"), height = "340px"),
+        div(style = "text-align: right; margin-top: 4px;",
+            actionButton(ns("dl_plot_svg"), tagList(icon("download"), " Download plot as SVG"),
+                         class = "btn-outline-secondary btn-sm"))
+      )
     },
 
     hr(),
@@ -453,21 +458,42 @@ wire_results_server <- function(input, output, session, family,
         ) |>
         plotly::config(
           displaylogo = FALSE,
-          # Trim the modebar down to the two tools that are actually useful
+          # Trim the modebar down to the tools that are actually useful
           # here; the full default bar is visual clutter on a single line.
           modeBarButtonsToRemove = list(
             "select2d", "lasso2d", "autoScale2d", "hoverClosestCartesian",
             "hoverCompareCartesian", "toggleSpikelines", "zoomIn2d", "zoomOut2d"
           ),
+          # PNG export (the modebar's own camera icon) is plotly's stock,
+          # purely client-side feature -- no server round trip, so it's
+          # immune to the iframe/Service-Worker download issue documented
+          # elsewhere in this file. SVG export is added the same way, as a
+          # second custom modebar button calling plotly.js's own
+          # Plotly.downloadImage() client-side API (again no server
+          # involvement at all) rather than inventing a new download path.
           toImageButtonOptions = list(
             format = "png", filename = paste0("power-curve-", family), scale = 2
+          ),
+          modeBarButtonsToAdd = list(
+            list(
+              name = "Download plot as SVG",
+              icon = htmlwidgets::JS("Plotly.Icons.disk"),
+              click = htmlwidgets::JS(sprintf(
+                "function(gd) { Plotly.downloadImage(gd, {format: 'svg', filename: %s}); }",
+                jsonlite::toJSON(paste0("power-curve-", family), auto_unbox = TRUE)
+              ))
+            )
           )
         )
     })
   }
 
   # ---- Static power curve (ggplot2 fallback) ---------------------------
-  output$power_curve_plot <- renderPlot({
+  # Built as a reactive returning the ggplot OBJECT (not wired to an output
+  # directly) so the same plot can be both rendered on-screen (renderPlot
+  # below) and exported to a file by the SVG download handler further
+  # down, without building it twice.
+  ggplot_curve_obj <- reactive({
     res <- tryCatch(result_r(), error = function(e) NULL)
     validate(need(!is.null(res), "Complete the previous steps to see the power curve."))
 
@@ -591,6 +617,33 @@ wire_results_server <- function(input, output, session, family,
         plot.margin      = ggplot2::margin(6, 10, 4, 4)
       )
   })
+
+  output$power_curve_plot <- renderPlot({ ggplot_curve_obj() })
+
+  # SVG-only download for the ggplot2 fallback path (only reachable when
+  # plotly failed to load -- see HAS_PLOTLY in global.R). PNG is skipped
+  # here: it would need base64 encoding plus a JS-side change to the
+  # shared Blob handler (atob() before constructing the Blob), for a
+  # rarely-hit code path, since plotly -- which already has working PNG
+  # export via its own modebar -- is the default. Uses the same
+  # 'pw-download-blob-ready' mechanism as the HTML report / Save-project
+  # buttons (see the comment above the dl_html handler below); SVG is
+  # plain text, so it works with that handler completely unmodified.
+  if (!HAS_PLOTLY) {
+    observeEvent(input$dl_plot_svg, {
+      p <- tryCatch(ggplot_curve_obj(), error = function(e) NULL)
+      req(p)
+      tmp_svg <- tempfile(fileext = ".svg")
+      on.exit(unlink(tmp_svg), add = TRUE)
+      ggplot2::ggsave(tmp_svg, plot = p, device = "svg", width = 8, height = 4.2)
+      content <- paste(readLines(tmp_svg, warn = FALSE), collapse = "\n")
+      session$sendCustomMessage("pw-download-blob-ready", list(
+        content = content,
+        filename = paste0("power-curve-", family, ".svg"),
+        mime = "image/svg+xml"
+      ))
+    }, ignoreInit = TRUE)
+  }
 
   output$sensitivity_result <- renderUI({
     n_max <- suppressWarnings(as.numeric(input$budget_n))

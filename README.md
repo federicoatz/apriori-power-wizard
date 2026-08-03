@@ -166,12 +166,14 @@ module sessions while keeping it isolated per user session. Keep
 
 - **Interactive power curve.** If [`plotly`](https://plotly.com/r/) is
   installed, the curve supports hover readout (N and power at any point),
-  drag-to-zoom, and PNG export. If it isn't, the app silently falls back
-  to the static `ggplot2` version -- see `HAS_PLOTLY` in `global.R`. The
-  fallback is deliberate: the browser-only build depends on webR's
-  WebAssembly package repository, and a missing or ABI-mismatched package
-  would otherwise take the whole app down at startup. Worst case here is
-  a less fancy chart, not a blank page.
+  drag-to-zoom, and PNG/SVG export (both via plotly's own client-side
+  modebar, no server round trip). If it isn't, the app silently falls
+  back to the static `ggplot2` version -- see `HAS_PLOTLY` in
+  `global.R` -- with its own "Download plot as SVG" button. The fallback
+  is deliberate: the browser-only build depends on webR's WebAssembly
+  package repository, and a missing or ABI-mismatched package would
+  otherwise take the whole app down at startup. Worst case here is a
+  less fancy chart, not a blank page.
 - **Compare across alpha, power, AND effect size.** Every family's
   Results step has an optional "Compare across alpha / power / effect
   size" panel: tick extra significance levels, power targets, or effect
