@@ -1,0 +1,28 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+title: "A Priori Power Analysis Wizard"
+type: software
+authors:
+  - family-names: "Atzori"
+    given-names: "Federico"
+    affiliation: "University of Cagliari"
+version: 0.4.6
+date-released: 2026-08-03
+license: MIT
+repository-code: "https://github.com/federicoatz/power-analysis-app"
+doi: 10.5281/zenodo.21750030
+identifiers:
+  - type: doi
+    value: 10.5281/zenodo.21750030
+    description: "Zenodo archive (concept DOI, resolves to the latest version)."
+abstract: >-
+  A step-by-step Shiny application that guides researchers in experimental
+  economics and behavioral science through an a priori (before data
+  collection) power analysis to determine required sample size, without
+  assuming prior power-analysis experience.
+keywords:
+  - power analysis
+  - sample size
+  - experimental economics
+  - behavioral science
+  - R Shiny

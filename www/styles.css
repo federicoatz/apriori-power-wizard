@@ -1,0 +1,1339 @@
+/* =======================================================================
+   styles.css -- visual layer for the A Priori Power Analysis Wizard.
+   -----------------------------------------------------------------------
+   Design direction: modern product UI, dual theme (light + dark) with a
+   toggle in the header. Soft raised cards, hairline borders, large
+   display numerals, a single strong accent per theme, and motion used
+   only to explain state changes (step transitions, value updates).
+
+   HOW THEMING WORKS
+   -----------------
+   Every colour is a CSS custom property. The two themes are two blocks of
+   the same variable names, selected by a `data-theme` attribute that JS
+   sets on <html> (see the theme-toggle script in app.R). Because it's
+   plain CSS, switching is instant and entirely client-side -- no server
+   round trip, no re-render, and it works identically in the browser-only
+   (shinylive/webR) build.
+
+   IMPORTANT -- why nothing here goes through bs_theme():
+   app.R uses a plain, uncustomized bs_theme(version = 5). Passing colours
+   or fonts to bs_theme() makes bslib recompile Bootstrap's Sass at
+   runtime via compiled libsass bindings, which is unreliable inside webR.
+   CSS custom properties have no such problem.
+
+   To re-skin the app, edit the two :root blocks below. Nothing else
+   should need to change.
+   ======================================================================= */
+
+/* ---------------------------------------------------------------- LIGHT */
+:root,
+[data-theme="light"] {
+  --bg:            #FFFFFF;
+  --bg-subtle:     #F7F8FA;
+  --surface:       #FFFFFF;
+  --surface-2:     #FBFBFD;
+  --surface-hover: #F4F4F8;
+
+  --border:        #E8E8ED;
+  --border-strong: #D6D6DE;
+
+  --text:          #16161D;
+  --text-2:        #52525E;
+  --text-muted:    #8B8B96;
+
+  --accent:        #5B5BD6;
+  --accent-hover:  #4A4AC4;
+  --accent-soft:   #F0F0FB;
+  --accent-ring:   rgba(91, 91, 214, 0.16);
+  --on-accent:     #FFFFFF;
+
+  --positive:      #00926F;
+  --positive-soft: #E6F5F1;
+  --warning:       #B45309;
+  --warning-soft:  #FEF6E7;
+  --danger:        #DC2626;
+  --danger-soft:   #FEF0F0;
+
+  --shadow-sm: 0 1px 2px rgba(16, 16, 29, 0.05);
+  --shadow-md: 0 2px 8px rgba(16, 16, 29, 0.06), 0 1px 2px rgba(16, 16, 29, 0.04);
+  --shadow-lg: 0 8px 28px rgba(16, 16, 29, 0.09), 0 2px 6px rgba(16, 16, 29, 0.05);
+
+  --plot-bg: #FFFFFF;
+  color-scheme: light;
+}
+
+/* ----------------------------------------------------------------- DARK */
+[data-theme="dark"] {
+  --bg:            #0B0F1A;
+  --bg-subtle:     #0F1420;
+  --surface:       #151B2B;
+  --surface-2:     #1A2133;
+  --surface-hover: #1F2740;
+
+  --border:        #232C42;
+  --border-strong: #33405E;
+
+  --text:          #E8ECF4;
+  --text-2:        #A8B4C8;
+  --text-muted:    #7C8AA5;
+
+  --accent:        #22D3EE;
+  --accent-hover:  #67E4F7;
+  --accent-soft:   rgba(34, 211, 238, 0.12);
+  --accent-ring:   rgba(34, 211, 238, 0.22);
+  --on-accent:     #0B0F1A;
+
+  --positive:      #34D399;
+  --positive-soft: rgba(52, 211, 153, 0.13);
+  --warning:       #FBBF24;
+  --warning-soft:  rgba(251, 191, 36, 0.13);
+  --danger:        #F87171;
+  --danger-soft:   rgba(248, 113, 113, 0.13);
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 2px 10px rgba(0, 0, 0, 0.36);
+  --shadow-lg: 0 10px 34px rgba(0, 0, 0, 0.48);
+
+  --plot-bg: #151B2B;
+  color-scheme: dark;
+}
+
+/* --------------------------------------------------------------- TOKENS */
+:root {
+  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+               "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+  --r-sm: 7px;
+  --r-md: 10px;
+  --r-lg: 14px;
+
+  --ease: cubic-bezier(0.4, 0, 0.2, 1);
+  --dur:  0.18s;
+}
+
+/* =======================================================================
+   Base
+   ======================================================================= */
+
+html { background-color: var(--bg); }
+
+body {
+  background-color: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  transition: background-color 0.3s var(--ease), color 0.3s var(--ease);
+}
+
+.container-fluid {
+  max-width: 1020px;
+  margin-inline: auto;
+  padding-inline: 26px;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  color: var(--text);
+  font-weight: 600;
+  letter-spacing: -0.018em;
+  line-height: 1.3;
+}
+
+a { color: var(--accent); text-decoration: none; }
+a:hover { color: var(--accent-hover); }
+
+::selection { background: var(--accent-ring); }
+
+/* Surfaces animate on theme switch, but only these properties -- animating
+   `all` would also animate layout and make the switch feel sluggish. */
+.step-card, .well, .choice-card, .bslib-value-box, .form-control,
+.form-select, .accordion-item, .accordion-button, pre, .btn {
+  transition: background-color 0.3s var(--ease), border-color 0.3s var(--ease),
+              color 0.3s var(--ease), box-shadow var(--dur) var(--ease);
+}
+
+/* =======================================================================
+   Header
+   ======================================================================= */
+
+.app-header {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 30px 0 26px 0;
+  position: relative;
+}
+
+.app-header-icon {
+  flex: 0 0 auto;
+  width: 42px;
+  height: 42px;
+  border-radius: var(--r-md);
+  background: var(--accent);
+  color: var(--on-accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  transition: background-color 0.3s var(--ease), color 0.3s var(--ease);
+}
+
+.app-header h1 {
+  font-size: 23px;
+  font-weight: 600;
+  margin-bottom: 3px;
+}
+
+.app-header p {
+  color: var(--text-2);
+  font-size: 14px;
+  margin: 0;
+  max-width: 66ch;
+}
+
+/* --- Header toggles (theme + guided mode) ----------------------------- */
+.header-toggles {
+  position: absolute;
+  top: 30px;
+  right: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 999px;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border);
+  transition: background-color 0.3s var(--ease), border-color 0.3s var(--ease);
+}
+.theme-toggle button {
+  appearance: none;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  width: 30px;
+  height: 26px;
+  border-radius: 999px;
+  font-size: 12.5px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+.theme-toggle button:hover { color: var(--text); }
+.theme-toggle button[aria-pressed="true"] {
+  background: var(--surface);
+  color: var(--accent);
+  box-shadow: var(--shadow-sm);
+}
+.theme-toggle button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.guided-toggle-btn {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px 5px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--bg-subtle);
+  color: var(--text-muted);
+  font-size: 12.5px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color var(--dur) var(--ease), color var(--dur) var(--ease),
+              border-color var(--dur) var(--ease);
+}
+.guided-toggle-btn:hover { color: var(--text); border-color: var(--border-strong); }
+.guided-toggle-btn[aria-pressed="true"] {
+  background: var(--accent-soft);
+  color: var(--accent);
+  border-color: var(--accent);
+}
+.guided-toggle-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+/* --- Step-1 "New here?" banner -----------------------------------------
+   A second, unmissable entry point into Guided mode (the header toggle
+   alone turned out to be too easy to miss). Hidden once guided mode is
+   already on, the same way the explanation boxes below are shown --
+   here inverted, since this should disappear rather than appear. */
+.guided-prompt {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 18px;
+  margin-bottom: 18px;
+  border: 1px solid var(--accent);
+  border-radius: var(--r-lg);
+  background: var(--accent-soft);
+  color: var(--text-2);
+  font-size: 14px;
+  line-height: 1.5;
+}
+.guided-prompt-icon {
+  color: var(--accent);
+  font-size: 22px;
+  flex: 0 0 auto;
+}
+.guided-prompt > div { flex: 1 1 auto; min-width: 200px; }
+.guided-prompt strong { color: var(--text); }
+.guided-prompt-btn {
+  flex: 0 0 auto;
+  appearance: none;
+  background: var(--accent);
+  color: var(--on-accent);
+  border: none;
+  padding: 9px 16px;
+  border-radius: var(--r-md);
+  font-weight: 600;
+  font-size: 13.5px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color var(--dur) var(--ease);
+}
+.guided-prompt-btn:hover { background: var(--accent-hover); }
+.guided-prompt-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+html[data-guided="true"] .guided-prompt { display: none; }
+
+/* --- Guided-mode explanation boxes -------------------------------------
+   Always rendered in the DOM (so toggling Guided mode takes effect
+   instantly, with no server round trip or re-render, even on steps/
+   families already visited this session) -- hidden by default, shown
+   only when the root element carries data-guided="true". */
+.guided-explain { display: none; }
+html[data-guided="true"] .guided-explain {
+  display: block;
+  margin-bottom: 18px;
+  padding: 14px 17px;
+  border: 1px solid var(--accent);
+  border-left-width: 4px;
+  border-radius: var(--r-md);
+  background: var(--accent-soft);
+  font-size: 13.5px;
+  line-height: 1.65;
+  color: var(--text-2);
+}
+.guided-explain-title {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--accent);
+  margin-bottom: 6px;
+}
+.guided-explain p { margin: 0 0 8px 0; }
+.guided-explain p:last-child { margin-bottom: 0; }
+.guided-explain strong { color: var(--text); }
+
+.app-footer {
+  margin-top: 52px;
+  padding: 20px 0 38px 0;
+  border-top: 1px solid var(--border);
+  color: var(--text-muted);
+  font-size: 12.5px;
+}
+.app-footer p { margin: 0; }
+.app-footer p + p { margin-top: 6px; }
+.app-footer a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
+
+/* =======================================================================
+   Cards & callouts
+   ======================================================================= */
+
+.step-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  padding: 26px 28px;
+  margin-bottom: 18px;
+  box-shadow: var(--shadow-sm);
+}
+
+.step-card h4 {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 7px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+.step-card h4 > .fa, .step-card h4 > svg,
+h4 > .fa, h4 > svg {
+  color: var(--accent);
+  font-size: 0.8em;
+}
+
+.step-intro {
+  color: var(--text-2);
+  font-size: 14px;
+  margin-bottom: 20px;
+  max-width: 72ch;
+}
+
+.well {
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  background: var(--surface-2);
+  padding: 14px 17px;
+  margin-bottom: 18px;
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--text-2);
+}
+.well p:last-child { margin-bottom: 0; }
+.well strong { color: var(--text); }
+.well > .fa, .well > svg { margin-right: 5px; }
+
+.well-warning {
+  background: var(--warning-soft);
+  border-color: transparent;
+  color: var(--warning);
+}
+.well-info {
+  background: var(--accent-soft);
+  border-color: transparent;
+  color: var(--text-2);
+}
+.well-info > .fa, .well-info > svg { color: var(--accent); }
+.well-result {
+  background: var(--positive-soft);
+  border-color: transparent;
+  color: var(--text);
+}
+
+/* Numbered sub-section headings that break a dense step (e.g. "Effect
+   size") into distinct, separately-weighted chunks instead of one
+   continuous flow of inputs. */
+.es-section-title {
+  font-size: 12.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--text-muted);
+  margin: 24px 0 10px 0;
+}
+.es-section-title:first-of-type { margin-top: 18px; }
+
+/* The chosen branch's actual numeric inputs, set apart from the card
+   picker above with their own bordered surface -- so "pick a method" and
+   "fill in its numbers" read as two clearly separate steps. */
+.es-branch-detail {
+  padding: 18px 20px 4px 20px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  background: var(--surface-2);
+}
+
+/* =======================================================================
+   Family module header
+   ======================================================================= */
+
+.family-header { margin: 2px 0 22px 0; }
+.family-header-row {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.family-header h3 {
+  font-size: 22px;
+  font-weight: 600;
+  margin: 9px 0 0 0;
+}
+.family-header-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.family-header-actions .btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+/* Step 1: Start button + "Load a saved project" file picker, side by
+   side but wrapping to its own line on narrow screens. */
+.step1-actions-row {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 14px;
+  margin-top: 2px;
+}
+.load-project { margin-top: 2px; }
+.load-project .form-group { margin-bottom: 0; }
+.load-project .input-group { flex-wrap: nowrap; }
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-muted) !important;
+  padding: 4px 10px 4px 8px;
+  border-radius: var(--r-sm);
+  transition: background-color var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+.back-link:hover {
+  color: var(--text) !important;
+  background: var(--surface-hover);
+}
+
+/* =======================================================================
+   Step 1: analysis choice cards
+   ======================================================================= */
+
+/* The real <input> is visually hidden but stays in the DOM and stays
+   focusable -- NOT display:none, which would remove it from the tab order
+   and from the accessibility tree. Selection and focus are surfaced by the
+   .pw-selected / .pw-focus classes that JS puts on the wrapper (see the
+   selection-highlighting script in app.R for why this isn't done with a
+   CSS sibling selector). */
+.shiny-input-radiogroup input[type="radio"],
+.shiny-input-checkboxgroup input[type="checkbox"] {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+.shiny-input-radiogroup .radio label,
+.shiny-input-radiogroup .form-check label {
+  padding-left: 0;
+  width: 100%;
+  cursor: pointer;
+  margin-bottom: 0;
+  font-weight: 400;
+}
+
+/* --------------------------------------------------------------------
+   Step 1: the analysis-type cards. An auto-fit grid rather than a fixed
+   column count, so the number of choices can grow (as it has, from 5 to
+   7) without hand-tuning column spans for a specific count -- each card
+   gets at least 240px and the grid wraps as many per row as fit.
+   -------------------------------------------------------------------- */
+#analysis_choice .shiny-options-group {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+/* One wide row per family instead of a multi-column grid of vertical
+   cards: icon on the left, title + description filling the rest of the
+   width, so the (now much wider) card doesn't waste space the way a
+   single narrow column would. Overrides the vertical icon-on-top layout
+   .choice-card otherwise uses (still the right choice for the narrower,
+   multi-column card picker in the Effect size step). */
+#analysis_choice .choice-card {
+  flex-direction: row;
+  align-items: center;
+  gap: 16px;
+  padding: 13px 18px;
+}
+#analysis_choice .radio,
+#analysis_choice .form-check {
+  margin: 0;
+  padding: 0;
+  display: flex;
+  min-width: 0;              /* let the grid track shrink below content */
+}
+
+/* Each level of this chain needs width:100% + min-width:0, otherwise the
+   default `min-width: auto` on flex items lets long words (e.g.
+   "independent") push past the card's border instead of wrapping. */
+#analysis_choice .radio > label,
+#analysis_choice .form-check > label {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+}
+#analysis_choice .radio > label > span,
+#analysis_choice .form-check > label > span {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+}
+
+/* Same choice-card grid pattern, reused wherever a family module needs a
+   small (2-3 option) card picker -- currently the effect-size branch
+   selector. A class rather than an ID, since these live inside a namespaced
+   Shiny module and the input id differs per family. */
+.choice-card-grid .shiny-options-group {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+}
+.choice-card-grid .radio,
+.choice-card-grid .form-check {
+  margin: 0;
+  padding: 0;
+  display: flex;
+  min-width: 0;
+}
+.choice-card-grid .radio > label,
+.choice-card-grid .form-check > label {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+}
+.choice-card-grid .radio > label > span,
+.choice-card-grid .form-check > label > span {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+}
+
+/* Vertical card: icon on top, then title, then description. Works far
+   better than a horizontal row once the card is only a third as wide. */
+.choice-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  width: 100%;
+  min-width: 0;
+  height: 100%;              /* all cards in a row match the tallest */
+  padding: 15px 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  position: relative;
+  cursor: pointer;
+  transition: transform 0.14s var(--ease), border-color 0.14s var(--ease),
+              box-shadow 0.14s var(--ease), background-color 0.14s var(--ease);
+}
+/* The text block (title + description) that follows the icon */
+.choice-card > div {
+  width: 100%;
+  min-width: 0;
+}
+.choice-card:hover {
+  border-color: var(--border-strong);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+.choice-card:active { transform: translateY(0); }
+
+/* ---- Selected state ---- */
+.pw-selected .choice-card {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  box-shadow: 0 0 0 3px var(--accent-ring);
+  transform: translateY(-2px);
+}
+.pw-selected .choice-card .choice-icon {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+.pw-selected .choice-card strong { color: var(--accent); }
+
+/* Checkmark badge, top-right of the selected card */
+.pw-selected .choice-card::after {
+  content: "";
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background-color: var(--accent);
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='white' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3.5 8.5l3 3 6-6'/%3E%3C/svg%3E");
+  background-size: 12px;
+  background-position: center;
+  background-repeat: no-repeat;
+  animation: pop 0.24s var(--ease);
+}
+@keyframes pop {
+  0%   { transform: scale(0.3); opacity: 0; }
+  65%  { transform: scale(1.15); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* Keyboard focus ring on the card (the input itself is visually hidden) */
+.pw-focus .choice-card {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.choice-card strong {
+  font-size: 14.5px;
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1.35;
+  display: block;
+  padding-right: 26px;       /* clear the checkmark badge */
+  overflow-wrap: break-word; /* never let a long word breach the border */
+  hyphens: auto;
+  transition: color 0.14s var(--ease);
+}
+.choice-icon {
+  flex: 0 0 auto;
+  width: 34px;
+  height: 34px;
+  border-radius: var(--r-sm);
+  background: var(--bg-subtle);
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  transition: background-color 0.14s var(--ease), color 0.14s var(--ease);
+}
+.choice-desc {
+  color: var(--text-2);
+  font-size: 12.5px;
+  line-height: 1.5;
+  margin: 5px 0 0 0;
+  max-width: none;
+  overflow-wrap: break-word;
+}
+
+@media (max-width: 560px) {
+  #analysis_choice .shiny-options-group { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* =======================================================================
+   Step progress -- connected dots with an animated fill
+   ======================================================================= */
+
+.step-progress {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  margin-bottom: 26px;
+  padding: 14px 2px;
+}
+
+.step-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-muted);
+  white-space: nowrap;
+  background: none !important;
+  box-shadow: none !important;
+  padding: 0;
+  transition: color 0.25s var(--ease);
+}
+.step-indicator > .fa, .step-indicator > svg {
+  width: 21px;
+  height: 21px;
+  border-radius: 50%;
+  background: var(--bg-subtle);
+  color: var(--text-muted);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9.5px;
+  transition: background-color 0.25s var(--ease), color 0.25s var(--ease),
+              box-shadow 0.25s var(--ease);
+}
+.step-indicator:not(:last-child)::after {
+  content: "";
+  display: block;
+  flex: 1;
+  min-width: 16px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--border);
+  margin: 0 10px;
+  transition: background-color 0.35s var(--ease);
+}
+.step-progress .step-indicator { flex: 1; }
+.step-progress .step-indicator:last-child { flex: 0 0 auto; }
+
+.step-done { color: var(--text-2); }
+.step-done > .fa, .step-done > svg {
+  background: var(--positive);
+  color: var(--bg);
+}
+.step-done::after { background: var(--positive) !important; }
+
+.step-active { color: var(--text); font-weight: 600; }
+.step-active > .fa, .step-active > svg {
+  background: var(--accent);
+  color: var(--on-accent);
+  box-shadow: 0 0 0 4px var(--accent-ring);
+  animation: pulse 2.2s var(--ease) infinite;
+}
+@keyframes pulse {
+  0%, 100% { box-shadow: 0 0 0 4px var(--accent-ring); }
+  50%      { box-shadow: 0 0 0 7px transparent; }
+}
+
+/* =======================================================================
+   Step transitions -- content slides in when the wizard advances
+   ======================================================================= */
+
+.tab-pane.active,
+.step-card {
+  animation: slideIn 0.32s var(--ease) both;
+}
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(7px); }
+  to   { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+/* =======================================================================
+   Forms
+   ======================================================================= */
+
+label, .control-label, .shiny-input-container > label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+  margin-bottom: 6px;
+}
+
+.form-control, .form-select,
+input[type="number"], input[type="text"] {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  padding: 8px 11px;
+  box-shadow: none;
+}
+.form-control:hover, input[type="number"]:hover { border-color: var(--border-strong); }
+.form-control:focus, .form-select:focus, input[type="number"]:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-ring);
+  outline: none;
+  background: var(--surface);
+  color: var(--text);
+}
+.form-control::placeholder { color: var(--text-muted); }
+
+/* Shiny ships a default `width: 300px` on .shiny-input-container (for
+   non-inline inputs). That's sensible in a sidebar, but here it silently
+   capped every input -- and, worse, the Step-1 choice grid, which then
+   divided 300px between its columns and squashed the cards to ~90px wide.
+   Inputs should fill whatever column they're placed in.
+   The `.container-fluid` prefix is deliberate: Shiny's own rule is
+   `.shiny-input-container:not(.shiny-input-container-inline)`, which has
+   exactly the same specificity as an unprefixed override would, so which
+   one won would depend on stylesheet load order -- and Shiny injects its
+   CSS as an htmlDependency, whose position relative to this file isn't
+   guaranteed. The extra ancestor makes this rule win outright. */
+.container-fluid .shiny-input-container:not(.shiny-input-container-inline) {
+  width: 100%;
+  max-width: 100%;
+}
+.shiny-input-container { margin-bottom: 16px; }
+
+/* Standalone checkboxes (e.g. "Balanced allocation") keep the native
+   control, since there is no group to turn into cards. */
+.checkbox .form-check-input,
+.shiny-input-container > .form-check > .form-check-input {
+  background-color: var(--surface);
+  border-color: var(--border-strong);
+}
+.form-check-input:checked {
+  background-color: var(--accent);
+  border-color: var(--accent);
+}
+.form-check-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-ring);
+}
+.form-check-label { font-weight: 400; color: var(--text-2); font-size: 13.5px; }
+
+/* --------------------------------------------------------------------
+   Every OTHER radio group in the app (test direction, effect-size branch,
+   SESOI mode, Cohen benchmark, predictor type, ...) becomes a selectable
+   row: a bordered strip with a custom radio dot on the left. Same
+   .pw-selected / .pw-focus contract as the Step-1 cards, so clicking
+   anything anywhere in the app gives the same visible feedback.
+
+   Scoped away from #analysis_choice, which has its own card grid above.
+   -------------------------------------------------------------------- */
+.shiny-input-radiogroup:not(#analysis_choice) .radio,
+.shiny-input-radiogroup:not(#analysis_choice) .form-check {
+  margin: 0 0 7px 0;
+  padding: 0;
+}
+.shiny-input-radiogroup:not(#analysis_choice) .radio > label,
+.shiny-input-radiogroup:not(#analysis_choice) .form-check > label {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 13px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  color: var(--text-2);
+  font-size: 13.5px;
+  line-height: 1.5;
+  transition: border-color 0.14s var(--ease), background-color 0.14s var(--ease),
+              color 0.14s var(--ease), box-shadow 0.14s var(--ease);
+}
+/* The radio dot */
+.shiny-input-radiogroup:not(#analysis_choice) .radio > label::before,
+.shiny-input-radiogroup:not(#analysis_choice) .form-check > label::before {
+  content: "";
+  flex: 0 0 auto;
+  width: 15px;
+  height: 15px;
+  margin-top: 3px;
+  border-radius: 50%;
+  border: 1.5px solid var(--border-strong);
+  background: var(--surface);
+  transition: border-color 0.14s var(--ease), border-width 0.14s var(--ease),
+              background-color 0.14s var(--ease);
+}
+.shiny-input-radiogroup:not(#analysis_choice) .radio > label:hover,
+.shiny-input-radiogroup:not(#analysis_choice) .form-check > label:hover {
+  border-color: var(--border-strong);
+  background: var(--surface-hover);
+  color: var(--text);
+}
+
+.shiny-input-radiogroup:not(#analysis_choice) .pw-selected > label {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--text);
+  box-shadow: 0 0 0 2px var(--accent-ring);
+}
+.shiny-input-radiogroup:not(#analysis_choice) .pw-selected > label::before {
+  border-color: var(--accent);
+  border-width: 4.5px;
+  background: var(--surface);
+}
+.shiny-input-radiogroup:not(#analysis_choice) .pw-selected > label strong { color: var(--accent); }
+
+.shiny-input-radiogroup:not(#analysis_choice) .pw-focus > label {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* --------------------------------------------------------------------
+   Inline radio/checkbox groups (radioButtons/checkboxGroupInput with
+   inline = TRUE -- the ANOVA factor-count radio, the alpha/power
+   comparison checkboxes) render a different DOM shape than the block
+   variant above: Shiny puts <input> directly inside
+   <label class="radio-inline"|"checkbox-inline">, with no wrapping
+   .radio/.form-check div at all. None of the block-variant selectors
+   above ever match that shape, so every inline control in the app had
+   its native dot/check hidden (by the generic clip-rect rule near the
+   top of this section) with no replacement -- selecting one gave no
+   visible feedback whatsoever. Same pw-selected class, applied directly
+   to the label itself here (see markSelection() in app.R), chip-shaped
+   instead of a full-width row since these sit side by side.
+   -------------------------------------------------------------------- */
+/* !important throughout this block: Shiny's bs3compat shim (loaded to
+   make Bootstrap-3-era markup like .radio-inline/.checkbox-inline look
+   right under a Bootstrap 5 theme) ships its own CSS for these same
+   classes, and depending on stylesheet load order it can win ties
+   against equal-specificity rules. These controls must never again end
+   up with zero visible selected/unselected distinction, so this does
+   not rely on load order or specificity margins at all. */
+.shiny-input-radiogroup label.radio-inline,
+.shiny-input-checkboxgroup label.checkbox-inline {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 7px !important;
+  margin: 0 8px 8px 0 !important;
+  padding: 7px 12px 7px 10px !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 999px !important;
+  background: var(--surface) !important;
+  color: var(--text-2) !important;
+  font-size: 13.5px !important;
+  font-weight: 400 !important;
+  cursor: pointer !important;
+  transition: border-color 0.14s var(--ease), background-color 0.14s var(--ease),
+              color 0.14s var(--ease), box-shadow 0.14s var(--ease) !important;
+}
+.shiny-input-radiogroup label.radio-inline::before,
+.shiny-input-checkboxgroup label.checkbox-inline::before {
+  content: "" !important;
+  display: inline-block !important;
+  flex: 0 0 auto !important;
+  width: 13px !important;
+  height: 13px !important;
+  border: 1.5px solid var(--border-strong) !important;
+  background-color: var(--surface) !important;
+  background-image: none !important;
+  transition: border-color 0.14s var(--ease), border-width 0.14s var(--ease),
+              background-color 0.14s var(--ease) !important;
+}
+.shiny-input-radiogroup label.radio-inline::before { border-radius: 50% !important; }
+.shiny-input-checkboxgroup label.checkbox-inline::before { border-radius: 4px !important; }
+.shiny-input-radiogroup label.radio-inline:hover,
+.shiny-input-checkboxgroup label.checkbox-inline:hover {
+  border-color: var(--border-strong) !important;
+  background: var(--surface-hover) !important;
+  color: var(--text) !important;
+}
+.shiny-input-radiogroup label.radio-inline.pw-selected,
+.shiny-input-checkboxgroup label.checkbox-inline.pw-selected {
+  border-color: var(--accent) !important;
+  background: var(--accent-soft) !important;
+  color: var(--text) !important;
+  box-shadow: 0 0 0 2px var(--accent-ring) !important;
+}
+.shiny-input-radiogroup label.radio-inline.pw-selected::before {
+  border-color: var(--accent) !important;
+  border-width: 4px !important;
+  background-color: var(--surface) !important;
+}
+.shiny-input-checkboxgroup label.checkbox-inline.pw-selected::before {
+  border-color: var(--accent) !important;
+  background-color: var(--accent) !important;
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='white' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3.5 8.5l3 3 6-6'/%3E%3C/svg%3E") !important;
+  background-size: 10px !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+}
+.shiny-input-radiogroup label.radio-inline.pw-focus,
+.shiny-input-checkboxgroup label.checkbox-inline.pw-focus {
+  outline: 2px solid var(--accent) !important;
+  outline-offset: 2px !important;
+}
+
+/* Shiny wraps each option's content in a <span>; let it take the
+   remaining width so long option text wraps inside the row instead of
+   overflowing it. */
+.shiny-input-radiogroup:not(#analysis_choice) .radio > label > span,
+.shiny-input-radiogroup:not(#analysis_choice) .form-check > label > span {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* Rich radio options (the three effect-size branches) carry a bold title
+   plus a .field-hint description; keep the hint readable inside the row. */
+.shiny-input-radiogroup:not(#analysis_choice) label strong {
+  color: var(--text);
+  font-weight: 600;
+  transition: color 0.14s var(--ease);
+}
+.shiny-input-radiogroup:not(#analysis_choice) label .field-hint { margin-top: 2px; }
+
+.field-hint {
+  color: var(--text-muted);
+  font-size: 12.5px;
+  line-height: 1.5;
+  margin-top: 5px;
+}
+
+.help-icon {
+  color: var(--text-muted);
+  font-size: 11.5px;
+  margin-left: 5px;
+  cursor: help;
+  transition: color var(--dur) var(--ease);
+}
+.help-icon:hover { color: var(--accent); }
+
+/* Slider */
+.irs--shiny .irs-line { background: var(--border); border: none; }
+.irs--shiny .irs-bar  { background: var(--accent); border: none; }
+.irs--shiny .irs-handle > i:first-child { background: var(--accent); }
+.irs--shiny .irs-handle {
+  background: var(--surface);
+  border: 2px solid var(--accent);
+  box-shadow: var(--shadow-sm);
+}
+.irs--shiny .irs-single, .irs--shiny .irs-min, .irs--shiny .irs-max {
+  background: var(--accent);
+  color: var(--on-accent);
+  border-radius: var(--r-sm);
+  font-size: 11px;
+}
+.irs--shiny .irs-min, .irs--shiny .irs-max {
+  background: var(--bg-subtle);
+  color: var(--text-muted);
+}
+
+/* =======================================================================
+   Buttons
+   ======================================================================= */
+
+.btn {
+  font-family: var(--font-sans);
+  font-size: 14px;
+  font-weight: 500;
+  border-radius: var(--r-sm);
+  padding: 8px 16px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  transition: background-color var(--dur) var(--ease), border-color var(--dur) var(--ease),
+              transform 0.08s var(--ease), box-shadow var(--dur) var(--ease),
+              color var(--dur) var(--ease);
+}
+.btn:active { transform: scale(0.975); }
+.btn:focus-visible { box-shadow: 0 0 0 3px var(--accent-ring); outline: none; }
+
+/* NOTE ON THE DOUBLE-CLASS SELECTORS (.btn.btn-primary)
+   Shiny's actionButton() always emits `class="btn btn-default action-button
+   ..."` and then APPENDS whatever you pass in `class=`. So the Start button
+   is literally `btn btn-default action-button btn-primary btn-lg`: it
+   carries btn-default AND btn-primary at once. With single-class selectors
+   both rules have equal specificity, so whichever is written later in this
+   file wins -- which silently rendered the primary buttons as plain grey
+   ones. Qualifying with `.btn` raises specificity to (0,2,0) so the colour
+   variants beat .btn-default regardless of source order. */
+.btn.btn-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent);
+}
+.btn.btn-primary:hover, .btn.btn-primary:focus {
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
+  color: var(--on-accent);
+  box-shadow: var(--shadow-md);
+}
+
+.btn-lg { font-size: 15px; padding: 11px 24px; }
+
+.btn.btn-success {
+  background: var(--positive);
+  border-color: var(--positive);
+  color: var(--bg);
+}
+.btn.btn-success:hover { filter: brightness(1.08); color: var(--bg); }
+
+/* Neutral buttons. The :not() guards are belt-and-braces alongside the
+   .btn.btn-primary specificity bump above -- see that note for why an
+   element can legitimately carry btn-default and btn-primary together. */
+.btn-outline-secondary,
+.btn-outline-primary,
+.btn-default:not(.btn-primary):not(.btn-success),
+.btn-secondary:not(.btn-primary):not(.btn-success) {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text-2);
+}
+.btn-outline-secondary:hover,
+.btn-outline-primary:hover,
+.btn-default:not(.btn-primary):not(.btn-success):hover,
+.btn-secondary:not(.btn-primary):not(.btn-success):hover {
+  background: var(--surface-hover);
+  border-color: var(--border-strong);
+  color: var(--text);
+}
+
+.wizard-nav {
+  margin-top: 26px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+}
+
+/* =======================================================================
+   Accordion
+   ======================================================================= */
+
+.accordion {
+  --bs-accordion-bg: var(--surface);
+  --bs-accordion-color: var(--text);
+  --bs-accordion-border-color: var(--border);
+  --bs-accordion-border-radius: var(--r-md);
+  --bs-accordion-btn-color: var(--text);
+  --bs-accordion-btn-bg: var(--surface);
+  --bs-accordion-active-bg: var(--accent-soft);
+  --bs-accordion-active-color: var(--accent);
+  --bs-accordion-btn-focus-box-shadow: 0 0 0 3px var(--accent-ring);
+  --bs-accordion-body-color: var(--text);
+}
+.accordion-button { font-weight: 500; font-size: 14px; }
+.accordion-button:not(.collapsed) { box-shadow: none; }
+.accordion-body { background: var(--surface); color: var(--text); }
+
+/* =======================================================================
+   Results
+   ======================================================================= */
+
+.bslib-value-box {
+  border: 1px solid var(--border) !important;
+  border-radius: var(--r-lg) !important;
+  box-shadow: var(--shadow-sm) !important;
+  overflow: hidden;
+}
+.bslib-value-box .value-box-value {
+  font-size: 2.4rem !important;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+.bslib-value-box .value-box-title {
+  font-size: 11.5px;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  opacity: 0.75;
+}
+.bslib-value-box .value-box-showcase { opacity: 0.4; }
+.value-box-row { margin-bottom: 22px; animation: slideIn 0.35s var(--ease) both; }
+
+/* The value boxes are built with bslib's shorthand theme = "primary" /
+   "success" / "warning", which resolves to Bootstrap's stock utility
+   colours. Remapping them here (rather than through bs_theme(), which
+   would force a Sass recompile webR can't do reliably) keeps the override
+   version-agnostic -- it only depends on the .bg-* class names. */
+.bslib-value-box.bg-primary, .bslib-value-box .bg-primary {
+  background: var(--accent) !important;
+  color: var(--on-accent) !important;
+  border-color: var(--accent) !important;
+}
+.bslib-value-box.bg-success, .bslib-value-box .bg-success {
+  background: var(--positive) !important;
+  color: var(--bg) !important;
+  border-color: var(--positive) !important;
+}
+.bslib-value-box.bg-warning, .bslib-value-box .bg-warning {
+  background: var(--warning-soft) !important;
+  color: var(--warning) !important;
+  border-color: var(--warning) !important;
+}
+
+/* Plot / chart container */
+.shiny-plot-output,
+.plotly, .js-plotly-plot {
+  background: var(--plot-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  padding: 8px;
+  transition: background-color 0.3s var(--ease), border-color 0.3s var(--ease);
+}
+.js-plotly-plot .modebar { background: transparent !important; }
+
+pre {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  padding: 16px 18px;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  font-family: var(--font-sans);
+  font-size: 13.5px;
+  line-height: 1.65;
+  color: var(--text-2);
+}
+
+table.table { color: var(--text); font-size: 13.5px; --bs-table-bg: transparent; }
+table.table th {
+  font-size: 11.5px;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  border-bottom-color: var(--border) !important;
+}
+table.table td { border-color: var(--border); }
+
+/* =======================================================================
+   Tooltips
+   ======================================================================= */
+
+.tooltip-inner {
+  background: var(--text);
+  color: var(--bg);
+  font-family: var(--font-sans);
+  font-size: 12.5px;
+  line-height: 1.5;
+  text-align: left;
+  max-width: 290px;
+  padding: 9px 12px;
+  border-radius: var(--r-sm);
+  box-shadow: var(--shadow-lg);
+}
+.tooltip .tooltip-arrow::before,
+.bs-tooltip-end .tooltip-arrow::before   { border-right-color: var(--text); }
+.bs-tooltip-top .tooltip-arrow::before    { border-top-color: var(--text); }
+.bs-tooltip-bottom .tooltip-arrow::before { border-bottom-color: var(--text); }
+.bs-tooltip-start .tooltip-arrow::before  { border-left-color: var(--text); }
+
+/* =======================================================================
+   Misc
+   ======================================================================= */
+
+h5 {
+  font-size: 15.5px;
+  font-weight: 600;
+  margin-top: 24px;
+  margin-bottom: 9px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+h5 > .fa, h5 > svg { color: var(--accent); font-size: 0.82em; }
+
+hr { border-color: var(--border); opacity: 1; }
+
+/* Report text "copy to clipboard" button */
+.report-text-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.report-text-header h5 { margin: 0; }
+.copy-report-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  transition: border-color var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+.copy-report-btn--done {
+  border-color: var(--positive) !important;
+  color: var(--positive) !important;
+  background: var(--positive-soft) !important;
+}
+
+.help-block, .shiny-output-error { color: var(--text-muted); font-size: 13px; }
+
+/* Shiny's "recalculating" dim: keep it subtle rather than a grey wash */
+.recalculating { opacity: 0.55; transition: opacity 0.2s var(--ease); }
+
+@media (max-width: 640px) {
+  .container-fluid { padding-inline: 16px; }
+  .app-header { flex-wrap: wrap; padding-top: 22px; }
+  .app-header h1 { font-size: 20px; }
+  .theme-toggle { top: 22px; }
+  .step-card { padding: 20px 18px; }
+  .step-indicator span, .step-indicator { font-size: 0; gap: 0; }
+  .step-indicator > .fa, .step-indicator > svg { font-size: 9.5px; }
+  .choice-desc { margin-right: 0; }
+}

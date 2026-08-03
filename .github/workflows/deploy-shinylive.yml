@@ -1,0 +1,67 @@
+## .github/workflows/deploy-shinylive.yml
+## -----------------------------------------------------------------------
+## Builds the browser-only (shinylive/webR) version of the app and
+## publishes it to GitHub Pages automatically on every push to main.
+##
+## One-time setup after this file is committed and pushed:
+##   1. In the GitHub repo, go to Settings -> Pages.
+##   2. Under "Build and deployment" -> "Source", choose "GitHub Actions".
+##   3. Push to main (or run this workflow manually from the Actions tab).
+##   4. The site will be published at:
+##        https://<your-github-username>.github.io/<repo-name>/
+##      (GitHub shows the exact URL on the Pages settings page and in the
+##      workflow run summary once the first deployment succeeds.)
+## -----------------------------------------------------------------------
+
+name: Deploy shinylive app to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Only one deployment at a time; new pushes cancel an in-progress build
+# rather than queuing behind it.
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up R
+        uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: "4.3.2"
+          use-public-rspm: true
+
+      - name: Install shinylive
+        run: Rscript -e 'install.packages("shinylive")'
+
+      - name: Export static (shinylive/webR) build
+        run: Rscript deploy/export_shinylive.R
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: "_site"
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
