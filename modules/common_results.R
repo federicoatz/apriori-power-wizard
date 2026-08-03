@@ -166,6 +166,7 @@ wire_results_server <- function(input, output, session, family,
     else if (family == "ancova") res$n_per_group
     else if (family %in% c("regression", "logistic", "chisq", "correlation", "survival")) res$n_total
     else if (family %in% c("mcnemar", "tost")) res$n
+    else if (family == "wilcoxon") res$n1
     else res$n1
   }
 

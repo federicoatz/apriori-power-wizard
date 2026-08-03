@@ -101,6 +101,11 @@ analysis_choice_names <- list(
     icon("hourglass-half", class = "choice-icon"),
     div(strong("Time-to-event (log-rank test)"),
         p(class = "choice-desc", "Compare how quickly two groups reach an event -- e.g., time to exit a market/game, or attrition in a longitudinal study."))
+  ),
+  wilcoxon = div(class = "choice-card",
+    icon("ranking-star", class = "choice-icon"),
+    div(strong("Mann-Whitney (nonparametric)"),
+        p(class = "choice-desc", "Compare two independent groups on a skewed, bounded, or ordinal outcome using ranks instead of means -- the usual choice for contributions, bids, and earnings."))
   )
 )
 
@@ -149,7 +154,8 @@ family_titles <- list(
   mcnemar = "McNemar's test",
   tost = "Equivalence test (TOST)",
   ancova = "ANCOVA (with a covariate)",
-  survival = "Time-to-event (log-rank test)"
+  survival = "Time-to-event (log-rank test)",
+  wilcoxon = "Mann-Whitney (nonparametric)"
 )
 family_ui_fns <- list(
   two_means = mod_two_means_ui, anova_factorial = mod_anova_factorial_ui,
@@ -157,7 +163,8 @@ family_ui_fns <- list(
   proportions = mod_proportions_ui, paired_t = mod_paired_t_ui,
   clustered_rct = mod_clustered_ui, chisq = mod_chisq_ui,
   correlation = mod_correlation_ui, mcnemar = mod_mcnemar_ui, tost = mod_tost_ui,
-  ancova = mod_ancova_ui, survival = mod_survival_ui
+  ancova = mod_ancova_ui, survival = mod_survival_ui,
+  wilcoxon = mod_wilcoxon_ui
 )
 family_server_fns <- list(
   two_means = mod_two_means_server, anova_factorial = mod_anova_factorial_server,
@@ -165,7 +172,8 @@ family_server_fns <- list(
   proportions = mod_proportions_server, paired_t = mod_paired_t_server,
   clustered_rct = mod_clustered_server, chisq = mod_chisq_server,
   correlation = mod_correlation_server, mcnemar = mod_mcnemar_server, tost = mod_tost_server,
-  ancova = mod_ancova_server, survival = mod_survival_server
+  ancova = mod_ancova_server, survival = mod_survival_server,
+  wilcoxon = mod_wilcoxon_server
 )
 
 ui <- page_fluid(
@@ -339,7 +347,8 @@ ui <- page_fluid(
                               "The SAME participants measured twice (e.g., before/after)" = "paired",
                               "Two or more manipulated factors at once" = "factorial",
                               "A continuous predictor (possibly with other control variables)" = "predictor",
-                              "Groups, adjusting for a covariate (e.g., a pre-test/baseline score)" = "ancova"),
+                              "Groups, adjusting for a covariate (e.g., a pre-test/baseline score)" = "ancova",
+                              "Two separate groups, but the outcome is skewed/bounded/ordinal (use ranks)" = "nonparametric"),
                   selected = character(0))
               ),
               conditionalPanel("input.dh_unit == 'individual' && input.dh_outcome == 'binary'",
@@ -392,7 +401,7 @@ ui <- page_fluid(
     # DOI to point at. Linking the old one would send readers to a dead
     # record. Restore the DOI link here as soon as a new archive is minted.
     p(icon("quote-left"), " If you use this app in your research, please cite: ",
-      tags$em("Atzori, F. (2026). A Priori Power Analysis Wizard (Version v0.8.0) [Computer software]."),
+      tags$em("Atzori, F. (2026). A Priori Power Analysis Wizard (Version v0.9.0) [Computer software]."),
       " ",
       tags$a(href = "https://github.com/federicoatz/power-analysis-app",
              target = "_blank", rel = "noopener noreferrer",
@@ -931,7 +940,8 @@ server <- function(input, output, session) {
       if (identical(input$dh_outcome, "continuous")) {
         switch(input$dh_continuous %||% "",
           two_groups = "two_means", paired = "paired_t", factorial = "anova_factorial",
-          predictor = "regression", ancova = "ancova", NULL)
+          predictor = "regression", ancova = "ancova",
+          nonparametric = "wilcoxon", NULL)
       } else if (identical(input$dh_outcome, "binary")) {
         switch(input$dh_binary %||% "",
           two_groups = "proportions", paired = "mcnemar", predictor = "logistic", NULL)
@@ -965,7 +975,8 @@ server <- function(input, output, session) {
       chisq = "Chi-square (goodness-of-fit / independence)",
       mcnemar = "McNemar's test",
       ancova = "ANCOVA (with a covariate)",
-      survival = "Time-to-event (log-rank test)")
+      survival = "Time-to-event (log-rank test)",
+      wilcoxon = "Mann-Whitney (nonparametric)")
     div(class = "well well-result",
       p(strong("Recommended analysis: "), label),
       actionButton("dh_use_recommendation", tagList(icon("check"), " Use this and start"), class = "btn-success")

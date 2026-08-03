@@ -6,7 +6,7 @@ authors:
   - family-names: "Atzori"
     given-names: "Federico"
     affiliation: "University of Cagliari"
-version: 0.8.0
+version: 0.9.0
 date-released: 2026-08-03
 license: MIT
 repository-code: "https://github.com/federicoatz/power-analysis-app"

@@ -27,7 +27,8 @@ family:
    adjusting for one covariate), or a two-group log-rank test for a
    time-to-event outcome (a niche tool for this app's audience -- e.g.,
    time-to-decision in a strategic game, or attrition/dropout timing in
-   a longitudinal study).
+   a longitudinal study), or a Wilcoxon-Mann-Whitney rank-sum test for
+   two independent groups with a skewed, bounded, or ordinal outcome.
 2. **Design structure** -- for factorial ANOVA, the number of factors and
    levels, and (critically) which **focal contrast** power should be
    computed for: a specific main effect or the interaction. The app
@@ -240,6 +241,7 @@ power-analysis-app/
 │   ├── power_tost.R                # Exact noncentral-t TOST (Phillips 1990), base R only
 │   ├── power_ancova.R              # pwr::pwr.f2.test with covariate-adjusted f2 (Cohen 1988; Borm et al. 2007)
 │   ├── power_survival.R            # Schoenfeld (1983) log-rank events formula, base R only
+│   ├── power_wilcoxon.R            # Noether (1987) Mann-Whitney rank-sum formula, base R only
 │   ├── project_state.R             # Save/load/share-link JSON (de)serialization
 │   ├── power_curve.R               # Generic power-vs-N curve generator
 │   ├── sensitivity_analysis.R      # Generic inverse/minimum-detectable-effect
@@ -259,7 +261,8 @@ power-analysis-app/
 │   ├── mod_mcnemar.R
 │   ├── mod_tost.R
 │   ├── mod_ancova.R
-│   └── mod_survival.R
+│   ├── mod_survival.R
+│   └── mod_wilcoxon.R
 ├── www/
 │   └── styles.css
 ├── tests/
@@ -522,6 +525,11 @@ additions -- this was a deliberate design constraint from the start.
   Carlo simulation before implementation; the app's own guided-mode text
   discloses that this formula is somewhat conservative for a strong
   hazard ratio combined with unequal allocation.)
+- Noether, G. E. (1987). Sample size determination for some common
+  nonparametric tests. *Journal of the American Statistical Association*,
+  82(398), 645-647. (Closed-form Wilcoxon-Mann-Whitney sample size used in
+  `R/power_wilcoxon.R`, cross-validated against Monte Carlo simulation of
+  `stats::wilcox.test()` before implementation.)
 - Peto, R., & Peto, J. (1972). Asymptotically efficient rank invariant
   test procedures. *Journal of the Royal Statistical Society: Series A*,
   135(2), 185-198. (Source of the log-hazard-ratio variance approximation
