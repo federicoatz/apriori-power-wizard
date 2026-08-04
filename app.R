@@ -330,6 +330,25 @@ ui <- page_fluid(
         )
       ),
 
+      # Third entry point into the app, alongside "I know my test" (the
+      # cards above) and "help me choose" (the decision helper below):
+      # "show me one like mine". Each example loads a COMPLETE design --
+      # every step populated, landing on the finished results -- because
+      # what a first-time user is missing is usually not the arithmetic
+      # but a sense of what a whole plausible setup looks like.
+      accordion(
+        id = "example_library_acc", open = FALSE,
+        accordion_panel(
+          title = tagList(icon("flask"), " Start from a worked example instead"),
+          value = "examples",
+          p(class = "field-hint",
+            "Each of these loads a complete, ready-made design from a paradigm you may recognise, landing straight on the results so you can see what a finished analysis looks like. Use Back inside it to inspect every step."),
+          div(class = "well well-warning", icon("triangle-exclamation"),
+              strong(" Before you borrow these numbers: "), example_library_caveat()),
+          div(class = "example-grid", uiOutput("example_cards"))
+        )
+      ),
+
       accordion(
         id = "decision_helper_acc", open = FALSE,
         accordion_panel(
@@ -420,7 +439,7 @@ ui <- page_fluid(
     # DOI to point at. Linking the old one would send readers to a dead
     # record. Restore the DOI link here as soon as a new archive is minted.
     p(icon("quote-left"), " If you use this app in your research, please cite: ",
-      tags$em("Atzori, F. (2026). A Priori Power Analysis Wizard (Version v0.12.0) [Computer software]."),
+      tags$em("Atzori, F. (2026). A Priori Power Analysis Wizard (Version v0.13.0) [Computer software]."),
       " ",
       tags$a(href = "https://github.com/federicoatz/power-analysis-app",
              target = "_blank", rel = "noopener noreferrer",
@@ -940,6 +959,39 @@ server <- function(input, output, session) {
     st <- tryCatch(json_to_state(query_to_json(input$pw_initial_share_state)), error = function(e) NULL)
     if (!is.null(st)) apply_saved_state(st)
   }, once = TRUE)
+
+  # ---- Step-1 example library ------------------------------------------
+  # An example is just a hard-coded instance of the same state object the
+  # Save/Load and share-link features serialize, so loading one reuses
+  # apply_saved_state() with no new plumbing (see R/example_library.R).
+  output$example_cards <- renderUI({
+    lib <- example_library()
+    lapply(names(lib), function(key) {
+      ex <- lib[[key]]
+      div(class = "example-card",
+        div(class = "example-card-body",
+          strong(ex$title),
+          p(class = "example-card-blurb", ex$blurb),
+          span(class = "example-card-family",
+               icon("arrow-turn-down"), " ", family_titles[[ex$family]])
+        ),
+        actionButton(paste0("example_load_", key),
+                     tagList(icon("play"), " Load"),
+                     class = "btn-outline-primary btn-sm example-card-btn")
+      )
+    })
+  })
+
+  # One observer per example. Registered once at startup (the library is a
+  # fixed, code-defined list, so there is nothing dynamic to re-register)
+  # and each is a plain hand-off to the shared state restorer.
+  lapply(names(example_library()), function(key) {
+    observeEvent(input[[paste0("example_load_", key)]], {
+      ex <- example_library()[[key]]
+      req(ex)
+      apply_saved_state(ex$state)
+    }, ignoreInit = TRUE)
+  })
 
   # ---- Step-1 decision helper: maps plain-language answers to a family.
   # The unit-of-assignment question (individual vs. cluster) is asked

@@ -1385,3 +1385,51 @@ hr { border-color: var(--border); opacity: 1; }
 .results-tool-output .well { margin-bottom: 0; }
 .results-tool .form-group { margin-bottom: 12px; }
 .results-tool .shiny-input-container { width: 100%; }
+
+/* --- Step-1 example library --------------------------------------------
+   Cards for the pre-filled worked examples. Deliberately lighter-weight
+   than the .choice-card analysis picker above them: choosing an analysis
+   is the primary decision on this screen, and the examples are an
+   alternative route in, not a competing one. */
+.example-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 12px;
+  margin-top: 14px;
+}
+.example-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  transition: border-color var(--dur) var(--ease), background-color var(--dur) var(--ease);
+}
+.example-card:hover {
+  border-color: var(--accent);
+  background: var(--surface);
+}
+.example-card-body { flex: 1 1 auto; min-width: 0; }
+.example-card-body > strong {
+  display: block;
+  font-size: 14px;
+  color: var(--text);
+  line-height: 1.35;
+  margin-bottom: 3px;
+}
+.example-card-blurb {
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--text-2);
+  margin: 0 0 6px;
+}
+.example-card-family {
+  display: inline-block;
+  font-size: 11.5px;
+  color: var(--text-muted);
+  font-variant: all-small-caps;
+  letter-spacing: 0.02em;
+}
+.example-card-btn { flex: 0 0 auto; align-self: center; white-space: nowrap; }

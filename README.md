@@ -134,6 +134,17 @@ The app assumes no prior power-analysis experience:
   smallest effect that would still be worth acting on?" -- to anchor the
   SESOI branch, which is the recommended default over Cohen's generic
   benchmarks.
+- **Worked examples** ("Start from a worked example instead", on Step 1):
+  nine complete, ready-made designs drawn from paradigms this audience
+  runs -- public goods and dictator games, trust games, risk elicitation,
+  Stroop, learning across rounds, pretest/posttest -- each loading every
+  step populated and landing straight on the results, so a first-time user
+  can see what a finished analysis looks like before building their own.
+  Mechanically these are just hard-coded instances of the same state
+  object Save/Load and share-links serialize (`R/example_library.R`), so
+  they reuse the existing restore path with no extra plumbing. Their
+  numbers are labelled prominently as illustrative starting points, not
+  empirical constants.
 - **Guided mode** (toggle in the top-right of the header, off by
   default): adds a longer "In plain language" explanation box to every
   step of every family, written for someone who has never run a power
@@ -262,6 +273,7 @@ power-analysis-app/
 │   ├── power_wilcoxon.R            # Noether (1987) Mann-Whitney rank-sum formula, base R only
 │   ├── power_rm_anova.R            # Repeated-measures noncentral F with rho and sphericity correction, base R only
 │   ├── power_clustered_cat.R       # Design-effect inflation of the proportions / chi-square families
+│   ├── example_library.R           # Pre-filled worked examples offered on Step 1
 │   ├── project_state.R             # Save/load/share-link JSON (de)serialization
 │   ├── power_curve.R               # Generic power-vs-N curve generator
 │   ├── sensitivity_analysis.R      # Generic inverse/minimum-detectable-effect
