@@ -540,6 +540,15 @@ mixed models via `simr`) can be added without touching existing files:
 No existing file needs to change beyond those two small `switch()`
 additions -- this was a deliberate design constraint from the start.
 
+## Validation
+
+Every closed-form formula is checked either against the `pwr` R package
+(near-exact agreement) or against a seeded, reproducible Monte Carlo
+simulation of the actual statistical test. See [VALIDATION.md](VALIDATION.md)
+for the full family-by-family breakdown, real tolerances from the test
+suite, and instructions to reproduce every check yourself
+(`Rscript validation/monte_carlo_validation.R`).
+
 ## Method references
 
 - Cohen, J. (1988). *Statistical Power Analysis for the Behavioral
@@ -612,7 +621,12 @@ additions -- this was a deliberate design constraint from the start.
 
 ## Contributing, issues, and support
 
-Bug reports, feature requests, and pull requests are welcome via the
+Found a bug or an unexpected result? Use the
+[bug report template](https://github.com/federicoatz/apriori-power-wizard/issues/new?template=bug_report.yml)
+(also linked from the app's own footer) -- it asks for the app version,
+browser, and analysis family, which are usually enough to reproduce most
+issues. For anything else, bug reports, feature requests, and pull requests
+are welcome via the
 [GitHub issue tracker](https://github.com/federicoatz/apriori-power-wizard/issues).
 For a code contribution: fork the repository, make your change (see
 "Project structure" above for where each kind of logic lives, and
@@ -622,7 +636,8 @@ include a corresponding `testthat` file following the existing pattern
 (a pinned textbook/G\*Power reference value where one exists, plus
 monotonicity/consistency checks). For questions about using the app,
 please open an issue rather than emailing directly, so the answer is
-searchable for future users.
+searchable for future users. See [CHANGELOG.md](CHANGELOG.md) for release
+history.
 
 ## License
 

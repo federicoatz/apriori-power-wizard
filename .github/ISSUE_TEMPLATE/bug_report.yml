@@ -1,0 +1,119 @@
+name: Bug report
+description: Something in the app looks wrong, crashed, or gave an unexpected number.
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report this. The app version and
+        family are usually enough on their own to reproduce most issues --
+        the more of the rest you can fill in, the faster it gets fixed.
+
+  - type: input
+    id: app-version
+    attributes:
+      label: App version
+      description: >
+        Shown at the bottom of the page ("A Priori Power Analysis Wizard
+        vX.Y.Z"), and included automatically in any generated report text
+        or saved/shared project file.
+      placeholder: e.g. v0.16.0
+    validations:
+      required: true
+
+  - type: dropdown
+    id: build
+    attributes:
+      label: Which build were you using?
+      options:
+        - Browser-only (static site, e.g. GitHub Pages / federicoatz.com)
+        - Server-hosted Shiny app (e.g. shinyapps.io, or run locally)
+        - Not sure
+    validations:
+      required: true
+
+  - type: dropdown
+    id: browser
+    attributes:
+      label: Browser
+      options:
+        - Chrome
+        - Firefox
+        - Safari
+        - Edge
+        - Other (specify below)
+    validations:
+      required: true
+
+  - type: input
+    id: browser-version
+    attributes:
+      label: Browser / OS version
+      placeholder: e.g. Chrome 128 on macOS 15, or Safari 17 on iOS 18
+    validations:
+      required: false
+
+  - type: dropdown
+    id: family
+    attributes:
+      label: Analysis family
+      description: Which of the sixteen families were you using?
+      options:
+        - Two independent means
+        - Paired / repeated measures (two measurements)
+        - Factorial ANOVA (between-subjects)
+        - Repeated-measures ANOVA (3+ measurements / mixed design)
+        - Multiple linear regression
+        - Logistic regression
+        - Two independent proportions
+        - Bivariate correlation
+        - Chi-square (goodness of fit / independence)
+        - McNemar's test
+        - TOST equivalence test
+        - One-way ANCOVA
+        - Clustered design, continuous outcome
+        - Clustered design, binary or categorical outcome
+        - Wilcoxon-Mann-Whitney
+        - Time-to-event (log-rank test)
+        - Not specific to one family / decision helper / other
+    validations:
+      required: true
+
+  - type: textarea
+    id: params
+    attributes:
+      label: Inputs used
+      description: >
+        The exact values you entered (alpha, power, effect size, N, etc.).
+        Easiest way: use "Save project" in the app and paste the downloaded
+        JSON here, or paste a share link.
+      render: json
+    validations:
+      required: false
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect to happen?
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: What actually happened?
+      description: Include the exact error message or incorrect value if there was one.
+    validations:
+      required: true
+
+  - type: textarea
+    id: console
+    attributes:
+      label: Browser console output (optional, but very helpful for crashes)
+      description: >
+        Open developer tools (F12 or Cmd+Option+I), click the Console tab,
+        reproduce the issue, and paste any red error text here.
+      render: text
+    validations:
+      required: false

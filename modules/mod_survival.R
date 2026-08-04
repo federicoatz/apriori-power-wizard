@@ -21,7 +21,7 @@ mod_survival_ui <- function(id) {
     tabsetPanel(
       id = ns("wiz"), type = "hidden",
       tabPanelBody("design",
-        h4(icon("hourglass-half"), " Step: Design structure"),
+        h3(icon("hourglass-half"), " Step: Design structure"),
         p(class = "step-intro",
           "Two independent groups compared on a time-to-event outcome --",
           "not just WHETHER something happens, but HOW LONG it takes to",
@@ -60,7 +60,7 @@ mod_survival_ui <- function(id) {
         wizard_nav_ui(ns, "params")
       ),
       tabPanelBody("effect_size",
-        h4(icon("bullseye"), " Step: Effect size (hazard ratio)"),
+        h3(icon("bullseye"), " Step: Effect size (hazard ratio)"),
         p(class = "step-intro",
           "The hazard ratio (HR) compares how quickly the event happens",
           "in one group relative to the other. HR < 1 means the event",

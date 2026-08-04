@@ -13,7 +13,7 @@ mod_logistic_ui <- function(id) {
     tabsetPanel(
       id = ns("wiz"), type = "hidden",
       tabPanelBody("design",
-        h4(icon("toggle-on"), " Step: Design structure"),
+        h3(icon("toggle-on"), " Step: Design structure"),
         p(class = "step-intro",
           "A single focal predictor of a binary (yes/no) outcome, tested via",
           "logistic regression (Demidenko, 2007)."),

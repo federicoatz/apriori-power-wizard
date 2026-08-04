@@ -184,7 +184,10 @@ build_report_text <- function(spec) {
       attrition_txt
     ),
     "",
-    sprintf("Method: %s", citation)
+    sprintf("Method: %s", citation),
+    "",
+    sprintf("Computed with A Priori Power Analysis Wizard v%s (%s).",
+            APP_VERSION, Sys.Date())
   )
 
   if (!is.null(spec$interaction_warning_shown) && isTRUE(spec$interaction_warning_shown)) {

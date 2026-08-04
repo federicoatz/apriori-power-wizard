@@ -13,7 +13,7 @@ mod_paired_t_ui <- function(id) {
     tabsetPanel(
       id = ns("wiz"), type = "hidden",
       tabPanelBody("design",
-        h4(icon("clock-rotate-left"), " Step: Design structure"),
+        h3(icon("clock-rotate-left"), " Step: Design structure"),
         p(class = "step-intro",
           "The SAME participants are measured on a continuous outcome under",
           "two conditions (e.g., before and after an intervention, or two",

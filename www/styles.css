@@ -71,7 +71,10 @@
 
   --text:          #16161D;
   --text-2:        #52525E;
-  --text-muted:    #8B8B96;
+  /* #6D6D78, not the lighter #8B8B96: an axe-core audit found the lighter
+     value at 3.17:1 contrast against --surface, below WCAG AA's 4.5:1
+     minimum. Keep in sync with APP_PALETTES$light$muted in global.R. */
+  --text-muted:    #6D6D78;
 
   --accent:        #5B5BD6;
   --accent-hover:  #4A4AC4;
@@ -401,7 +404,7 @@ html[data-guided="true"] .guided-explain {
   box-shadow: var(--shadow-sm);
 }
 
-.step-card h4 {
+.step-card h3 {
   font-size: 18px;
   font-weight: 600;
   margin-bottom: 7px;
@@ -409,8 +412,8 @@ html[data-guided="true"] .guided-explain {
   align-items: center;
   gap: 9px;
 }
-.step-card h4 > .fa, .step-card h4 > svg,
-h4 > .fa, h4 > svg {
+.step-card h3 > .fa, .step-card h3 > svg,
+h3 > .fa, h3 > svg {
   color: var(--accent);
   font-size: 0.8em;
 }
@@ -488,7 +491,7 @@ h4 > .fa, h4 > svg {
   flex-wrap: wrap;
   gap: 10px;
 }
-.family-header h3 {
+.family-header h2 {
   font-size: 22px;
   font-weight: 600;
   margin: 9px 0 0 0;
@@ -1319,7 +1322,7 @@ table.table td { border-color: var(--border); }
    Misc
    ======================================================================= */
 
-h5 {
+h4 {
   font-size: 15.5px;
   font-weight: 600;
   margin-top: 24px;
@@ -1328,7 +1331,7 @@ h5 {
   align-items: center;
   gap: 8px;
 }
-h5 > .fa, h5 > svg { color: var(--accent); font-size: 0.82em; }
+h4 > .fa, h4 > svg { color: var(--accent); font-size: 0.82em; }
 
 hr { border-color: var(--border); opacity: 1; }
 
@@ -1340,7 +1343,7 @@ hr { border-color: var(--border); opacity: 1; }
   gap: 12px;
   flex-wrap: wrap;
 }
-.report-text-header h5 { margin: 0; }
+.report-text-header h4 { margin: 0; }
 .copy-report-btn {
   display: inline-flex;
   align-items: center;

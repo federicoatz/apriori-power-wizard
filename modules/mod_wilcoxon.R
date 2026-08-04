@@ -20,7 +20,7 @@ mod_wilcoxon_ui <- function(id) {
     tabsetPanel(
       id = ns("wiz"), type = "hidden",
       tabPanelBody("design",
-        h4(icon("ranking-star"), " Step: Design structure"),
+        h3(icon("ranking-star"), " Step: Design structure"),
         p(class = "step-intro",
           "Two independent groups are compared on an outcome that is ordinal,",
           "or continuous but not plausibly normal -- skewed earnings,",

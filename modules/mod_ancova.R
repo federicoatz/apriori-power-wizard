@@ -15,7 +15,7 @@ mod_ancova_ui <- function(id) {
     tabsetPanel(
       id = ns("wiz"), type = "hidden",
       tabPanelBody("design",
-        h4(icon("table-cells"), " Step: Design structure"),
+        h3(icon("table-cells"), " Step: Design structure"),
         p(class = "step-intro",
           "ANCOVA compares group means on an outcome while statistically",
           "adjusting for one continuous covariate measured on the same",

@@ -135,7 +135,7 @@ family_page_header <- function(id, title) {
     actionLink(ns("back_to_step1"),
                tagList(icon("arrow-left"), " Change analysis type"), class = "back-link"),
     div(class = "family-header-row",
-      h3(title),
+      h2(title),
       div(class = "family-header-actions",
         actionButton(ns("save_project"), tagList(icon("floppy-disk"), " Save"),
                      class = "btn-outline-secondary btn-sm"),
@@ -193,6 +193,7 @@ family_server_fns <- list(
 ui <- page_fluid(
   theme = app_theme,
   title = "A Priori Power Analysis Wizard",
+  lang = "en",
   tags$head(
     # Webfonts: Inter, SELF-HOSTED from www/fonts/ via @font-face rules at the
     # top of styles.css -- deliberately not loaded from Google Fonts.
@@ -246,7 +247,8 @@ ui <- page_fluid(
     "))
   ),
 
-  div(class = "app-header",
+  tags$header(
+    div(class = "app-header",
       div(class = "app-header-icon", icon("calculator")),
       div(
         h1("A Priori Power Analysis Wizard"),
@@ -279,6 +281,7 @@ ui <- page_fluid(
                     `aria-pressed` = "false",
                     icon("graduation-cap"), tags$span("Guided mode"))
       )
+    )
   ),
 
   # NOTE: family tabs (two_means, anova_factorial, ...) are NOT listed here.
@@ -294,6 +297,7 @@ ui <- page_fluid(
   # it -- see navigate_to_family() below. Once inserted, a tab is never
   # removed, so returning to a family already visited preserves everything
   # the user entered, exactly as before.
+  tags$main(
   tabsetPanel(
     id = "main_nav", type = "hidden",
 
@@ -314,7 +318,17 @@ ui <- page_fluid(
                     class = "btn guided-prompt-btn", "Turn on Guided mode")
       ),
       div(class = "step-card",
-        h4(icon("flag-checkered"), " Step 1: What is your main analysis?"),
+        # aria-level="2" (not a plain h2): this heading sits inside the
+        # same .step-card styling as every "Step: ..." h3 elsewhere, and
+        # changing the tag itself would either lose that styling (no
+        # ".step-card h2" rule exists) or require duplicating it. This tab
+        # is the landing view's top-level content, semantically parallel
+        # to a family's h2 title (family_page_header() in this file) which
+        # doesn't exist yet until a family is chosen -- so the exposed
+        # accessible level is overridden to 2 to keep heading order
+        # correct (h1 -> h2 -> h3 -> h4) without a visual change.
+        h3(icon("flag-checkered"), " Step 1: What is your main analysis?",
+           `aria-level` = "2"),
         p(class = "step-intro",
           "This is the type of statistical test you plan to run once your data are",
           "collected. If you already know, pick it below. If not, use the helper",
@@ -421,6 +435,7 @@ ui <- page_fluid(
         )
       )
     )
+  )
   ),
 
   tags$footer(class = "app-footer",
@@ -432,6 +447,10 @@ ui <- page_fluid(
       " -- formulas and method references for every analysis family are credited in the ",
       tags$a(href = "https://github.com/federicoatz/apriori-power-wizard#method-references",
              target = "_blank", rel = "noopener noreferrer", "README"), "."),
+    p(icon("flask-vial"), " Every formula is checked against ",
+      tags$code("pwr"), " or a reproducible, seeded Monte Carlo simulation -- see the ",
+      tags$a(href = "https://github.com/federicoatz/apriori-power-wizard/blob/main/VALIDATION.md",
+             target = "_blank", rel = "noopener noreferrer", "validation page"), "."),
     p(icon("scale-balanced"), " Released under the ",
       tags$a(href = "https://github.com/federicoatz/apriori-power-wizard/blob/main/LICENSE",
              target = "_blank", rel = "noopener noreferrer", "MIT license"), "."),
@@ -441,6 +460,10 @@ ui <- page_fluid(
     p(icon("user-shield"), " This tool sets no cookies and nothing you enter leaves your browser -- see the ",
       tags$a(href = "https://github.com/federicoatz/apriori-power-wizard/blob/main/PRIVACY.md",
              target = "_blank", rel = "noopener noreferrer", "privacy notice"), "."),
+    p(icon("bug"), " Found a bug or an unexpected result? ",
+      tags$a(href = "https://github.com/federicoatz/apriori-power-wizard/issues/new?template=bug_report.yml",
+             target = "_blank", rel = "noopener noreferrer", "Report a problem"),
+      " -- the form asks for the app version and family, which are usually enough to reproduce it."),
     # NOTE: the Zenodo DOI is deliberately omitted right now. The previous
     # records were withdrawn (tombstoned) in August 2026 when the repository
     # history was rebuilt, and the GitHub-Zenodo integration has not yet been
@@ -448,7 +471,7 @@ ui <- page_fluid(
     # DOI to point at. Linking the old one would send readers to a dead
     # record. Restore the DOI link here as soon as a new archive is minted.
     p(icon("quote-left"), " If you use this app in your research, please cite: ",
-      tags$em("Atzori, F. (2026). A Priori Power Analysis Wizard (Version v0.16.0) [Computer software]."),
+      tags$em(sprintf("Atzori, F. (2026). A Priori Power Analysis Wizard (Version v%s) [Computer software].", APP_VERSION)),
       " ",
       tags$a(href = "https://github.com/federicoatz/apriori-power-wizard",
              target = "_blank", rel = "noopener noreferrer",

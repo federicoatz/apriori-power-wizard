@@ -8,6 +8,15 @@
 library(shiny)
 library(bslib)
 library(htmltools)
+
+# Single source of truth for the app version shown in the UI footer, baked
+# into generated report text (R/report_text.R), and saved into every
+# project-state JSON (R/project_state.R) so a result can always be traced
+# back to the exact app version that produced it. Keep in sync with the
+# `version:` field in CITATION.cff -- tests/testthat/test-misc.R asserts
+# the two match, so a mismatch fails the test suite instead of drifting
+# silently.
+APP_VERSION <- "0.17.0"
 ## NOTE: neither the logistic-regression nor the factorial-ANOVA family
 ## depends on an external power-analysis package, and this is deliberate.
 ## Logistic regression used to depend on WebPower::wp.logistic(), whose
@@ -46,6 +55,13 @@ library(htmltools)
 # active theme is passed from the browser to R via the `pw_theme` input
 # (see the theme-toggle script at the bottom of app.R) and resolved here by
 # app_palette(). Keep these in sync with the :root blocks in styles.css.
+# light.muted is #6D6D78 rather than the more common #8B8B96 lighter grey
+# specifically because an axe-core accessibility audit (see
+# validation/accessibility_check.R) flagged the lighter value at 3.17:1
+# contrast against the light theme's surface color -- below WCAG AA's
+# 4.5:1 minimum for body text. #6D6D78 keeps the same hue/saturation,
+# darkened to 4.5:1+ against both bg and surface. Dark theme's muted
+# already passed (4.6:1+) and was left unchanged.
 APP_PALETTES <- list(
   light = list(
     accent   = "#5B5BD6",
@@ -54,7 +70,7 @@ APP_PALETTES <- list(
     bg       = "#FFFFFF",
     surface  = "#FBFBFD",
     ink      = "#16161D",
-    muted    = "#8B8B96",
+    muted    = "#6D6D78",
     rule     = "#E8E8ED",
     fill     = "rgba(91, 91, 214, 0.13)"
   ),

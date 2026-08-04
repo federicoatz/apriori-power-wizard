@@ -16,7 +16,7 @@ mod_tost_ui <- function(id) {
     tabsetPanel(
       id = ns("wiz"), type = "hidden",
       tabPanelBody("design",
-        h4(icon("scale-balanced"), " Step: Design structure"),
+        h3(icon("scale-balanced"), " Step: Design structure"),
         p(class = "step-intro",
           "Two independent groups compared on a continuous outcome, but",
           "instead of testing whether they differ, this tests whether",
@@ -51,7 +51,7 @@ mod_tost_ui <- function(id) {
         wizard_nav_ui(ns, "params")
       ),
       tabPanelBody("effect_size",
-        h4(icon("bullseye"), " Step: Equivalence margin"),
+        h3(icon("bullseye"), " Step: Equivalence margin"),
         p(class = "step-intro",
           "State the largest difference between the two groups (in",
           "Cohen's d units) that you would still consider practically",

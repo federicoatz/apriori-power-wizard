@@ -12,7 +12,7 @@ mod_correlation_ui <- function(id) {
     tabsetPanel(
       id = ns("wiz"), type = "hidden",
       tabPanelBody("design",
-        h4(icon("chart-line"), " Step: Design structure"),
+        h3(icon("chart-line"), " Step: Design structure"),
         p(class = "step-intro",
           "A single sample in which two continuous variables are measured",
           "on each participant, tested for whether they are correlated",

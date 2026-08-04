@@ -57,7 +57,7 @@ guided_box <- function(title, ...) {
 #' @export
 params_step_ui <- function(ns) {
   tagList(
-    h4(icon("sliders"), " Step: Statistical parameters"),
+    h3(icon("sliders"), " Step: Statistical parameters"),
     p(class = "step-intro",
       "These four settings define how strict your test will be and how confident",
       "you want to be in detecting a real effect. If you're unsure, the defaults",
@@ -194,7 +194,7 @@ read_params_step <- function(input) {
 effect_size_step_ui <- function(ns, cohen_ui, sesoi_ui,
                                  safeguard_metric_label = "Published effect size") {
   tagList(
-    h4(icon("bullseye"), " Step: Effect size"),
+    h3(icon("bullseye"), " Step: Effect size"),
     p(class = "step-intro",
       "This is the single most important choice in the whole calculation --",
       "it's your assumption about how large the effect you're looking for",
@@ -236,7 +236,7 @@ effect_size_step_ui <- function(ns, cohen_ui, sesoi_ui,
       )
     ),
 
-    h5(class = "es-section-title", "1. How do you want to determine the effect size?"),
+    h4(class = "es-section-title", "1. How do you want to determine the effect size?"),
     div(class = "choice-card-grid",
       radioButtons(ns("es_branch"), NULL,
         choiceNames = list(
@@ -257,7 +257,7 @@ effect_size_step_ui <- function(ns, cohen_ui, sesoi_ui,
         selected = "sesoi")
     ),
 
-    h5(class = "es-section-title", "2. Enter the values for that choice"),
+    h4(class = "es-section-title", "2. Enter the values for that choice"),
     div(class = "es-branch-detail",
       conditionalPanel(
         condition = sprintf("input['%s'] == 'cohen'", ns("es_branch")),

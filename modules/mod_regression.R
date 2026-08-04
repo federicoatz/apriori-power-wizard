@@ -12,7 +12,7 @@ mod_regression_ui <- function(id) {
     tabsetPanel(
       id = ns("wiz"), type = "hidden",
       tabPanelBody("design",
-        h4(icon("chart-line"), " Step: Design structure"),
+        h3(icon("chart-line"), " Step: Design structure"),
         p(class = "step-intro",
           "Specify the regression model: the focal test concerns one or",
           "more predictors, evaluated over and above any covariates",

@@ -23,7 +23,7 @@ mod_clustered_cat_ui <- function(id) {
     tabsetPanel(
       id = ns("wiz"), type = "hidden",
       tabPanelBody("design",
-        h4(icon("sitemap"), " Step: Design structure"),
+        h3(icon("sitemap"), " Step: Design structure"),
         p(class = "step-intro",
           "Participants are grouped -- they interact in fixed matching groups",
           "or sessions, or whole groups are assigned to condition together --",

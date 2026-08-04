@@ -19,7 +19,7 @@ mod_rm_anova_ui <- function(id) {
     tabsetPanel(
       id = ns("wiz"), type = "hidden",
       tabPanelBody("design",
-        h4(icon("repeat"), " Step: Design structure"),
+        h3(icon("repeat"), " Step: Design structure"),
         p(class = "step-intro",
           "The SAME participants are measured several times -- across",
           "conditions, rounds, or time points. Measuring each person",

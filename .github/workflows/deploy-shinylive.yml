@@ -1,7 +1,14 @@
 ## .github/workflows/deploy-shinylive.yml
 ## -----------------------------------------------------------------------
-## Builds the browser-only (shinylive/webR) version of the app and
-## publishes it to GitHub Pages automatically on every push to main.
+## Builds the browser-only (shinylive/webR) version of the app, smoke-
+## tests it in a real headless browser (deploy/smoke_test.R -- catches a
+## broken webR/package fetch or a JS error before Shiny connects, none of
+## which would make `shinylive::export()` itself fail), runs an
+## informational accessibility audit (validation/accessibility_check.R --
+## see VALIDATION.md), and publishes it to GitHub Pages automatically on
+## every push to main. A failed smoke test fails the build job, so a
+## broken export is never deployed; the accessibility audit does not
+## (yet) fail the build -- see that script's header comment for why.
 ##
 ## One-time setup after this file is committed and pushed:
 ##   1. In the GitHub repo, go to Settings -> Pages.
@@ -49,6 +56,41 @@ jobs:
 
       - name: Export static (shinylive/webR) build
         run: Rscript deploy/export_shinylive.R
+
+      - name: Set up Chrome for the smoke test
+        uses: browser-actions/setup-chrome@v1
+        id: setup-chrome
+
+      - name: Install smoke-test R packages
+        run: Rscript -e 'install.packages(c("httpuv", "chromote", "jsonlite"))'
+
+      - name: Browser smoke test the exported build
+        env:
+          CHROMOTE_CHROME: ${{ steps.setup-chrome.outputs.chrome-path }}
+        run: |
+          Rscript deploy/serve_static.R _site 8917 > /tmp/smoke-server.log 2>&1 &
+          for i in $(seq 1 20); do
+            grep -q "SERVER-READY" /tmp/smoke-server.log && break
+            sleep 0.5
+          done
+          cat /tmp/smoke-server.log
+          Rscript deploy/smoke_test.R "http://127.0.0.1:8917/index.html" 90
+
+      # Informational for now (always exits 0) -- see the header comment in
+      # validation/accessibility_check.R for the known findings this
+      # already surfaces and why they're not auto-fixed. Flip
+      # FAIL_ON_VIOLATIONS in that script to TRUE once those are cleared,
+      # so this becomes a real quality gate instead of a build-log report.
+      - name: Accessibility audit (axe-core, informational)
+        env:
+          CHROMOTE_CHROME: ${{ steps.setup-chrome.outputs.chrome-path }}
+        run: |
+          Rscript deploy/serve_static.R _site 8921 > /tmp/a11y-server.log 2>&1 &
+          for i in $(seq 1 20); do
+            grep -q "SERVER-READY" /tmp/a11y-server.log && break
+            sleep 0.5
+          done
+          Rscript validation/accessibility_check.R _site 8921
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3

@@ -46,7 +46,13 @@ capture_family_state <- function(all_inputs, family) {
   names(vals) <- stripped
   vals <- vals[!vapply(vals, is.null, logical(1))]
 
-  list(family = family, inputs = vals)
+  # app_version and saved_at are provenance only: apply_saved_state() (in
+  # app.R) reads just $family and $inputs when restoring, so these two
+  # extra fields are silently ignored on load and never need a migration
+  # path -- they exist purely so a saved/shared project file can be traced
+  # back to the exact app version and moment that produced it.
+  list(family = family, inputs = vals, app_version = APP_VERSION,
+       saved_at = as.character(Sys.time()))
 }
 
 #' Serialize a captured state to a JSON string

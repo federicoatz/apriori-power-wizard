@@ -16,7 +16,7 @@ mod_mcnemar_ui <- function(id) {
     tabsetPanel(
       id = ns("wiz"), type = "hidden",
       tabPanelBody("design",
-        h4(icon("arrow-right-arrow-left"), " Step: Design structure"),
+        h3(icon("arrow-right-arrow-left"), " Step: Design structure"),
         p(class = "step-intro",
           "The SAME participants are classified on a yes/no outcome under",
           "two conditions (e.g., before/after, or two products each",
@@ -49,7 +49,7 @@ mod_mcnemar_ui <- function(id) {
         wizard_nav_ui(ns, "params")
       ),
       tabPanelBody("effect_size",
-        h4(icon("bullseye"), " Step: Effect size"),
+        h3(icon("bullseye"), " Step: Effect size"),
         p(class = "step-intro",
           "For a paired yes/no design, only the participants who switch",
           "between conditions -- the discordant pairs -- carry",

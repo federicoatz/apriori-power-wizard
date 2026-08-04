@@ -12,7 +12,7 @@
 #' @export
 results_panel_ui <- function(ns) {
   tagList(
-    h4(icon("chart-simple"), " Step: Results"),
+    h3(icon("chart-simple"), " Step: Results"),
     p(class = "step-intro",
       "Here is your recommended sample size, together with everything needed",
       "to check and defend it: how power changes with N, what you could still",
@@ -59,7 +59,7 @@ results_panel_ui <- function(ns) {
       )
     ),
 
-    h5(icon("chart-line"), " Power curve"),
+    h4(icon("chart-line"), " Power curve"),
     p(class = "field-hint",
       if (HAS_PLOTLY) {
         "Hover anywhere on the curve to read the power you'd get at that sample size; drag to zoom, double-click to reset. Dashed lines are power targets; marked points are the sample sizes each scenario needs."
@@ -130,7 +130,7 @@ results_panel_ui <- function(ns) {
 
     hr(),
     div(class = "report-text-header",
-        h5(icon("file-lines"), " Paste-ready report / pre-registration text"),
+        h4(icon("file-lines"), " Paste-ready report / pre-registration text"),
         tags$button(type = "button", class = "btn btn-outline-secondary btn-sm copy-report-btn",
                     `data-target` = ns("report_text"),
                     icon("copy"), tags$span(class = "copy-report-label", " Copy to clipboard"))

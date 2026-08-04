@@ -14,7 +14,7 @@ mod_two_means_ui <- function(id) {
     tabsetPanel(
       id = ns("wiz"), type = "hidden",
       tabPanelBody("design",
-        h4(icon("people-arrows"), " Step: Design structure"),
+        h3(icon("people-arrows"), " Step: Design structure"),
         p(class = "step-intro",
           "Two independent groups (e.g., treatment vs. control), each measured",
           "once on a continuous outcome, compared with an independent-samples",

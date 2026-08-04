@@ -36,7 +36,7 @@ mod_clustered_ui <- function(id) {
     tabsetPanel(
       id = ns("wiz"), type = "hidden",
       tabPanelBody("design",
-        h4(icon("sitemap"), " Step: Design structure"),
+        h3(icon("sitemap"), " Step: Design structure"),
         p(class = "step-intro",
           "Two conditions are compared on a continuous outcome, but whole",
           "GROUPS rather than individuals are the unit that gets assigned to",

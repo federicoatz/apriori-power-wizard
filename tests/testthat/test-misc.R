@@ -79,3 +79,19 @@ test_that("effect_comparison_values returns an empty vector for an invalid curre
   expect_length(effect_comparison_values(0), 0)
   expect_length(effect_comparison_values(-1), 0)
 })
+
+test_that("APP_VERSION (global.R) matches the version: field in CITATION.cff", {
+  # Every saved project file and generated report is stamped with
+  # APP_VERSION (see R/report_text.R, R/project_state.R), and CITATION.cff
+  # is what "please cite this software" points people to -- if the two
+  # drift apart, a result traced back to "v0.16.0" and a citation claiming
+  # "v0.17.0" would disagree about which version actually produced it.
+  cand <- c("../../CITATION.cff", "../CITATION.cff", "CITATION.cff")
+  path <- cand[vapply(cand, file.exists, logical(1))]
+  skip_if(length(path) == 0, "CITATION.cff not found from this working directory")
+  cff <- readLines(path[[1]], warn = FALSE)
+  version_line <- grep("^version:", cff, value = TRUE)
+  skip_if(length(version_line) == 0, "no version: field in CITATION.cff")
+  cff_version <- gsub('"', "", trimws(sub("^version:", "", version_line[[1]])))
+  expect_equal(APP_VERSION, cff_version)
+})

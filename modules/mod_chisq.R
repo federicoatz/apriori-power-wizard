@@ -15,7 +15,7 @@ mod_chisq_ui <- function(id) {
     tabsetPanel(
       id = ns("wiz"), type = "hidden",
       tabPanelBody("design",
-        h4(icon("chart-pie"), " Step: Design structure"),
+        h3(icon("chart-pie"), " Step: Design structure"),
         p(class = "step-intro",
           "Compares counts or proportions across categories with a",
           "chi-square test: either one categorical variable against a",

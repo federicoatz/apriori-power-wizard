@@ -11,7 +11,7 @@ mod_proportions_ui <- function(id) {
     tabsetPanel(
       id = ns("wiz"), type = "hidden",
       tabPanelBody("design",
-        h4(icon("percent"), " Step: Design structure"),
+        h3(icon("percent"), " Step: Design structure"),
         p(class = "step-intro",
           "Two independent groups, each with a binary outcome (e.g.,",
           "conversion vs. no conversion), compared with a two-proportions z-test."),

@@ -15,7 +15,7 @@ mod_anova_factorial_ui <- function(id) {
     tabsetPanel(
       id = ns("wiz"), type = "hidden",
       tabPanelBody("design",
-        h4(icon("table-cells"), " Step: Design structure"),
+        h3(icon("table-cells"), " Step: Design structure"),
         p(class = "step-intro",
           "A factor is anything you manipulate or group participants by (e.g.,",
           "\"pay scheme\" with levels \"flat\" / \"bonus\"). With two factors you",
