@@ -371,45 +371,32 @@ Copy the project directory (including `renv.lock`) to the server and
 point Shiny Server / Connect at it; both will call `renv::restore()`
 automatically if `renv` integration is enabled, or run it manually first.
 
-### Privacy posture
+### Privacy
 
-Audited against the live site rather than assumed: the application sets **no
-cookies**, writes to `localStorage` only when a visitor actively toggles the
-theme or Guided mode (a preference they asked for, not tracking), and -- since
-the webfont was brought in-house -- issues **no third-party requests**. Nothing
-a user types is transmitted anywhere: every calculation runs locally in
-WebAssembly. There is no account, no session, and no server-side storage,
-because there is no server. Hosting is GitHub Pages, whose access logs are
-outside the site owner's control, as with any static host.
+Full notice: **[PRIVACY.md](PRIVACY.md)**. Data controller: Federico Atzori,
+University of Cagliari.
 
-This is a description of what the software does, not a legal assessment.
+The claims below were verified by auditing the deployed site's network traffic
+and storage, not inferred from the source:
 
-### Usage analytics (optional, off by default)
+| | |
+|---|---|
+| Cookies | none |
+| Inputs transmitted | none -- every calculation runs locally in WebAssembly |
+| Third-party requests | none, other than the analytics beacon below |
+| `localStorage` | written only if the visitor actively toggles the theme or Guided mode (`pw-theme`, `pw-guided`); nothing otherwise |
+| Personal data collected by the app | none; there is no account, login, or database |
 
-A static site has no server, so counting visits requires an external service.
-`deploy/export_shinylive.R` has an opt-in hook for
-[GoatCounter](https://www.goatcounter.com/) -- open source, no cookies, and no
-personal-data collection in its default configuration, which is why it is
-normally deployed without a consent banner. **Nothing is injected and no
-external request is made until it is configured**: set `goatcounter_code` at the
-top of that script to the code issued when you register the site, and re-export.
+The webfont is self-hosted (`www/fonts/`) precisely so that opening the page
+does not disclose the visitor's IP address to a font CDN -- that request was,
+before v0.14.0, the only third-party call the application made.
 
-Two details are deliberate:
+Two things are outside the app's control and are disclosed in the notice: GitHub
+Pages processes the technical data needed to serve a page, including IP
+addresses, in logs the site owner cannot see; and the analytics service below
+receives a request per page view.
 
-- The snippet is injected into the **outer page**, not into `app.R`. The
-  deployed page is not the Shiny app itself: shinylive mounts the app inside an
-  `<iframe class="app-frame">` with its own dynamically generated internal URL,
-  so a snippet placed in the app's own footer would record that meaningless
-  internal URL instead of the address a visitor actually opened -- data that
-  looks plausible but is useless.
-- It only fires on the real deployed hostname (`analytics_hostname`). Without
-  that guard every local preview, and every colleague running the export on
-  their own machine, would silently pollute the statistics.
-
-As of v0.14.0 the app makes **no third-party requests at all** -- the webfont is
-self-hosted (see `www/fonts/`), so with analytics left unconfigured the only
-host a visitor's browser contacts is the one serving the site. That was verified
-by auditing the live site's network traffic, not inferred from the source.
+This describes what the software does. It is not a legal assessment.
 
 ### Browser-only deployment (shinylive + GitHub Pages, no server at all)
 
