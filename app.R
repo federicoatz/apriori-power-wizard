@@ -439,7 +439,7 @@ ui <- page_fluid(
     # DOI to point at. Linking the old one would send readers to a dead
     # record. Restore the DOI link here as soon as a new archive is minted.
     p(icon("quote-left"), " If you use this app in your research, please cite: ",
-      tags$em("Atzori, F. (2026). A Priori Power Analysis Wizard (Version v0.13.0) [Computer software]."),
+      tags$em("Atzori, F. (2026). A Priori Power Analysis Wizard (Version v0.13.1) [Computer software]."),
       " ",
       tags$a(href = "https://github.com/federicoatz/power-analysis-app",
              target = "_blank", rel = "noopener noreferrer",

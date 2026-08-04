@@ -371,6 +371,32 @@ Copy the project directory (including `renv.lock`) to the server and
 point Shiny Server / Connect at it; both will call `renv::restore()`
 automatically if `renv` integration is enabled, or run it manually first.
 
+### Usage analytics (optional, off by default)
+
+A static site has no server, so counting visits requires an external service.
+`deploy/export_shinylive.R` has an opt-in hook for
+[GoatCounter](https://www.goatcounter.com/) -- open source, no cookies, and no
+personal-data collection in its default configuration, which is why it is
+normally deployed without a consent banner. **Nothing is injected and no
+external request is made until it is configured**: set `goatcounter_code` at the
+top of that script to the code issued when you register the site, and re-export.
+
+Two details are deliberate:
+
+- The snippet is injected into the **outer page**, not into `app.R`. The
+  deployed page is not the Shiny app itself: shinylive mounts the app inside an
+  `<iframe class="app-frame">` with its own dynamically generated internal URL,
+  so a snippet placed in the app's own footer would record that meaningless
+  internal URL instead of the address a visitor actually opened -- data that
+  looks plausible but is useless.
+- It only fires on the real deployed hostname (`analytics_hostname`). Without
+  that guard every local preview, and every colleague running the export on
+  their own machine, would silently pollute the statistics.
+
+Note that the app already loads webfonts from Google Fonts; in the EU that
+specific practice has itself attracted GDPR scrutiny, so self-hosting the fonts
+would be a separate improvement worth considering.
+
 ### Browser-only deployment (shinylive + GitHub Pages, no server at all)
 
 This app does no simulation and every calculation is closed-form and

@@ -80,6 +80,50 @@ for (item in runtime_items) {
 
 message(sprintf("Exporting to ./%s (this downloads webR + package wasm binaries the first time, so it can take a few minutes)...", destdir))
 
+analytics_hostname <- "federicoatz.com"
+
+# ---- Privacy-preserving usage analytics (optional, off until configured) ---
+# WHY IT LIVES HERE AND NOT IN app.R. The deployed page is NOT the Shiny app:
+# shinylive builds an outer index.html that mounts the real app inside an
+# <iframe class="app-frame"> with its own dynamically generated internal URL.
+# An analytics snippet placed in the app's own footer would therefore run
+# INSIDE that iframe and record that meaningless internal URL instead of the
+# page a visitor actually opened -- producing data that looks fine but is
+# useless. Injecting it into the outer page via shinylive's
+# `include_before_body` hook (the same one the loading splash uses) is what
+# makes it record the real address.
+#
+# The service is GoatCounter: open source, no cookies, and no collection of
+# personal data in its default configuration, which is why it is normally
+# deployed without a consent banner. That is the basis for choosing it here;
+# whether it satisfies any particular institution's requirements is a call
+# for the site owner, not a guarantee made by this script.
+#
+# TO ENABLE: register the site at https://www.goatcounter.com/ and put the
+# code you are issued (the "yourcode" in yourcode.goatcounter.com) below.
+# While this is empty NOTHING is injected and no external request is made.
+goatcounter_code <- ""
+
+analytics_html <- if (nzchar(goatcounter_code)) {
+  sprintf('
+<script>
+  // Only ever count the real deployed site. Without this guard every local
+  // preview (httpuv::runStaticServer, file://, a colleague running the export
+  // on their laptop) would silently pollute the statistics.
+  (function () {
+    if (window.location.hostname !== "%s") return;
+    var s = document.createElement("script");
+    s.async = true;
+    s.src = "//gc.zgo.at/count.js";
+    s.setAttribute("data-goatcounter", "https://%s.goatcounter.com/count");
+    document.head.appendChild(s);
+  })();
+</script>
+', analytics_hostname, goatcounter_code)
+} else {
+  ""
+}
+
 # ---- Boot-time loading splash with a 0->100% progress bar -----------------
 # Purely cosmetic: an overlay drawn on top of the page via shinylive's own
 # `include_before_body` template hook. It never touches the Shiny/webR boot
@@ -258,7 +302,7 @@ shinylive::export(
   destdir = destdir,
   template_params = list(
     title = "A Priori Power Analysis Wizard",
-    include_before_body = splash_html
+    include_before_body = paste0(splash_html, analytics_html)
   )
 )
 
