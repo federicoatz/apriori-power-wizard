@@ -12,6 +12,88 @@ collection) power analysis to determine required sample size.
 
 ![Conceptual overview: the Wizard moves the starting point of a power analysis upstream, from a research question through a guided decision layer to a sample-size recommendation](assets/workflow-overview.png)
 
+## Design principles
+
+The Wizard follows three principles. They are the reason the tool is
+structured the way it is, not just stated intent -- each maps onto a
+specific, checkable part of the codebase, and each corresponds directly
+to how the accompanying manuscript frames the tool's contribution.
+
+1. **Start from the research question, not the statistical test.**
+   Traditional tools (G\*Power, `pwr`) assume the user already knows which
+   of several dozen procedures applies to their design. The decision
+   helper (Step 1; `recommended_family()` in `app.R`) instead routes a
+   first-time user from a plain-language description of their design --
+   how participants are sampled, what the outcome looks like -- to the
+   correct analysis family. See Figure 1 ("Conceptual Positioning of the
+   Wizard Within the A Priori Power-Analysis Workflow") in the manuscript
+   for this contrasted directly against the traditional workflow.
+
+2. **Separate analysis selection from numerical calculation.** Deciding
+   *which* family applies and *computing* that family's power are
+   different pieces of code: the decision-helper logic lives in `app.R`
+   (`recommended_family()`), while every closed-form formula lives in
+   `R/power_*.R` as a pure, independently testable function with no
+   knowledge of how it was arrived at. This mirrors the manuscript's own
+   framing of the tool's contribution: not a new statistical method, but
+   an interface layer wrapped around the same closed-form formulas
+   `pwr` and G\*Power already provide (see the manuscript's Discussion).
+
+3. **Make assumptions explicit rather than defaulting silently.** Every
+   effect size is justified through one of three explicit branches
+   (Cohen's convention, flagged as a last resort; safeguard power;
+   directly stated SESOI) rather than a single free-text field. Where a
+   closed-form relation is itself an approximation -- the Schoenfeld
+   log-rank formula, the asymptotic Wilcoxon-Mann-Whitney formula, the
+   first-order clustered-categorical design effect -- the app and its
+   generated report text say so, rather than presenting every number
+   with equal, unwarranted confidence. Bonferroni correction and
+   attrition inflation, when applicable, are likewise disclosed in the
+   generated report text rather than silently folded into the number.
+   See [VALIDATION.md](VALIDATION.md) for exactly which formulas are
+   exact and which are documented approximations, with tolerances.
+
+## Reproducibility
+
+For a reviewer: clone, restore, run, test.
+
+```bash
+git clone https://github.com/federicoatz/apriori-power-wizard.git
+cd apriori-power-wizard
+```
+
+```r
+install.packages("renv")
+renv::restore()      # installs the exact package versions in renv.lock
+shiny::runApp()      # opens the app at http://127.0.0.1:<port>
+```
+
+```r
+source("global.R")
+testthat::test_dir("tests/testthat")   # 394 tests
+```
+
+`source("global.R")` first is required -- it attaches the packages and
+sources every file in `R/` and `modules/` that the test suite calls into;
+running `testthat::test_dir()` on its own will fail with "could not find
+function" errors.
+
+> **Note on `renv.lock`:** this lockfile was authored by hand (the
+> development environment used to build this app had no local R
+> installation available to run `renv::snapshot()`). Package version
+> numbers are current-as-of-writing best estimates, and the lockfile does
+> not include transitive-dependency hashes. **Before relying on this for
+> a submission, run `renv::init()` followed by `renv::snapshot()` in a
+> real R session to regenerate an accurate, fully-resolved lockfile.**
+
+No local installation needed at all: the same code runs entirely in the
+browser at <https://federicoatz.com/apriori-power-wizard/> (or your own
+fork's GitHub Pages URL once deployed -- see "Deployment" below).
+
+Every closed-form formula's correctness is documented family-by-family,
+with real test tolerances and a reproducible, seeded Monte Carlo script,
+in [VALIDATION.md](VALIDATION.md).
+
 ## What it does
 
 The app is a wizard with four conceptual steps, implemented per test
@@ -321,29 +403,10 @@ directly unit-testable without starting Shiny:
 - `power_<family>_min_*(...)` -- minimum detectable effect at a given N
   (used by the sensitivity analysis)
 
-## Running locally
+## Test reference values
 
-```r
-install.packages("renv")
-renv::restore()   # installs the exact package versions in renv.lock
-shiny::runApp()
-```
-
-> **Note on `renv.lock`:** this lockfile was authored by hand (the
-> development environment used to build this app had no local R
-> installation available to run `renv::snapshot()`). Package version
-> numbers are current-as-of-writing best estimates, and the lockfile does
-> not include transitive-dependency hashes. **Before relying on this
-> project, run `renv::init()` followed by `renv::snapshot()` in a real R
-> session to regenerate an accurate, fully-resolved lockfile.**
-
-## Running the tests
-
-```r
-testthat::test_dir("tests/testthat")
-```
-
-Reference values for the two-means, two-proportions, multiple regression,
+See "Reproducibility" above for how to run the suite. Reference values
+for the two-means, two-proportions, multiple regression,
 and logistic-regression tests are checked against textbook / G*Power /
 published-documentation numbers (see comments in each test file for the
 exact source; the logistic-regression tests are pinned against the
