@@ -194,20 +194,23 @@ ui <- page_fluid(
   theme = app_theme,
   title = "A Priori Power Analysis Wizard",
   tags$head(
-    # Webfonts: Source Serif 4 for display/headings, Inter for UI and running
-    # text. Loaded from Google Fonts rather than bundled, to keep the
-    # shinylive export small. Both have system fallbacks declared in
-    # styles.css (--pw-serif / --pw-sans), so if the fonts fail to load --
-    # offline use, a blocked CDN, a restrictive corporate network -- the app
-    # degrades to Georgia + the native UI sans and stays perfectly legible.
-    # `display=swap` means text renders immediately in the fallback and
-    # re-renders once the webfont arrives, rather than blocking on it.
-    tags$link(rel = "preconnect", href = "https://fonts.googleapis.com"),
-    tags$link(rel = "preconnect", href = "https://fonts.gstatic.com", crossorigin = NA),
-    tags$link(rel = "stylesheet",
-              href = paste0("https://fonts.googleapis.com/css2",
-                            "?family=Inter:wght@400;500;600;700",
-                            "&display=swap")),
+    # Webfonts: Inter, SELF-HOSTED from www/fonts/ via @font-face rules at the
+    # top of styles.css -- deliberately not loaded from Google Fonts.
+    #
+    # It used to be. Auditing the live site's network traffic showed that the
+    # Google Fonts request was the ONLY thing this application fetched from a
+    # third party, and loading a webfont from a CDN transmits the visitor's IP
+    # address to that CDN on every page view. Serving the font ourselves means
+    # the app now contacts nothing but its own origin, which is a much cleaner
+    # position for a tool whose whole premise is that nothing you enter leaves
+    # your browser -- and it removes a dependency on an external service being
+    # reachable at all. Inter ships as a variable font, so the cost is two
+    # files (~130KB total) against a wasm payload measured in megabytes.
+    #
+    # styles.css still declares system fallbacks, so if the font files fail to
+    # load the app degrades to the native UI sans and stays perfectly legible;
+    # `font-display: swap` means text renders immediately in that fallback and
+    # re-renders once Inter arrives, rather than blocking on it.
     tags$link(rel = "stylesheet", type = "text/css", href = "styles.css"),
 
     # ------------------------------------------------------------------
@@ -439,7 +442,7 @@ ui <- page_fluid(
     # DOI to point at. Linking the old one would send readers to a dead
     # record. Restore the DOI link here as soon as a new archive is minted.
     p(icon("quote-left"), " If you use this app in your research, please cite: ",
-      tags$em("Atzori, F. (2026). A Priori Power Analysis Wizard (Version v0.13.1) [Computer software]."),
+      tags$em("Atzori, F. (2026). A Priori Power Analysis Wizard (Version v0.14.0) [Computer software]."),
       " ",
       tags$a(href = "https://github.com/federicoatz/power-analysis-app",
              target = "_blank", rel = "noopener noreferrer",

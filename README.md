@@ -371,6 +371,19 @@ Copy the project directory (including `renv.lock`) to the server and
 point Shiny Server / Connect at it; both will call `renv::restore()`
 automatically if `renv` integration is enabled, or run it manually first.
 
+### Privacy posture
+
+Audited against the live site rather than assumed: the application sets **no
+cookies**, writes to `localStorage` only when a visitor actively toggles the
+theme or Guided mode (a preference they asked for, not tracking), and -- since
+the webfont was brought in-house -- issues **no third-party requests**. Nothing
+a user types is transmitted anywhere: every calculation runs locally in
+WebAssembly. There is no account, no session, and no server-side storage,
+because there is no server. Hosting is GitHub Pages, whose access logs are
+outside the site owner's control, as with any static host.
+
+This is a description of what the software does, not a legal assessment.
+
 ### Usage analytics (optional, off by default)
 
 A static site has no server, so counting visits requires an external service.
@@ -393,9 +406,10 @@ Two details are deliberate:
   that guard every local preview, and every colleague running the export on
   their own machine, would silently pollute the statistics.
 
-Note that the app already loads webfonts from Google Fonts; in the EU that
-specific practice has itself attracted GDPR scrutiny, so self-hosting the fonts
-would be a separate improvement worth considering.
+As of v0.14.0 the app makes **no third-party requests at all** -- the webfont is
+self-hosted (see `www/fonts/`), so with analytics left unconfigured the only
+host a visitor's browser contacts is the one serving the site. That was verified
+by auditing the live site's network traffic, not inferred from the source.
 
 ### Browser-only deployment (shinylive + GitHub Pages, no server at all)
 
