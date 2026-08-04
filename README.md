@@ -249,7 +249,7 @@ legible. To make the app fully self-contained, delete the three
 ## Project structure
 
 ```
-power-analysis-app/
+apriori-power-wizard/
 ├── app.R                     # Wizard shell: Step 1, decision helper, routing, bslib theme
 ├── global.R                  # Package loading + sources R/ and modules/ + shared color palette
 ├── R/                         # Pure, testable calculation functions (no Shiny)
@@ -611,7 +611,7 @@ additions -- this was a deliberate design constraint from the start.
 ## Contributing, issues, and support
 
 Bug reports, feature requests, and pull requests are welcome via the
-[GitHub issue tracker](https://github.com/federicoatz/power-analysis-app/issues).
+[GitHub issue tracker](https://github.com/federicoatz/apriori-power-wizard/issues).
 For a code contribution: fork the repository, make your change (see
 "Project structure" above for where each kind of logic lives, and
 "Running the tests" for how to validate it), and open a pull request

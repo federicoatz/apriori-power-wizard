@@ -3,7 +3,7 @@
 *Last updated: 4 August 2026.*
 
 This notice describes what the **A Priori Power Analysis Wizard**
-(<https://federicoatz.com/power-analysis-app/>) does with data. It is written to
+(<https://federicoatz.com/apriori-power-wizard/>) does with data. It is written to
 be checkable: every claim below can be verified by opening your browser's
 developer tools and watching the Network and Application tabs while you use the
 application.

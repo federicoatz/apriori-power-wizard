@@ -427,19 +427,19 @@ ui <- page_fluid(
     p(icon("circle-info"), " This tool performs closed-form (non-simulation) a priori power analysis.",
       "It does not replace statistical consultation for complex or non-standard designs."),
     p(icon("code-branch"), " Source code on ",
-      tags$a(href = "https://github.com/federicoatz/power-analysis-app",
+      tags$a(href = "https://github.com/federicoatz/apriori-power-wizard",
              target = "_blank", rel = "noopener noreferrer", "GitHub"),
       " -- formulas and method references for every analysis family are credited in the ",
-      tags$a(href = "https://github.com/federicoatz/power-analysis-app#method-references",
+      tags$a(href = "https://github.com/federicoatz/apriori-power-wizard#method-references",
              target = "_blank", rel = "noopener noreferrer", "README"), "."),
     p(icon("scale-balanced"), " Released under the ",
-      tags$a(href = "https://github.com/federicoatz/power-analysis-app/blob/main/LICENSE",
+      tags$a(href = "https://github.com/federicoatz/apriori-power-wizard/blob/main/LICENSE",
              target = "_blank", rel = "noopener noreferrer", "MIT license"), "."),
     # Absolute URL rather than a relative one: this footer is rendered INSIDE
     # the shinylive iframe, whose base URL is a dynamically generated internal
     # path, so anything relative would resolve against that instead of the site.
     p(icon("user-shield"), " This tool sets no cookies and nothing you enter leaves your browser -- see the ",
-      tags$a(href = "https://github.com/federicoatz/power-analysis-app/blob/main/PRIVACY.md",
+      tags$a(href = "https://github.com/federicoatz/apriori-power-wizard/blob/main/PRIVACY.md",
              target = "_blank", rel = "noopener noreferrer", "privacy notice"), "."),
     # NOTE: the Zenodo DOI is deliberately omitted right now. The previous
     # records were withdrawn (tombstoned) in August 2026 when the repository
@@ -448,11 +448,11 @@ ui <- page_fluid(
     # DOI to point at. Linking the old one would send readers to a dead
     # record. Restore the DOI link here as soon as a new archive is minted.
     p(icon("quote-left"), " If you use this app in your research, please cite: ",
-      tags$em("Atzori, F. (2026). A Priori Power Analysis Wizard (Version v0.15.0) [Computer software]."),
+      tags$em("Atzori, F. (2026). A Priori Power Analysis Wizard (Version v0.16.0) [Computer software]."),
       " ",
-      tags$a(href = "https://github.com/federicoatz/power-analysis-app",
+      tags$a(href = "https://github.com/federicoatz/apriori-power-wizard",
              target = "_blank", rel = "noopener noreferrer",
-             "https://github.com/federicoatz/power-analysis-app"))
+             "https://github.com/federicoatz/apriori-power-wizard"))
   ),
 
   # =====================================================================

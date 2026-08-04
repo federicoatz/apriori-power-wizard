@@ -62,7 +62,7 @@ if (!file.exists("app.R")) {
     "app.R not found in the current working directory. ",
     "Run this script from the project root, e.g.:\n",
     "  Rscript deploy/export_shinylive.R\n",
-    "(from inside the power-analysis-app/ folder)."
+    "(from inside the apriori-power-wizard/ folder)."
   )
 }
 
@@ -70,7 +70,7 @@ destdir <- "_site"
 
 # ---- Stage only the runtime-relevant files into a clean temp directory ----
 runtime_items <- c("app.R", "global.R", "R", "modules", "www")
-stage_dir <- file.path(tempdir(), paste0("power-analysis-app-shinylive-src-", Sys.getpid()))
+stage_dir <- file.path(tempdir(), paste0("apriori-power-wizard-shinylive-src-", Sys.getpid()))
 if (dir.exists(stage_dir)) unlink(stage_dir, recursive = TRUE)
 dir.create(stage_dir, recursive = TRUE)
 for (item in runtime_items) {
