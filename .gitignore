@@ -13,3 +13,7 @@ _site/
 
 # Local Claude Code tooling state (not part of the app)
 .claude/
+
+# Manuscript drafts (paper.tex, APA submission version, bibliography, figures) --
+# kept local only, not part of the public repo history.
+manuscript/

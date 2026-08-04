@@ -10,6 +10,8 @@ A step-by-step Shiny application that guides researchers in experimental
 economics and behavioral science through an a priori (before data
 collection) power analysis to determine required sample size.
 
+![Conceptual overview: the Wizard moves the starting point of a power analysis upstream, from a research question through a guided decision layer to a sample-size recommendation](assets/workflow-overview.png)
+
 ## What it does
 
 The app is a wizard with four conceptual steps, implemented per test
