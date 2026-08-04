@@ -79,34 +79,54 @@ results_panel_ui <- function(ns) {
       )
     },
 
-    hr(),
-    h5(icon("magnifying-glass-dollar"), " Sensitivity analysis (inverse): what if your budget is smaller?"),
-    p(class = "field-hint",
-      "If you can't reach the recommended N, enter the maximum sample size you can realistically collect to see the smallest effect that design could still detect."),
-    fluidRow(
-      column(6, numericInput(ns("budget_n"), "Maximum feasible N (total, or per cell for factorial ANOVA)",
-                              value = NA, min = 2)),
-      column(6, uiOutput(ns("sensitivity_result")))
+    # The two interactive tools on this step (sensitivity and budget) used
+    # to be plain hr()-separated headings, which made them read as footnotes
+    # to the report text rather than as things you are meant to USE. They
+    # are now cards with an accent spine, matching the .step-card language
+    # of the wizard steps themselves.
+    div(class = "results-tool",
+      div(class = "results-tool-title", icon("magnifying-glass-dollar"),
+          "What if you can't reach that sample size?"),
+      p(class = "results-tool-intro",
+        "Enter the largest sample you could realistically collect, and this",
+        "tells you the smallest effect that design could still detect --",
+        "the honest way to report a study you can afford rather than the",
+        "one you'd like."),
+      fluidRow(
+        column(5, numericInput(ns("budget_n"), "Maximum feasible N (total, or per cell for factorial ANOVA)",
+                                value = NA, min = 2)),
+        column(7, div(class = "results-tool-output", uiOutput(ns("sensitivity_result"))))
+      )
     ),
 
     uiOutput(ns("attrition_note")),
 
-    hr(),
-    h5(icon("coins"), " Budget (optional)"),
-    p(class = "field-hint",
-      "Experiments cost money per participant. Enter what one participant costs -- show-up fee plus expected average earnings -- to turn the sample size above into a figure you can put in a grant application, and to see what a fixed budget would buy."),
-    fluidRow(
-      column(4, numericInput(ns("cost_per_participant"),
-                help_tip("Cost per participant", "Show-up fee plus the average payment you expect a participant to earn, in whatever currency you work in."),
-                value = NA, min = 0, step = 1)),
-      column(4, numericInput(ns("cost_fixed"),
-                help_tip("Fixed costs (optional)", "Costs that do not scale with the number of participants -- lab or platform fees, research assistant time, software."),
-                value = 0, min = 0, step = 10)),
-      column(4, numericInput(ns("budget_cap"),
-                help_tip("Budget available (optional)", "If you have a fixed budget, enter it to see how many participants it covers and the smallest effect that sample could detect."),
-                value = NA, min = 0, step = 100))
+    div(class = "results-tool",
+      div(class = "results-tool-title", icon("coins"),
+          "What will it cost?"),
+      p(class = "results-tool-intro",
+        "Experiments pay their participants, so a sample size is also a line",
+        "in a grant application. Enter what one participant costs and this",
+        "turns the N above into a total -- and, if you give it a fixed",
+        "budget, tells you how many participants that buys and the smallest",
+        "effect they could detect."),
+      fluidRow(
+        column(3, selectInput(ns("currency"),
+                  help_tip("Currency", "Used only to label the amounts below; it has no effect on any calculation."),
+                  choices = c("Euro (\u20ac)" = "EUR", "Pound (\u00a3)" = "GBP", "US dollar ($)" = "USD"),
+                  selected = "EUR")),
+        column(3, numericInput(ns("cost_per_participant"),
+                  help_tip("Cost per participant", "Show-up fee plus the average payment you expect a participant to earn."),
+                  value = NA, min = 0, step = 1)),
+        column(3, numericInput(ns("cost_fixed"),
+                  help_tip("Fixed costs (optional)", "Costs that do not scale with the number of participants -- lab or platform fees, research assistant time, software."),
+                  value = 0, min = 0, step = 10)),
+        column(3, numericInput(ns("budget_cap"),
+                  help_tip("Budget available (optional)", "If you have a fixed budget, enter it to see how many participants it covers and the smallest effect that sample could detect."),
+                  value = NA, min = 0, step = 100))
+      ),
+      div(class = "results-tool-output", uiOutput(ns("budget_result")))
     ),
-    uiOutput(ns("budget_result")),
 
     hr(),
     div(class = "report-text-header",
@@ -716,6 +736,9 @@ wire_results_server <- function(input, output, session, family,
       return(helpText("Enter what one participant costs to see the total, and what a fixed budget could buy."))
     }
     fixed <- safe_numeric(input$cost_fixed, 0, 1e9, 0)
+    sym <- unname(currency_symbols()[input$currency %||% "EUR"])
+    if (is.na(sym)) sym <- ""
+    money <- function(v) format_money(v, sym)
     cur <- if (is.na(n_recruit())) NA_integer_ else n_recruit()
     if (is.na(cur)) return(NULL)
     total <- cur * per + fixed
@@ -731,7 +754,7 @@ wire_results_server <- function(input, output, session, family,
       afford_txt <- tags$p(
         icon("wallet"),
         sprintf(" A budget of %s covers %d recruited participants (%d after attrition). ",
-                format_money(cap), n_afford, n_analytic),
+                money(cap), n_afford, n_analytic),
         if (!is.null(det)) {
           sprintf("At that size the smallest detectable %s is %s.", det$metric, format_stat(det$value, 4))
         } else {
@@ -743,8 +766,8 @@ wire_results_server <- function(input, output, session, family,
     div(class = "well well-result",
       tags$p(icon("coins"),
              sprintf(" Estimated cost for %d participants: %s%s.",
-                     cur, format_money(total),
-                     if (fixed > 0) sprintf(" (%s per participant plus %s fixed)", format_money(per), format_money(fixed)) else "")),
+                     cur, money(total),
+                     if (fixed > 0) sprintf(" (%s per participant plus %s fixed)", money(per), money(fixed)) else "")),
       afford_txt
     )
   })

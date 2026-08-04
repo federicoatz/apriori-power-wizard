@@ -1337,3 +1337,51 @@ hr { border-color: var(--border); opacity: 1; }
   .step-indicator > .fa, .step-indicator > svg { font-size: 9.5px; }
   .choice-desc { margin-right: 0; }
 }
+
+/* --- Results-step interactive tools -------------------------------------
+   The sensitivity and budget panels are the two things on the results step
+   the user is meant to actively USE, as opposed to read. Previously they
+   were plain <hr> + <h5> + muted hint text, which made them read as
+   footnotes to the report text below and meant people missed them. They now
+   get the same card treatment as the wizard's own steps, plus an accent
+   spine on the left so they read as "interactive" rather than "more prose". */
+.results-tool {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--r-lg);
+  padding: 20px 22px 16px;
+  margin: 22px 0;
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow var(--dur) var(--ease), border-color var(--dur) var(--ease);
+}
+.results-tool:hover { box-shadow: var(--shadow-md); }
+.results-tool-title {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0 0 6px;
+  letter-spacing: -0.01em;
+}
+.results-tool-title > .fa,
+.results-tool-title > svg {
+  color: var(--accent);
+  font-size: 15px;
+  flex: 0 0 auto;
+}
+.results-tool-intro {
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--text-2);
+  margin: 0 0 16px;
+  max-width: 68ch;
+}
+/* The output slot sits beside (or under) the inputs; give it a floor so the
+   card doesn't visibly jump when a result first appears. */
+.results-tool-output { min-height: 2.5em; }
+.results-tool-output .well { margin-bottom: 0; }
+.results-tool .form-group { margin-bottom: 12px; }
+.results-tool .shiny-input-container { width: 100%; }

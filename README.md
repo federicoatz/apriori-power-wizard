@@ -86,7 +86,7 @@ grant application. Enter the cost of one participant (show-up fee plus
 expected average earnings) and any fixed costs to turn N into a total,
 and optionally a fixed budget to see how many participants it covers and,
 reusing the same sensitivity machinery, the smallest effect that sample
-could still detect. Amounts are deliberately currency-agnostic.
+could still detect. Amounts are labelled in euro, pound, or US dollar, selectable in the panel (the choice is cosmetic and affects no calculation).
 
 ## Saving, sharing, and resuming a project
 

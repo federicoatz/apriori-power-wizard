@@ -101,12 +101,21 @@ effect_comparison_values <- function(current, kind = c("magnitude", "ratio"),
 
 #' Format a money amount for display
 #'
-#' Deliberately currency-agnostic: the app has users in different
-#' currencies and no way to know which one is meant, so amounts are shown
-#' as plain formatted numbers with thousands separators and no symbol.
-#' @param x numeric
+#' @param x numeric amount
+#' @param symbol character, currency symbol to prefix (e.g. "\u20ac", "\u00a3",
+#'   "$"); "" gives a bare number. Prefixed rather than suffixed for all
+#'   supported currencies, which is the convention in English-language
+#'   academic writing even for the euro.
 #' @export
-format_money <- function(x) {
+format_money <- function(x, symbol = "") {
   if (is.null(x) || length(x) == 0 || is.na(x)) return("NA")
-  formatC(x, format = "f", digits = if (x >= 100) 0 else 2, big.mark = ",")
+  paste0(symbol, formatC(x, format = "f",
+                          digits = if (x >= 100) 0 else 2, big.mark = ","))
 }
+
+#' Currency choices offered by the budget panel, as symbol lookup
+#'
+#' Kept here rather than inline in the UI so the selectInput and the
+#' formatting helper can never drift apart.
+#' @export
+currency_symbols <- function() c(EUR = "\u20ac", GBP = "\u00a3", USD = "$")
