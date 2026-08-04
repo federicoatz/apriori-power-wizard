@@ -25,7 +25,8 @@ generate_power_curve <- function(family = c("two_means", "anova_factorial",
                                              "clustered_rct", "chisq",
                                              "correlation", "mcnemar", "tost",
                                              "ancova", "survival", "wilcoxon",
-                                             "rm_anova"),
+                                             "rm_anova", "clustered_binary",
+                                             "clustered_cat"),
                                   n_solution, n_range = NULL, n_points = 60,
                                   ...) {
   family <- match.arg(family)
@@ -55,7 +56,9 @@ generate_power_curve <- function(family = c("two_means", "anova_factorial",
     ancova         = function(n) do.call(power_ancova_at_n, c(list(n_per_group = n), extra)),
     survival       = function(n) do.call(power_survival_at_n, c(list(n_total = n), extra)),
     wilcoxon       = function(n) do.call(power_wilcoxon_at_n, c(list(n1 = n), extra)),
-    rm_anova       = function(n) do.call(power_rm_anova_at_n, c(list(n_total = n), extra))
+    rm_anova       = function(n) do.call(power_rm_anova_at_n, c(list(n_total = n), extra)),
+    clustered_binary = function(n) do.call(power_clustered_binary_at_n, c(list(n1 = n), extra)),
+    clustered_cat  = function(n) do.call(power_clustered_cat_at_n, c(list(n_total = n), extra))
   )
 
   powers <- vapply(grid, function(n) {

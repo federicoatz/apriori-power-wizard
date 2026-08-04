@@ -20,7 +20,8 @@ sensitivity_min_effect <- function(family = c("two_means", "anova_factorial",
                                                "clustered_rct", "chisq",
                                                "correlation", "mcnemar", "tost",
                                                "ancova", "survival", "wilcoxon",
-                                               "rm_anova"),
+                                               "rm_anova", "clustered_binary",
+                                               "clustered_cat"),
                                     n_max, ...) {
   family <- match.arg(family)
   extra <- list(...)
@@ -85,6 +86,14 @@ sensitivity_min_effect <- function(family = c("two_means", "anova_factorial",
     rm_anova = list(
       metric = "f",
       value = do.call(power_rm_anova_min_f, c(list(n_total = n_max), extra))
+    ),
+    clustered_binary = list(
+      metric = "h (individual-level, pre-design-effect)",
+      value = do.call(power_clustered_binary_min_h, c(list(n1 = n_max), extra))
+    ),
+    clustered_cat = list(
+      metric = "w (individual-level, pre-design-effect)",
+      value = do.call(power_clustered_cat_min_w, c(list(n_total = n_max), extra))
     )
   )
 }

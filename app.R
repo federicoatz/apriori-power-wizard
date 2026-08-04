@@ -111,6 +111,11 @@ analysis_choice_names <- list(
     icon("repeat", class = "choice-icon"),
     div(strong("Repeated-measures ANOVA"),
         p(class = "choice-desc", "The same participants measured 3+ times -- across conditions, rounds, or time points -- including whether that change differs between groups."))
+  ),
+  clustered_cat = div(class = "choice-card",
+    icon("diagram-project", class = "choice-icon"),
+    div(strong("Clustered: binary or categorical outcome"),
+        p(class = "choice-desc", "A yes/no or multi-category outcome when participants interact in matching groups/sessions, or whole groups are assigned together -- e.g. a cooperation rate by matching group."))
   )
 )
 
@@ -161,7 +166,8 @@ family_titles <- list(
   ancova = "ANCOVA (with a covariate)",
   survival = "Time-to-event (log-rank test)",
   wilcoxon = "Mann-Whitney (nonparametric)",
-  rm_anova = "Repeated-measures ANOVA"
+  rm_anova = "Repeated-measures ANOVA",
+  clustered_cat = "Clustered: binary or categorical outcome"
 )
 family_ui_fns <- list(
   two_means = mod_two_means_ui, anova_factorial = mod_anova_factorial_ui,
@@ -170,7 +176,8 @@ family_ui_fns <- list(
   clustered_rct = mod_clustered_ui, chisq = mod_chisq_ui,
   correlation = mod_correlation_ui, mcnemar = mod_mcnemar_ui, tost = mod_tost_ui,
   ancova = mod_ancova_ui, survival = mod_survival_ui,
-  wilcoxon = mod_wilcoxon_ui, rm_anova = mod_rm_anova_ui
+  wilcoxon = mod_wilcoxon_ui, rm_anova = mod_rm_anova_ui,
+  clustered_cat = mod_clustered_cat_ui
 )
 family_server_fns <- list(
   two_means = mod_two_means_server, anova_factorial = mod_anova_factorial_server,
@@ -179,7 +186,8 @@ family_server_fns <- list(
   clustered_rct = mod_clustered_server, chisq = mod_chisq_server,
   correlation = mod_correlation_server, mcnemar = mod_mcnemar_server, tost = mod_tost_server,
   ancova = mod_ancova_server, survival = mod_survival_server,
-  wilcoxon = mod_wilcoxon_server, rm_anova = mod_rm_anova_server
+  wilcoxon = mod_wilcoxon_server, rm_anova = mod_rm_anova_server,
+  clustered_cat = mod_clustered_cat_server
 )
 
 ui <- page_fluid(
@@ -377,7 +385,11 @@ ui <- page_fluid(
                 div(class = "field-hint", icon("circle-check"),
                     " A grouped design (matching groups/sessions, or cluster-randomized) with a continuous outcome -- see the recommendation below.")
               ),
-              conditionalPanel("input.dh_unit == 'cluster' && (input.dh_outcome == 'binary' || input.dh_outcome == 'categorical' || input.dh_outcome == 'time_to_event')",
+              conditionalPanel("input.dh_unit == 'cluster' && (input.dh_outcome == 'binary' || input.dh_outcome == 'categorical')",
+                div(class = "field-hint", icon("circle-check"),
+                    " A grouped design with a binary or categorical outcome -- see the recommendation below.")
+              ),
+              conditionalPanel("input.dh_unit == 'cluster' && input.dh_outcome == 'time_to_event'",
                 div(class = "field-hint", icon("triangle-exclamation"),
                     " This combination isn't covered by this wizard yet -- see the note below.")
               )
@@ -408,7 +420,7 @@ ui <- page_fluid(
     # DOI to point at. Linking the old one would send readers to a dead
     # record. Restore the DOI link here as soon as a new archive is minted.
     p(icon("quote-left"), " If you use this app in your research, please cite: ",
-      tags$em("Atzori, F. (2026). A Priori Power Analysis Wizard (Version v0.11.1) [Computer software]."),
+      tags$em("Atzori, F. (2026). A Priori Power Analysis Wizard (Version v0.12.0) [Computer software]."),
       " ",
       tags$a(href = "https://github.com/federicoatz/power-analysis-app",
              target = "_blank", rel = "noopener noreferrer",
@@ -936,13 +948,17 @@ server <- function(input, output, session) {
   # closed-form calculator for a continuous outcome (see clustered_rct).
   dh_unsupported <- reactive({
     identical(input$dh_unit, "cluster") &&
-      (input$dh_outcome %||% "") %in% c("binary", "categorical", "time_to_event")
+      identical(input$dh_outcome %||% "", "time_to_event")
   })
 
   recommended_family <- reactive({
     unit <- input$dh_unit %||% ""
     if (identical(unit, "cluster")) {
-      if (identical(input$dh_outcome, "continuous")) "clustered_rct" else NULL
+      switch(input$dh_outcome %||% "",
+        continuous = "clustered_rct",
+        binary = "clustered_cat",
+        categorical = "clustered_cat",
+        NULL)
     } else if (identical(unit, "individual")) {
       if (identical(input$dh_outcome, "continuous")) {
         switch(input$dh_continuous %||% "",
@@ -968,7 +984,7 @@ server <- function(input, output, session) {
     if (isTRUE(dh_unsupported())) {
       return(div(class = "well well-warning", icon("triangle-exclamation"),
         strong(" Not yet supported: "),
-        "This wizard doesn't currently include a closed-form calculator for a cluster-randomized design with a binary, categorical, or time-to-event outcome -- the math is meaningfully more involved than the continuous case implemented here. Consider consulting a statistician, or looking at a dedicated package such as R's clusterPower for this specific scenario."))
+        "This wizard doesn't currently include a closed-form calculator for a clustered design with a time-to-event outcome -- combining the design effect with the log-rank test's events-based sample size is meaningfully more involved than the cases implemented here. Consider consulting a statistician, or looking at a dedicated package such as R's clusterPower for this specific scenario."))
     }
     fam <- recommended_family()
     if (is.null(fam)) {
@@ -984,7 +1000,8 @@ server <- function(input, output, session) {
       ancova = "ANCOVA (with a covariate)",
       survival = "Time-to-event (log-rank test)",
       wilcoxon = "Mann-Whitney (nonparametric)",
-      rm_anova = "Repeated-measures ANOVA")
+      rm_anova = "Repeated-measures ANOVA",
+      clustered_cat = "Clustered: binary or categorical outcome")
     div(class = "well well-result",
       p(strong("Recommended analysis: "), label),
       actionButton("dh_use_recommendation", tagList(icon("check"), " Use this and start"), class = "btn-success")

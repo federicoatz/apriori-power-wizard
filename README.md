@@ -30,7 +30,10 @@ family:
    a longitudinal study), or a Wilcoxon-Mann-Whitney rank-sum test for
    two independent groups with a skewed, bounded, or ordinal outcome, or a
    repeated-measures ANOVA (the same participants measured three or more
-   times, including the within x between interaction of a mixed design).
+   times, including the within x between interaction of a mixed design), or
+   a clustered design with a binary or categorical outcome (e.g. a
+   cooperation rate measured on participants who interacted in matching
+   groups).
 2. **Design structure** -- for factorial ANOVA, the number of factors and
    levels, and (critically) which **focal contrast** power should be
    computed for: a specific main effect or the interaction. The app
@@ -258,6 +261,7 @@ power-analysis-app/
 │   ├── power_survival.R            # Schoenfeld (1983) log-rank events formula, base R only
 │   ├── power_wilcoxon.R            # Noether (1987) Mann-Whitney rank-sum formula, base R only
 │   ├── power_rm_anova.R            # Repeated-measures noncentral F with rho and sphericity correction, base R only
+│   ├── power_clustered_cat.R       # Design-effect inflation of the proportions / chi-square families
 │   ├── project_state.R             # Save/load/share-link JSON (de)serialization
 │   ├── power_curve.R               # Generic power-vs-N curve generator
 │   ├── sensitivity_analysis.R      # Generic inverse/minimum-detectable-effect
@@ -279,7 +283,8 @@ power-analysis-app/
 │   ├── mod_ancova.R
 │   ├── mod_survival.R
 │   ├── mod_wilcoxon.R
-│   └── mod_rm_anova.R
+│   ├── mod_rm_anova.R
+│   └── mod_clustered_cat.R
 ├── www/
 │   └── styles.css
 ├── tests/
@@ -542,6 +547,12 @@ additions -- this was a deliberate design constraint from the start.
   Carlo simulation before implementation; the app's own guided-mode text
   discloses that this formula is somewhat conservative for a strong
   hazard ratio combined with unequal allocation.)
+- Rao, J. N. K., & Scott, A. J. (1984). On chi-squared tests for multiway
+  contingency tables with cell proportions estimated from survey data.
+  *The Annals of Statistics*, 12(1), 46-60. (Referenced in
+  `R/power_clustered_cat.R` as the rigorous correction that the app's
+  design-effect inflation approximates to first order for clustered
+  categorical outcomes.)
 - Faul, F., Erdfelder, E., Lang, A.-G., & Buchner, A. (2007). G*Power 3: A
   flexible statistical power analysis program for the social, behavioral, and
   biomedical sciences. *Behavior Research Methods*, 39(2), 175-191. (Source of
