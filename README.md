@@ -1,6 +1,6 @@
 # A Priori Power Analysis Wizard
 
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.21804596.svg)](https://doi.org/10.5281/zenodo.21804596)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.21804595.svg)](https://doi.org/10.5281/zenodo.21804595)
 [![Run test suite](https://github.com/federicoatz/apriori-power-wizard/actions/workflows/test.yml/badge.svg)](https://github.com/federicoatz/apriori-power-wizard/actions/workflows/test.yml)
 [![License: MIT](https://img.shields.io/github/license/federicoatz/apriori-power-wizard)](LICENSE)
 [![R >= 4.1](https://img.shields.io/badge/R-%E2%89%A5%204.1-276DC3?logo=r)](https://www.r-project.org/)
