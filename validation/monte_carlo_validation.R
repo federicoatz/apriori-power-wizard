@@ -134,6 +134,71 @@ for (cfg in list(list(n1 = 40, p_sup = 0.65),
 }
 cat("\n")
 
+## ---- Wilcoxon-Mann-Whitney: robustness to the PARENT DISTRIBUTION -------
+## The point of parameterizing this family on p = P(X<Y) rather than on
+## Cohen's d is that p is what a rank test is actually sensitive to, and
+## needs no normality assumption to be well defined. This block checks that
+## claim the only way that is not circular: hold p_sup FIXED and vary the
+## shape of the parent distribution. Holding d fixed instead would be
+## near-tautological -- heavier tails at fixed d simply imply a different p,
+## so any power difference would just be that reparameterization showing up.
+##
+## For each parent the location shift is solved numerically so that
+## P(X < Y) equals the target EXACTLY: with a symmetric parent,
+##   P(X < Y) = int f(x) F(x + delta) dx,
+## which is inverted for delta by uniroot(). All three parents are scaled to
+## unit variance (irrelevant to a rank test, but it keeps the shifts
+## comparable). Laplace and logistic are the standard heavier-tailed
+## reference shapes; the outcomes that motivate reaching for a rank test in
+## the first place (contributions, bids, earnings) are heavier-tailed than
+## normal in exactly this direction.
+cat("Wilcoxon-Mann-Whitney: parent-shape robustness at fixed p_sup\n")
+set.seed(SEED)
+
+wmw_parents <- list(
+  normal   = list(r = function(n) rnorm(n),
+                  d = function(x) dnorm(x),
+                  p = function(x) pnorm(x)),
+  logistic = list(r = function(n) rlogis(n, scale = sqrt(3) / pi),
+                  d = function(x) dlogis(x, scale = sqrt(3) / pi),
+                  p = function(x) plogis(x, scale = sqrt(3) / pi)),
+  laplace  = list(r = function(n) { b <- 1 / sqrt(2); u <- runif(n) - 0.5
+                                    -b * sign(u) * log(1 - 2 * abs(u)) },
+                  d = function(x) { b <- 1 / sqrt(2); exp(-abs(x) / b) / (2 * b) },
+                  p = function(x) { b <- 1 / sqrt(2)
+                                    ifelse(x < 0, 0.5 * exp(x / b),
+                                           1 - 0.5 * exp(-x / b)) })
+)
+
+# location shift giving exactly the requested P(X < Y) under this parent
+wmw_delta_for <- function(par, target) {
+  p_sup_of <- function(delta)
+    stats::integrate(function(x) par$d(x) * par$p(x + delta), -Inf, Inf)$value
+  stats::uniroot(function(dl) p_sup_of(dl) - target, c(0, 6))$root
+}
+
+sim_wilcoxon_parent <- function(par, n1, delta, sig_level = 0.05, reps = 6000) {
+  rej <- 0L
+  for (i in seq_len(reps)) {
+    x <- par$r(n1); y <- par$r(n1) + delta
+    if (suppressWarnings(wilcox.test(y, x)$p.value) < sig_level) rej <- rej + 1L
+  }
+  rej / reps
+}
+
+for (cfg in list(list(n1 = 40, p_sup = 0.65), list(n1 = 40, p_sup = 0.70))) {
+  f <- power_wilcoxon_at_n(cfg$n1, cfg$p_sup)
+  for (nm in names(wmw_parents)) {
+    par <- wmw_parents[[nm]]
+    dl <- wmw_delta_for(par, cfg$p_sup)
+    s <- sim_wilcoxon_parent(par, cfg$n1, dl)
+    .report("Wilcoxon-MW parent",
+            sprintf("%s n1=%d p_sup=%.2f (shift=%.3f)", nm, cfg$n1, cfg$p_sup, dl),
+            f, s, 6000)
+  }
+}
+cat("\n")
+
 ## ---- Repeated-measures ANOVA (within main effect, compound symmetry) ---
 ## Condition means are spaced so their POPULATION sd equals f_target
 ## exactly; participant and residual variance are split so that

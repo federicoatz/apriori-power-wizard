@@ -126,7 +126,7 @@ rejection rate to the formula's predicted power.
 | 12 | McNemar's test | Monte Carlo (`stats::mcnemar.test()`) | see script output below | Large-sample approximation; small-n configurations can show a few points of deviation, disclosed in `R/power_mcnemar.R` |
 | 13 | TOST equivalence test | Monte Carlo (two one-sided t-tests) | see script output below | |
 | 14 | Repeated-measures ANOVA | Monte Carlo (manual sum-of-squares F-test under compound symmetry), plus an exact algebraic identity to the paired t-test at m=2 | see script output below | The m=2 identity is an exact regression test (`pwr::pwr.t.test(type="paired")` to 8 decimal places), not a simulation |
-| 15 | Wilcoxon-Mann-Whitney | Monte Carlo (`stats::wilcox.test()`) | see script output below | Asymptotic formula; conservative under heavier-tailed (non-normal) parents, which is the case that motivates using this test in the first place |
+| 15 | Wilcoxon-Mann-Whitney | Monte Carlo (`stats::wilcox.test()`), under normal parents and, separately, at fixed `p` across normal/logistic/Laplace parents | see script output below | Asymptotic formula, mildly conservative throughout; power is close to invariant to parent shape once `p` is held fixed, which is what justifies parameterizing on `p = P(X<Y)` rather than on Cohen's `d` |
 | 16 | Time-to-event (log-rank test) | Monte Carlo (`survival::survdiff()` on simulated exponential survival times) | see script output below | Schoenfeld approximation; documented to become conservative for a strong hazard ratio combined with unbalanced allocation |
 
 ## Reproducing the Monte Carlo checks
@@ -159,14 +159,14 @@ from scratch rather than take the historical claim on faith.
 
 ### Last verified run
 
-Captured 2026-08-05, app version 1.0.0, R 4.5.3 (re-run to confirm: the
+Captured 2026-08-05, app version 1.0.2, R 4.5.3 (re-run to confirm: the
 seed is fixed, so these exact numbers are reproducible). Re-run the
 command above for a current result; this snapshot exists so a reader can
 see what a passing run looks like without installing R first.
 
 ```
 A Priori Power Analysis Wizard -- Monte Carlo validation
-App version: 1.0.0 | R version: R version 4.5.3 (2026-03-11)
+App version: 1.0.2 | R version: R version 4.5.3 (2026-03-11)
 
 McNemar's test (Connor, 1987)
   [WATCH] McNemar                      n=100 p10=0.25 p01=0.10                formula=0.7241 sim=0.7384 diff=-0.0143 (2*SE=0.0098, reps=8000)
@@ -180,6 +180,15 @@ Wilcoxon-Mann-Whitney (Noether, 1987)
   [OK   ] Wilcoxon-Mann-Whitney        n1=40 p_sup=0.65                       formula=0.6420 sim=0.6468 diff=-0.0048 (2*SE=0.0123, reps=6000)
   [OK   ] Wilcoxon-Mann-Whitney        n1=60 p_sup=0.62                       formula=0.6243 sim=0.6150 diff=+0.0093 (2*SE=0.0125, reps=6000)
   [WATCH] Wilcoxon-Mann-Whitney        n1=30 p_sup=0.70                       formula=0.7653 sim=0.7768 diff=-0.0116 (2*SE=0.0108, reps=6000)
+
+Wilcoxon-Mann-Whitney: parent-shape robustness at fixed p_sup
+  [OK   ] Wilcoxon-MW parent           normal n1=40 p_sup=0.65 (shift=0.545)  formula=0.6420 sim=0.6468 diff=-0.0048 (2*SE=0.0123, reps=6000)
+  [OK   ] Wilcoxon-MW parent           logistic n1=40 p_sup=0.65 (shift=0.510) formula=0.6420 sim=0.6447 diff=-0.0027 (2*SE=0.0124, reps=6000)
+  [WATCH] Wilcoxon-MW parent           laplace n1=40 p_sup=0.65 (shift=0.446) formula=0.6420 sim=0.6580 diff=-0.0160 (2*SE=0.0122, reps=6000)
+  [WATCH] Wilcoxon-MW parent           normal n1=40 p_sup=0.70 (shift=0.742)  formula=0.8725 sim=0.8883 diff=-0.0158 (2*SE=0.0081, reps=6000)
+  [WATCH] Wilcoxon-MW parent           logistic n1=40 p_sup=0.70 (shift=0.697) formula=0.8725 sim=0.9000 diff=-0.0275 (2*SE=0.0077, reps=6000)
+  [WATCH] Wilcoxon-MW parent           laplace n1=40 p_sup=0.70 (shift=0.617) formula=0.8725 sim=0.8838 diff=-0.0113 (2*SE=0.0083, reps=6000)
+
 Repeated-measures ANOVA, within main effect (Cohen, 1988, ch. 8; G*Power 3 formulation)
   [OK   ] RM-ANOVA (within)            n=20 m=3 f=0.25 rho=0.50               formula=0.6505 sim=0.6548 diff=-0.0042 (2*SE=0.0150, reps=4000)
   [OK   ] RM-ANOVA (within)            n=15 m=4 f=0.25 rho=0.60               formula=0.6860 sim=0.6730 diff=+0.0130 (2*SE=0.0147, reps=4000)
@@ -194,14 +203,29 @@ Factorial ANOVA, one-way case, vs. pwr::pwr.anova.test() (Cohen, 1988, ch. 8)
   [OK   ] Factorial ANOVA (1-way)      k=5 n=10 f=0.30                        ours=0.324534 pwr=0.324534 diff=3.33e-16
 ```
 
-Three of eighteen checks landed in the `WATCH` band (McNemar at small n,
-Wilcoxon at one configuration); all three are small (1-2 percentage
-points), all three are in the direction the source code already documents
-(the formula being a large-sample approximation), and re-running with a
-different seed moves which specific configurations land in `WATCH` without
-changing that overall picture. None involve a family validated primarily
-against `pwr` (rows 1-9 above), where the tolerance is exact rather than
-simulation-based.
+Seven of twenty-four checks landed in the `WATCH` band (McNemar at small
+n, Wilcoxon at one configuration, and four of the six parent-shape
+checks). All are small (1-3 percentage points), and -- the part that
+matters -- every one of them has the simulated power *above* the formula's
+prediction, meaning the formula asks for a slightly larger sample than
+strictly necessary. That is the direction the source code already
+documents for these large-sample approximations, and the safe direction
+for a planning tool to err in. Re-running with a different seed moves
+which specific configurations land in `WATCH` without changing that
+picture. None involve a family validated primarily against `pwr` (rows 1-9
+above), where the tolerance is exact rather than simulation-based.
+
+The parent-shape block is a deliberately non-circular test of the
+Wilcoxon-Mann-Whitney family's *parameterization* rather than of its
+arithmetic. Because the formula takes p = P(X<Y) rather than Cohen's d,
+the claim that it needs no normality assumption can only be checked by
+holding p fixed and varying the shape of the parent distribution:
+comparing shapes at fixed d would be near-tautological, since heavier
+tails at fixed d simply imply a different p. For each parent the location
+shift is therefore solved numerically so that p is exactly on target. The
+result is that power is close to invariant to parent shape (.888/.900/.884
+for normal/logistic/Laplace at p = .70), which is the property that makes
+p the defensible input for a rank test.
 
 ## Accessibility
 
