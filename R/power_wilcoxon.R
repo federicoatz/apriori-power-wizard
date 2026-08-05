@@ -111,12 +111,14 @@ power_wilcoxon_n <- function(p_sup, sig_level = 0.05, power = 0.80,
   c_prop <- 1 / (1 + allocation_ratio)
 
   n_total_exact <- (za + zb)^2 / (12 * c_prop * (1 - c_prop) * (p_sup - 0.5)^2)
+  assert_solvable_n(n_total_exact, "probability of superiority")
   n1 <- round_up_n(n_total_exact * c_prop)
 
   achieved <- power_wilcoxon_at_n(n1, p_sup, sig_level, alternative, allocation_ratio)
   while (is.na(achieved) || achieved < power) {
     n1 <- n1 + 1
     achieved <- power_wilcoxon_at_n(n1, p_sup, sig_level, alternative, allocation_ratio)
+    assert_solvable_n(n1, "probability of superiority")
   }
   n2 <- round_up_n(n1 * allocation_ratio)
 

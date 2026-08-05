@@ -62,3 +62,59 @@ test_that("d_to_or / or_to_d round-trip and match Chinn (2000) at Cohen's medium
   expect_equal(or, exp(d_medium * pi / sqrt(3)), tolerance = 1e-10)
   expect_equal(or_to_d(or), d_medium, tolerance = 1e-8)
 })
+
+# --- Sign handling -------------------------------------------------------
+# Both bugs below shipped in v1.0.3 and produced wrong answers silently
+# rather than failing, which is why they are pinned here.
+
+test_that("safeguard_shrink moves toward the null from either side and never crosses it", {
+  # positive and negative estimates of equal magnitude must shrink
+  # symmetrically, never flip sign, never grow
+  pos <- safeguard_shrink( 0.50, se = 0.10, conf_level = 0.80)
+  neg <- safeguard_shrink(-0.50, se = 0.10, conf_level = 0.80)
+  expect_gt(pos, 0);  expect_lt(pos, 0.50)
+  expect_lt(neg, 0);  expect_gt(neg, -0.50)
+  expect_equal(pos, -neg, tolerance = 1e-12)
+
+  # a bound that would cross the null is clamped just short of it,
+  # on the correct side
+  expect_gt(safeguard_shrink( 0.01, se = 5, conf_level = 0.95), 0)
+  expect_lt(safeguard_shrink(-0.01, se = 5, conf_level = 0.95), 0)
+})
+
+test_that("a protective hazard ratio never comes back as a harmful one", {
+  # HR = 0.85 from 40 events has |log HR| / SE < z even at the 80% default,
+  # so the naive lower bound crosses HR = 1 and would return a plausible
+  # sample size for an effect in the opposite direction.
+  for (cl in c(0.80, 0.95)) {
+    hr <- safeguard_ci_logHR(0.85, events_published = 40, conf_level = cl)$hr_safeguard
+    expect_lt(hr, 1)
+  }
+  # and a harmful one stays harmful
+  expect_gt(safeguard_ci_logHR(1.80, events_published = 60)$hr_safeguard, 1)
+})
+
+test_that("a negative published correlation is shrunk toward zero, not away from it", {
+  pos <- safeguard_ci_r( 0.30, n = 60)$r_safeguard
+  neg <- safeguard_ci_r(-0.30, n = 60)$r_safeguard
+  expect_gt(pos, 0); expect_lt(pos, 0.30)
+  expect_lt(neg, 0); expect_gt(neg, -0.30)
+  expect_equal(pos, -neg, tolerance = 1e-12)
+})
+
+test_that("a diverged sample size raises a clean error instead of hanging", {
+  # near-null effects reach the unbounded refinement loops in these
+  # families; each must fail fast rather than walk upward forever
+  expect_error(power_survival_n(hr = 0.9999, p_event = 0.5), "indistinguishable from no effect")
+  expect_error(power_wilcoxon_n(p_sup = 0.50001), "indistinguishable from no effect")
+  expect_error(power_ancova_n(k = 2, f_target = 1e-6, r_cov = 0.5), "indistinguishable from no effect")
+  # and normal cases are untouched
+  expect_gt(power_survival_n(hr = 0.60, p_event = 0.5)$n_total, 0)
+})
+
+test_that("published Table 3 safeguard values are unchanged by the sign fix", {
+  expect_equal(safeguard_ci_d(0.40, 50, 50)$d_safeguard, 0.230, tolerance = 1e-3)
+  expect_equal(safeguard_ci_r(0.516, 55)$r_safeguard, 0.425, tolerance = 1e-3)
+  expect_equal(safeguard_ci_h(1.049984, 152, 155)$h_safeguard, 0.954, tolerance = 1e-3)
+  expect_equal(safeguard_ci_d(1.344628, 72, 72)$d_safeguard, 1.189, tolerance = 1e-3)
+})

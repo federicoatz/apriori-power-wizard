@@ -80,12 +80,14 @@ power_survival_n <- function(hr, p_event, alloc_ratio = 1, sig_level = 0.05,
   zb <- stats::qnorm(power)
   d_events <- (1 + k)^2 / k * (za + zb)^2 / (log(hr))^2
   n_total_exact <- d_events / p_event
+  assert_solvable_n(n_total_exact, "hazard ratio")
   n_total <- round_up_n(n_total_exact)
 
   achieved <- power_survival_at_n(n_total, hr, p_event, k, sig_level, tails)
   while (is.na(achieved) || achieved < power) {
     n_total <- n_total + 1
     achieved <- power_survival_at_n(n_total, hr, p_event, k, sig_level, tails)
+    assert_solvable_n(n_total, "hazard ratio")
   }
 
   n1 <- round_up_n(n_total / (1 + k))

@@ -17,6 +17,50 @@
 ## calculation.
 ## -----------------------------------------------------------------------
 
+#' Shrink an estimate toward the null by z*SE, never past it
+#'
+#' Every safeguard bound in this file is "the confidence-interval edge that
+#' makes the effect look SMALLER". For a positive estimate that is the lower
+#' bound; for a negative one it is the UPPER bound. Taking the lower bound
+#' unconditionally, as an earlier version of this file did, is wrong in two
+#' distinct ways for a negatively-signed effect:
+#'
+#'   1. It moves the estimate AWAY from the null (a published r = -.30
+#'      became -.40), which is anti-conservative -- the opposite of what
+#'      safeguard power is for.
+#'   2. Combined with a `max(bound, 1e-4)` floor it then silently flipped
+#'      the sign, or (in the hazard-ratio case, which has no such floor)
+#'      crossed HR = 1 outright and returned a finite, entirely
+#'      plausible-looking N for an effect in the OPPOSITE direction from
+#'      the one hypothesized. A published HR of 0.85 from 40 events came
+#'      back as a safeguard HR of 1.11 at the 80% default.
+#'
+#' The bound is additionally clamped so it can never reach or cross the
+#' null. When it would, the estimate is left just short of it: the required
+#' N then diverges, which is the honest answer (the prior study cannot
+#' support a directional claim at this confidence level) and is what the
+#' results step's own guard detects and explains to the user.
+#'
+#' @param estimate numeric, the published point estimate, on a scale whose
+#'   null value is 0 (d, h, w, Fisher's z, or log HR -- not HR itself)
+#' @param se numeric > 0, its standard error on that same scale
+#' @param conf_level numeric in (0,1)
+#' @param one_sided logical, TRUE for the one-sided safeguard bound
+#' @param floor_abs numeric > 0, how close to the null the bound may get
+#' @return numeric, the shrunk estimate, with the same sign as `estimate`
+#' @export
+safeguard_shrink <- function(estimate, se, conf_level = 0.80,
+                              one_sided = TRUE, floor_abs = 1e-4) {
+  stopifnot(se > 0, conf_level > 0, conf_level < 1, floor_abs > 0)
+  z <- if (one_sided) {
+    stats::qnorm(conf_level)
+  } else {
+    stats::qnorm(1 - (1 - conf_level) / 2)
+  }
+  if (estimate >= 0) max(estimate - z * se, floor_abs)
+  else               min(estimate + z * se, -floor_abs)
+}
+
 #' Confidence interval around a published Cohen's d
 #'
 #' Uses the standard (large-sample normal-approximation) sampling variance
@@ -59,12 +103,7 @@ safeguard_ci_d <- function(d_published, n1, n2, conf_level = 0.80,
     upper = upper,
     conf_level = conf_level,
     one_sided = one_sided,
-    # The safeguard effect size is floored at a tiny positive number so
-    # downstream N-solvers don't choke on d <= 0 (a published effect whose
-    # lower CI bound crosses zero signals a genuinely under-informative
-    # prior study; the UI surfaces this as an explicit warning rather than
-    # silently returning an enormous or undefined N).
-    d_safeguard = max(lower, 1e-4)
+    d_safeguard = safeguard_shrink(d_published, se, conf_level, one_sided)
   )
 }
 
@@ -97,7 +136,7 @@ safeguard_ci_h <- function(h_published, n1, n2, conf_level = 0.80,
   list(
     h_published = h_published, se = se, lower = lower, upper = upper,
     conf_level = conf_level, one_sided = one_sided,
-    h_safeguard = max(lower, 1e-4)
+    h_safeguard = safeguard_shrink(h_published, se, conf_level, one_sided)
   )
 }
 
@@ -129,10 +168,14 @@ safeguard_ci_r <- function(r_published, n, conf_level = 0.80, one_sided = TRUE) 
     lower_z <- z - zcrit * se
   }
   lower_r <- tanh(lower_z)
+  # Shrinking happens on the Fisher z scale (where the SE is defined and
+  # free of the estimate) and is transformed back afterwards. A negative
+  # published r is shrunk UPWARD toward zero, not downward away from it.
+  safeguard_r <- tanh(safeguard_shrink(z, se, conf_level, one_sided))
   list(
     r_published = r_published, se_z = se, lower = lower_r,
     conf_level = conf_level, one_sided = one_sided,
-    r_safeguard = max(lower_r, 1e-4)
+    r_safeguard = safeguard_r
   )
 }
 
@@ -172,7 +215,7 @@ safeguard_ci_w <- function(w_published, n_published, df, conf_level = 0.80,
   list(
     w_published = w_published, se = se, lower = lower, upper = upper,
     conf_level = conf_level, one_sided = one_sided,
-    w_safeguard = max(lower, 1e-4)
+    w_safeguard = safeguard_shrink(w_published, se, conf_level, one_sided)
   )
 }
 
@@ -206,16 +249,14 @@ safeguard_ci_logHR <- function(hr_published, events_published, alloc_ratio = 1,
   k <- alloc_ratio
   log_hr <- log(hr_published)
   se <- sqrt((1 + k)^2 / (k * events_published))
-  z <- if (one_sided) stats::qnorm(conf_level) else stats::qnorm(1 - (1 - conf_level) / 2)
-  # The safeguard bound is the CI edge CLOSER to 1 (the conservative,
-  # less-protective direction), on whichever side of 1 the published HR
-  # falls -- mirroring how every other safeguard_ci_*() here takes the
-  # bound that shrinks the apparent effect, never the one that inflates it.
-  if (hr_published < 1) {
-    bound_log <- log_hr + z * se
-  } else {
-    bound_log <- log_hr - z * se
-  }
+  # Shrinking happens on the LOG HR scale, whose null is 0 (HR = 1) and on
+  # which the SE is defined. safeguard_shrink() moves the estimate toward
+  # that null from whichever side it starts on, and -- critically here --
+  # clamps it just short of crossing. Without the clamp a protective
+  # HR = 0.85 from 40 events came back as a safeguard HR of 1.11 even at
+  # the 80% default: a finite, plausible-looking sample size for an effect
+  # in the opposite direction from the one being planned for.
+  bound_log <- safeguard_shrink(log_hr, se, conf_level, one_sided)
   list(
     hr_published = hr_published, se_log_hr = se,
     conf_level = conf_level, one_sided = one_sided,

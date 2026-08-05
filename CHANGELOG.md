@@ -10,6 +10,39 @@ minor = new feature/family, major reserved for a future breaking redesign).
 > notes in `CITATION.cff`). Every entry below corresponds to a real tagged
 > release on the current history; nothing has been renumbered or backdated.
 
+## [1.0.4] - 2026-08-05
+
+Two silent-wrong-answer bugs in the safeguard-power branch, both of which
+returned a plausible number rather than failing.
+
+- **A safeguard bound could cross the null and flip the sign of the
+  effect.** The bound is the confidence-interval edge that shrinks the
+  effect, but nothing stopped it crossing zero. For the hazard-ratio
+  family, which has no floor, a published `HR = 0.85` from 40 events came
+  back as a safeguard `HR = 1.11` *at the 80% default* -- a finite,
+  entirely reasonable-looking sample size for detecting harm when the
+  user was planning for benefit. Bounds are now clamped just short of the
+  null on the side they started from.
+- **A negatively signed estimate was shrunk away from the null, not
+  toward it.** All five constructions took the *lower* bound
+  unconditionally, so a published `r = -.30` became `-.40` (a larger
+  effect, the opposite of the correction's purpose) before a
+  `max(bound, 1e-4)` floor wiped it out to `+0.0001`. Both are fixed by a
+  single shared helper, `safeguard_shrink()`, which always moves toward
+  the null from whichever side the estimate is on.
+- **Diverged sample sizes no longer hang the app.** Three families
+  (survival, Wilcoxon-Mann-Whitney, ANCOVA) refined a closed-form
+  starting value upward one participant at a time with no upper bound, so
+  a near-null effect -- now reachable precisely *because* the clamp above
+  works correctly -- walked forever instead of returning. They now fail
+  fast via `assert_solvable_n()`, and ANCOVA additionally translates
+  `pwr`'s opaque "f() values at end points not of opposite sign" into the
+  same message. The results step's guard turns that into an explanation.
+- 23 regression tests pin all of the above (460 total, from 437).
+
+Published values in the manuscript are unaffected: every positively
+signed case is numerically unchanged.
+
 ## [1.0.3] - 2026-08-05
 
 - **Guard the safeguard-power branch against an uninformative prior

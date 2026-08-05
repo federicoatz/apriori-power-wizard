@@ -65,9 +65,18 @@ power_ancova_at_n <- function(n_per_group, k, f_target, r_cov = 0, sig_level = 0
 power_ancova_n <- function(k, f_target, r_cov = 0, sig_level = 0.05, power = 0.80) {
   stopifnot(k >= 2, power > 0, power < 1)
   f2_adj <- .ancova_f2_adj(f_target, r_cov)
-  fit <- pwr::pwr.f2.test(u = k - 1, f2 = f2_adj, sig.level = sig_level, power = power)
+  # pwr's own root-finder gives up with "f() values at end points not of
+  # opposite sign" when f2 is small enough that no N in its search range
+  # reaches the target power. That is the same divergence assert_solvable_n()
+  # reports elsewhere, so translate it rather than letting an opaque
+  # numerical message reach the user.
+  fit <- tryCatch(
+    pwr::pwr.f2.test(u = k - 1, f2 = f2_adj, sig.level = sig_level, power = power),
+    error = function(e) assert_solvable_n(Inf, "effect size f")
+  )
   # fit$v = N_total - k - 1  =>  N_total = v + k + 1
   n_total_exact <- fit$v + k + 1
+  assert_solvable_n(n_total_exact, "effect size f")
   n_per_group <- round_up_n(n_total_exact / k)
   n_total <- n_per_group * k
 
@@ -76,6 +85,7 @@ power_ancova_n <- function(k, f_target, r_cov = 0, sig_level = 0.05, power = 0.8
     n_per_group <- n_per_group + 1
     n_total <- n_per_group * k
     achieved <- power_ancova_at_n(n_per_group, k, f_target, r_cov, sig_level)
+    assert_solvable_n(n_total, "effect size f")
   }
 
   list(

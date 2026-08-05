@@ -119,3 +119,41 @@ format_money <- function(x, symbol = "") {
 #' formatting helper can never drift apart.
 #' @export
 currency_symbols <- function() c(EUR = "\u20ac", GBP = "\u00a3", USD = "$")
+
+#' Refuse to solve for a sample size that has diverged
+#'
+#' Several families refine a closed-form starting value upward one
+#' participant at a time until the achieved power meets the target. That
+#' loop is fast and safe whenever the starting value is close, which it is
+#' for any realistic effect size -- but it has no natural upper bound, so an
+#' effect size arbitrarily close to the null sends it either to an
+#' astronomically large starting point or into an unbounded walk, and the
+#' app hangs rather than returning anything.
+#'
+#' Near-null effects are reachable in normal use: the safeguard-power branch
+#' shrinks a published estimate toward the null by z*SE, so a sufficiently
+#' imprecise prior study (or a high confidence level) legitimately produces
+#' one. See safeguard_shrink() in R/safeguard_power.R.
+#'
+#' The cap is deliberately far above any feasible study rather than tuned to
+#' this app's audience: the point is to convert a hang into a clean error
+#' that the calling module can catch and explain, not to second-guess what
+#' sample size a user is allowed to ask for.
+#'
+#' @param n numeric, a candidate sample size
+#' @param what character, the input to name in the error message
+#' @param max_n numeric, the largest sample size treated as solvable
+#' @return invisible(TRUE); raises an error otherwise
+#' @export
+assert_solvable_n <- function(n, what = "effect size", max_n = 1e7) {
+  if (!is.finite(n) || n > max_n) {
+    stop(sprintf(
+      paste0("Required sample size exceeds %s, which means the %s given is ",
+             "indistinguishable from no effect at all. Increase it, or ",
+             "(if it came from the safeguard branch) lower the confidence ",
+             "level or use a stated smallest effect of interest instead."),
+      format(max_n, big.mark = ",", scientific = FALSE), what),
+      call. = FALSE)
+  }
+  invisible(TRUE)
+}
