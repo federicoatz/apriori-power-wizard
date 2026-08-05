@@ -1,10 +1,6 @@
 # A Priori Power Analysis Wizard
 
-<!-- Zenodo DOI badge removed for now: the project's earlier Zenodo records were
-     withdrawn in August 2026 when the repository history was rebuilt, so every
-     previous DOI (concept DOI included) resolves to a "record deleted"
-     tombstone. Restore the badge once the GitHub-Zenodo integration is
-     re-established and a new DOI is minted. -->
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.21804596.svg)](https://doi.org/10.5281/zenodo.21804596)
 
 A step-by-step Shiny application that guides researchers in experimental
 economics and behavioral science through an a priori (before data

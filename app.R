@@ -465,18 +465,12 @@ ui <- page_fluid(
       tags$a(href = "https://github.com/federicoatz/apriori-power-wizard/issues/new?template=bug_report.yml",
              target = "_blank", rel = "noopener noreferrer", "Report a problem"),
       " -- the form asks for the app version and family, which are usually enough to reproduce it."),
-    # NOTE: the Zenodo DOI is deliberately omitted right now. The previous
-    # records were withdrawn (tombstoned) in August 2026 when the repository
-    # history was rebuilt, and the GitHub-Zenodo integration has not yet been
-    # re-established for the new repository -- so there is currently no live
-    # DOI to point at. Linking the old one would send readers to a dead
-    # record. Restore the DOI link here as soon as a new archive is minted.
     p(icon("quote-left"), " If you use this app in your research, please cite: ",
       tags$em(sprintf("Atzori, F. (2026). A Priori Power Analysis Wizard (Version v%s) [Computer software].", APP_VERSION)),
       " ",
-      tags$a(href = "https://github.com/federicoatz/apriori-power-wizard",
+      tags$a(href = "https://doi.org/10.5281/zenodo.21804596",
              target = "_blank", rel = "noopener noreferrer",
-             "https://github.com/federicoatz/apriori-power-wizard"))
+             "https://doi.org/10.5281/zenodo.21804596"))
   ),
 
   # =====================================================================
