@@ -10,6 +10,12 @@ minor = new feature/family, major reserved for a future breaking redesign).
 > notes in `CITATION.cff`). Every entry below corresponds to a real tagged
 > release on the current history; nothing has been renumbered or backdated.
 
+## [1.0.2] - 2026-08-05
+
+- Link the SSRN working paper describing the tool's design and validation
+  from the README, `CITATION.cff` (as a `references` entry), and the app's
+  own footer.
+
 ## [1.0.1] - 2026-08-05
 
 Reviewer-facing polish: a faster path to running the app locally, and the
