@@ -736,3 +736,7 @@ If you use this app in your research, please cite it -- see
 [CITATION.cff](CITATION.cff) for the machine-readable citation record
 (also picked up automatically by GitHub's "Cite this repository" button
 and by Zenodo).
+
+A working paper describing the design and validation behind the tool is
+available on SSRN:
+[papers.ssrn.com/sol3/papers.cfm?abstract_id=7237018](https://papers.ssrn.com/sol3/papers.cfm?abstract_id=7237018).

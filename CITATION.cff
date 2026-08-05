@@ -26,3 +26,16 @@ keywords:
   - experimental economics
   - behavioral science
   - R Shiny
+references:
+  - type: article
+    title: >-
+      A Priori Power Analysis Wizard: A Guided Interface for Choosing and
+      Justifying Sample-Size Calculations in Behavioral Science
+    authors:
+      - family-names: "Atzori"
+        given-names: "Federico"
+        affiliation: "University of Cagliari"
+    url: "https://papers.ssrn.com/sol3/papers.cfm?abstract_id=7237018"
+    notes: >-
+      Working paper describing the design and validation of this software;
+      posted to SSRN 2026-08-05, not yet peer-reviewed.

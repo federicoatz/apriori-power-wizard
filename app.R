@@ -470,7 +470,11 @@ ui <- page_fluid(
       " ",
       tags$a(href = "https://doi.org/10.5281/zenodo.21804596",
              target = "_blank", rel = "noopener noreferrer",
-             "https://doi.org/10.5281/zenodo.21804596"))
+             "https://doi.org/10.5281/zenodo.21804596")),
+    p(icon("file-lines"), " A working paper describing the design and validation behind this tool is available on SSRN: ",
+      tags$a(href = "https://papers.ssrn.com/sol3/papers.cfm?abstract_id=7237018",
+             target = "_blank", rel = "noopener noreferrer",
+             "papers.ssrn.com/sol3/papers.cfm?abstract_id=7237018"))
   ),
 
   # =====================================================================
