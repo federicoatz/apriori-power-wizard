@@ -10,6 +10,32 @@ minor = new feature/family, major reserved for a future breaking redesign).
 > notes in `CITATION.cff`). Every entry below corresponds to a real tagged
 > release on the current history; nothing has been renumbered or backdated.
 
+## [1.0.3] - 2026-08-05
+
+- **Guard the safeguard-power branch against an uninformative prior
+  study.** The safeguard bound is `estimate - z * SE`, so it collapses
+  toward zero as the *original* study's t statistic approaches z, and the
+  required N (which goes as 1/effect²) diverges. At the 80% default this
+  needs t <= 0.84 and is unreachable for a published result, but the
+  confidence level is a user-facing slider: at 95% the threshold rises to
+  t <= 1.65, which a marginally significant prior study can sit below.
+  Both failure modes were silent -- either an absurd recommendation
+  (N = 12,968 for d = 0.40 from n = 50/group at 95%) or a root-finder
+  error that the surrounding `tryCatch` swallowed, leaving a blank panel.
+  The results step now detects this and explains that the prior study is
+  too imprecise to power from at the requested level, pointing to the
+  lower default or the SESOI branch. Checked on the solved N rather than
+  on any one effect-size metric, so it covers all sixteen families from
+  one place.
+- **Flag the normality assumption in the Wilcoxon-Mann-Whitney
+  d-to-p converter.** The power formula is close to invariant to the
+  shape of the outcome distribution once P(X<Y) is fixed, which is why
+  this family is parameterized on it. But `d_to_p_superiority()` is
+  `pnorm(d/sqrt(2))`, a normal-theory identity, so a user arriving via a
+  published Cohen's d silently re-imports at the conversion step exactly
+  the assumption the rest of the route avoids. The effect-size step now
+  says so and points to stating P(X<Y) directly.
+
 ## [1.0.2] - 2026-08-05
 
 - Link the SSRN working paper describing the tool's design and validation

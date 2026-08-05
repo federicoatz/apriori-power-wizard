@@ -147,15 +147,41 @@ mod_wilcoxon_server <- function(id) {
       !is.null(p) && !is.na(p) && p > 0.5 && p < 1
     })
 
+    # TRUE when p was reached by converting a d rather than stated directly.
+    # This matters more than it looks: the power formula itself is close to
+    # invariant to the shape of the outcome distribution once p is fixed
+    # (see validation/monte_carlo_validation.R, parent-shape block), which
+    # is the whole reason this family is parameterized on p. But
+    # d_to_p_superiority() is p = pnorm(d/sqrt(2)), which is a NORMAL-theory
+    # identity. So a user arriving via a d re-imports at the conversion step
+    # exactly the distributional assumption the rest of the route avoids --
+    # and does so silently, since the converted p looks like any other p.
+    used_d_conversion <- reactive({
+      branch <- input$es_branch %||% "sesoi"
+      branch %in% c("cohen", "safeguard") ||
+        (identical(branch, "sesoi") && identical(input$sesoi_mode %||% "psup", "d"))
+    })
+
     output$psup_summary <- renderUI({
       p <- tryCatch(effect_value(), error = function(e) NA_real_)
       if (is.na(p) || p <= 0.5) {
         return(div(class = "well well-warning", icon("triangle-exclamation"),
           " The effect must correspond to a probability of superiority different from 0.5 -- exactly 0.5 means the two groups are indistinguishable and can never be detected at any sample size."))
       }
-      div(class = "well well-result", icon("circle-check"),
-          sprintf(" Planning for P(X < Y) = %.3f (equivalent to Cohen's d = %.3f under normality).",
-                  p, p_superiority_to_d(p)))
+      tagList(
+        div(class = "well well-result", icon("circle-check"),
+            sprintf(" Planning for P(X < Y) = %.3f (equivalent to Cohen's d = %.3f under normality).",
+                    p, p_superiority_to_d(p))),
+        if (isTRUE(used_d_conversion())) {
+          div(class = "well well-warning", icon("triangle-exclamation"),
+              HTML(" This P(X &lt; Y) was converted from a standardized mean difference using
+                    <em>p</em> = &Phi;(<em>d</em>/&radic;2), which assumes the outcome is normally
+                    distributed. The power calculation itself does not need that assumption, but
+                    this conversion does. If your outcome is skewed, bounded, or piles up at zero
+                    -- the usual reason for choosing a rank test -- prefer stating P(X &lt; Y)
+                    directly: it is the quantity this test is actually sensitive to."))
+        }
+      )
     })
 
     effect_branch_details <- reactive({

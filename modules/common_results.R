@@ -35,6 +35,7 @@ results_panel_ui <- function(ns) {
         "detect?'")
     ),
 
+    uiOutput(ns("safeguard_uninformative_note")),
     uiOutput(ns("value_boxes")),
     div(class = "well well-result", uiOutput(ns("n_summary"))),
 
@@ -705,6 +706,55 @@ wire_results_server <- function(input, output, session, family,
   # many you must recruit to end up with that many. Shared across every
   # family via the same params-step input, exactly like the Bonferroni
   # control.
+  # ---- Safeguard branch: is the prior study informative enough? --------
+  # The safeguard bound is published_estimate - z_gamma * SE. Since
+  # SE ~= estimate / t, that bound is approximately estimate * (1 - z/t),
+  # so it collapses toward zero as the ORIGINAL study's t statistic
+  # approaches z_gamma -- and the required N, which goes as 1/effect^2,
+  # diverges. At the 80% default (z = 0.84) this needs t <= 0.84 and is
+  # effectively unreachable for a published result, but the confidence
+  # level is a user-facing slider: at 95% the threshold rises to t <= 1.65,
+  # which a marginally significant prior study genuinely can sit below,
+  # especially when the user is typing numbers off an abstract.
+  #
+  # Without this guard the two failure modes are both silent: the solver
+  # either returns an absurd N (12,968 for d = 0.40 from n = 50/group at
+  # 95%) or throws a uniroot "values at end points not of opposite sign"
+  # error that the surrounding tryCatch swallows, leaving a blank panel.
+  # The check is deliberately on the OUTCOME rather than on any one
+  # effect-size metric, so it covers all sixteen families from this one
+  # place without needing a metric-specific standard error here.
+  # 10,000 rather than a larger round number because this app's audience
+  # recruits paid participants (hence the budget panel below): a
+  # five-figure N is already far outside anything fundable here, so a
+  # recommendation that large is much more likely to be signalling an
+  # uninformative prior than a genuinely feasible plan. The note is
+  # advisory and sits ABOVE the number rather than replacing it, so an
+  # over-eager threshold costs the user nothing.
+  IMPLAUSIBLE_N <- 10000L
+  output$safeguard_uninformative_note <- renderUI({
+    if (!identical(input$es_branch %||% "sesoi", "safeguard")) return(NULL)
+    res <- tryCatch(result_r(), error = function(e) NULL)
+    n_tot <- if (is.null(res)) NA_integer_ else (res$n_total %||% res$n %||% NA_integer_)
+    solved <- !is.null(res) && !is.na(n_tot)
+    if (solved && n_tot < IMPLAUSIBLE_N) return(NULL)
+
+    cl <- as.numeric(input$sg_conf_level %||% 0.80)
+    div(class = "well well-warning", icon("triangle-exclamation"),
+        HTML(sprintf(
+          " <strong>This prior study may be too imprecise to power from at a %.0f%% safeguard
+           level.</strong> Its reported effect is small relative to its own uncertainty, so the
+           lower confidence bound has collapsed toward zero and the required sample size %s.
+           This is the safeguard procedure working as intended rather than a calculation error:
+           it is telling you the original evidence is too weak to plan on.
+           Either lower the confidence level (the 80%% default is less demanding), or switch to
+           the smallest-effect-of-interest branch, which does not depend on a prior estimate
+           at all.",
+          cl * 100,
+          if (solved) sprintf("has grown to %s", format(n_tot, big.mark = ","))
+          else "grows beyond what can be solved")))
+  })
+
   attrition_rate <- reactive(safe_numeric(input$attrition, 0, 0.95, 0))
   n_recruit <- reactive({
     res <- tryCatch(result_r(), error = function(e) NULL)
