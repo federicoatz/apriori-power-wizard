@@ -1,0 +1,35 @@
+Package: aprioripowerwizard
+Type: project
+Title: A Priori Power Analysis Wizard
+Version: 1.0.1
+Authors@R: person("Federico", "Atzori", role = c("aut", "cre"),
+    comment = c(affiliation = "University of Cagliari"))
+Description: A step-by-step Shiny application that guides researchers in
+    experimental economics and behavioral science through an a priori
+    (before data collection) power analysis to determine required sample
+    size, across sixteen closed-form analysis families. Not distributed as
+    an installable package; this file documents runtime dependencies and
+    metadata for renv and for reviewers, mirroring the version pinned in
+    CITATION.cff.
+License: MIT + file LICENSE
+Depends: R (>= 4.1.0)
+Imports:
+    shiny,
+    bslib,
+    htmltools,
+    pwr,
+    ggplot2,
+    survival,
+    jsonlite
+Suggests:
+    plotly,
+    htmlwidgets,
+    rmarkdown,
+    tinytex,
+    testthat (>= 3.0.0),
+    chromote,
+    httpuv,
+    shinylive
+Encoding: UTF-8
+URL: https://github.com/federicoatz/apriori-power-wizard, https://federicoatz.com/apriori-power-wizard/
+BugReports: https://github.com/federicoatz/apriori-power-wizard/issues

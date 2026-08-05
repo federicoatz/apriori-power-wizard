@@ -10,6 +10,34 @@ minor = new feature/family, major reserved for a future breaking redesign).
 > notes in `CITATION.cff`). Every entry below corresponds to a real tagged
 > release on the current history; nothing has been renumbered or backdated.
 
+## [1.0.1] - 2026-08-05
+
+Reviewer-facing polish: a faster path to running the app locally, and the
+metadata files reviewers look for by convention.
+
+- **README**: added a "Quick start" section right after the title (clone,
+  `renv::restore()`, `runApp()`) so a reviewer doesn't have to read the
+  full "Reproducibility" section just to get the app running, plus three
+  new badges (CI status, license, minimum R version) alongside the
+  existing Zenodo DOI badge.
+- **Added `CONTRIBUTING.md`**: coding style, the file-per-family pattern
+  for adding a new analysis family, how to run the tests, and the pull
+  request process -- surfaced automatically by GitHub's issue/PR UI,
+  unlike the equivalent prose that used to live only inside the README.
+- **Added `DESCRIPTION`**: documents runtime dependencies (`Imports`/
+  `Suggests`), license, and author metadata in the format reviewers
+  expect from an R codebase, without turning this into an installable
+  package. Fixed a real bug this introduced: `renv` infers a `package`
+  vs. `project` layout from `DESCRIPTION`'s presence, and by default
+  treats anything with a `Package:` field as a package, which switches
+  `renv::restore()`/`renv::status()` to an external, cache-keyed library
+  path instead of this repository's committed-empty, locally-populated
+  `renv/library/` -- silently breaking the reproducibility workflow
+  documented in "Reproducibility" for anyone who added a plain
+  `DESCRIPTION`. Setting `Type: project` explicitly keeps `renv` on the
+  original, project-local library path; `renv::status()` confirmed clean
+  and the full test suite confirmed passing after the fix.
+
 ## [1.0.0] - 2026-08-05
 
 First public 1.0.0: the core promise (route from a research question to a

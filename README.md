@@ -1,10 +1,32 @@
 # A Priori Power Analysis Wizard
 
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.21804596.svg)](https://doi.org/10.5281/zenodo.21804596)
+[![Run test suite](https://github.com/federicoatz/apriori-power-wizard/actions/workflows/test.yml/badge.svg)](https://github.com/federicoatz/apriori-power-wizard/actions/workflows/test.yml)
+[![License: MIT](https://img.shields.io/github/license/federicoatz/apriori-power-wizard)](LICENSE)
+[![R >= 4.1](https://img.shields.io/badge/R-%E2%89%A5%204.1-276DC3?logo=r)](https://www.r-project.org/)
 
 A step-by-step Shiny application that guides researchers in experimental
 economics and behavioral science through an a priori (before data
 collection) power analysis to determine required sample size.
+
+## Quick start
+
+```bash
+git clone https://github.com/federicoatz/apriori-power-wizard.git
+cd apriori-power-wizard
+```
+
+```r
+install.packages("renv")
+renv::restore()      # installs the exact package versions in renv.lock
+shiny::runApp()      # opens the app at http://127.0.0.1:<port>
+```
+
+No local install at all? Try the live, browser-only build:
+<https://federicoatz.com/apriori-power-wizard/>.
+
+See [Reproducibility](#reproducibility) below for running the test suite
+and validation scripts.
 
 ![Conceptual overview: the Wizard moves the starting point of a power analysis upstream, from a research question through a guided decision layer to a sample-size recommendation](assets/workflow-overview.png)
 
@@ -406,7 +428,11 @@ apriori-power-wizard/
 ├── renv.lock                  # Machine-generated (renv::snapshot()) -- see "Reproducibility"
 ├── .Rprofile                  # Activates renv for this project (source("renv/activate.R"))
 ├── renv/                      # renv's own bootstrap files; renv/library/ is gitignored
+├── DESCRIPTION                # Dependency/metadata manifest (Imports, license, version) --
+│                               # not an installable package; Type: project keeps renv using
+│                               # the local renv/library/ rather than a package-style cache
 ├── CHANGELOG.md
+├── CONTRIBUTING.md
 ├── VALIDATION.md
 └── README.md
 ```
@@ -693,16 +719,9 @@ Found a bug or an unexpected result? Use the
 [bug report template](https://github.com/federicoatz/apriori-power-wizard/issues/new?template=bug_report.yml)
 (also linked from the app's own footer) -- it asks for the app version,
 browser, and analysis family, which are usually enough to reproduce most
-issues. For anything else, bug reports, feature requests, and pull requests
-are welcome via the
-[GitHub issue tracker](https://github.com/federicoatz/apriori-power-wizard/issues).
-For a code contribution: fork the repository, make your change (see
-"Project structure" above for where each kind of logic lives, and
-"Running the tests" for how to validate it), and open a pull request
-against `main`. New analysis families or calculation changes should
-include a corresponding `testthat` file following the existing pattern
-(a pinned textbook/G\*Power reference value where one exists, plus
-monotonicity/consistency checks). For questions about using the app,
+issues. For code contributions -- coding style, how to add a new analysis
+family, running the tests, and the pull request process -- see
+[CONTRIBUTING.md](CONTRIBUTING.md). For questions about using the app,
 please open an issue rather than emailing directly, so the answer is
 searchable for future users. See [CHANGELOG.md](CHANGELOG.md) for release
 history.
