@@ -391,6 +391,7 @@ wire_results_server <- function(input, output, session, family,
   # the matching output binding. See HAS_PLOTLY in global.R.
   if (HAS_PLOTLY) {
     output$power_curve_plotly <- plotly::renderPlotly({
+      req(!isTRUE(safeguard_diverged()))
       res <- tryCatch(result_r(), error = function(e) NULL)
       validate(need(!is.null(res), "Complete the previous steps to see the power curve."))
 
@@ -664,7 +665,10 @@ wire_results_server <- function(input, output, session, family,
       )
   })
 
-  output$power_curve_plot <- renderPlot({ ggplot_curve_obj() })
+  output$power_curve_plot <- renderPlot({
+    req(!isTRUE(safeguard_diverged()))
+    ggplot_curve_obj()
+  })
 
   # SVG-only download for the ggplot2 fallback path (only reachable when
   # plotly failed to load -- see HAS_PLOTLY in global.R). PNG is skipped
@@ -692,6 +696,7 @@ wire_results_server <- function(input, output, session, family,
   }
 
   output$sensitivity_result <- renderUI({
+    if (isTRUE(safeguard_diverged())) return(NULL)
     n_max <- suppressWarnings(as.numeric(input$budget_n))
     if (is.null(n_max) || is.na(n_max) || n_max < 2) {
       return(helpText("Enter a maximum feasible N to see the minimum detectable effect."))
@@ -732,9 +737,7 @@ wire_results_server <- function(input, output, session, family,
   # recruits paid participants (hence the budget panel below): a
   # five-figure N is already far outside anything fundable here, so a
   # recommendation that large is much more likely to be signalling an
-  # uninformative prior than a genuinely feasible plan. The note is
-  # advisory and sits ABOVE the number rather than replacing it, so an
-  # over-eager threshold costs the user nothing.
+  # uninformative prior than a genuinely feasible plan.
   IMPLAUSIBLE_N <- 10000L
 
   # TRUE when the safeguard branch has produced an effect indistinguishable
@@ -781,6 +784,7 @@ wire_results_server <- function(input, output, session, family,
   })
 
   output$attrition_note <- renderUI({
+    if (isTRUE(safeguard_diverged())) return(NULL)
     a <- attrition_rate()
     if (is.na(a) || a <= 0) return(NULL)
     res <- tryCatch(result_r(), error = function(e) NULL)
@@ -797,6 +801,7 @@ wire_results_server <- function(input, output, session, family,
   # family's own sensitivity_fn) budget -> affordable N -> smallest
   # detectable effect.
   output$budget_result <- renderUI({
+    if (isTRUE(safeguard_diverged())) return(NULL)
     per <- safe_numeric(input$cost_per_participant, 0, 1e6, NA_real_)
     if (is.na(per) || per <= 0) {
       return(helpText("Enter what one participant costs to see the total, and what a fixed budget could buy."))
@@ -857,6 +862,18 @@ wire_results_server <- function(input, output, session, family,
   }
 
   output$report_text <- renderText({
+    # Guarded FIRST, and deliberately: this is the one output the user
+    # copies into a manuscript or pre-registration, so a sample size
+    # derived from a collapsed safeguard bound reaching it is worse than
+    # the same figure appearing on screen, where at least the warning
+    # above it is visible in the same glance.
+    validate(need(
+      !isTRUE(safeguard_diverged()),
+      paste("No report text: the prior study entered in the effect-size step is too",
+            "imprecise to support a safeguard input at this confidence level, so there",
+            "is no sample size to report. Lower the confidence level, or use the",
+            "smallest-effect-of-interest branch instead.")
+    ))
     spec <- tryCatch(report_spec_r(), error = function(e) NULL)
     validate(need(!is.null(spec), "Complete the previous steps to generate report text."))
     build_report_text(with_multiplicity(spec))
@@ -875,6 +892,10 @@ wire_results_server <- function(input, output, session, family,
   # server-provided download endpoint at all, so it works identically in
   # both deployment modes.
   observeEvent(input$dl_html, {
+    # Same reasoning as output$report_text: a downloaded artefact outlives
+    # the on-screen warning entirely, so it must not be producible at all
+    # while the safeguard bound has collapsed.
+    req(!isTRUE(safeguard_diverged()))
     spec <- with_multiplicity(report_spec_r())
     txt <- build_report_text(spec)
     html <- htmltools::tagList(
@@ -905,6 +926,7 @@ wire_results_server <- function(input, output, session, family,
     output$dl_pdf <- downloadHandler(
       filename = function() paste0("power_analysis_report_", Sys.Date(), ".pdf"),
       content = function(file) {
+        req(!isTRUE(safeguard_diverged()))
         spec <- with_multiplicity(report_spec_r())
         txt <- build_report_text(spec)
         tmp_rmd <- tempfile(fileext = ".Rmd")

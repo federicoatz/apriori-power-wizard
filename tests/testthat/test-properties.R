@@ -21,12 +21,22 @@
 ##   N finite or an explicit error        catches the unbounded loops
 ##   N non-increasing in |effect|         catches solver monotonicity breaks
 ##
-## The seed is fixed so a failure is reproducible; raising REPS locally is
-## the cheap way to search harder before a release.
+## The seed is fixed so a failure is reproducible. REPS and SOLVER_DRAWS are
+## sized for CI (the whole suite stays under a few seconds); raising them
+## locally is the cheap way to search harder before a release.
+##
+## Reproducing the non-vacuity figures quoted in VALIDATION.md. Those rates
+## -- the pre-fix hazard-ratio bound violating sign preservation in roughly
+## 8% of draws, the pre-fix correlation bound in roughly 50% -- were
+## measured at 300 draws, not at the REPS below. To reproduce them, set
+## REPS <- 300 and re-run against the pre-fix implementations; at the
+## default REPS the same defects still fail, just with a smaller sample
+## behind the percentage.
 ## -----------------------------------------------------------------------
 
 set.seed(20260805)
-REPS <- 60
+REPS <- 60            # draws per safeguard invariant
+SOLVER_DRAWS <- 12    # draws per family for the solver invariants
 
 # Draw a value uniformly, optionally allowing negatives, avoiding an exact
 # zero (which is the null itself and not a meaningful published estimate).
@@ -97,38 +107,100 @@ test_that("safeguard shrinkage increases with confidence and decreases with the 
 
 # --- Solver invariants ---------------------------------------------------
 
-# One adapter per family: effect size in, total N out. Kept explicit rather
-# than derived so that adding a family to the app forces a decision here.
+# Sampling is LOG-uniform and reaches down to 1e-5, not uniform on the
+# plausible range. This matters more than it looks: the earlier version of
+# this file drew effect sizes from runif(1, 0.05, 1.2), i.e. exactly the
+# region where nothing goes wrong, while carrying a test named "never NA,
+# NULL, or a hang". The pathological region was covered only by a short
+# list of hand-written calls -- a value-based test wearing a property-based
+# test's name, and the same limitation this file exists to escape.
+rloguniform <- function(n, lo, hi) exp(runif(n, log(lo), log(hi)))
+
+# All sixteen families. Adapters take (effect, alpha, power, ratio) so that
+# allocation ratio is SAMPLED rather than left at its default -- the
+# two-proportions family crashed outright for any ratio below about 0.6,
+# and no test saw it because every adapter used balanced allocation.
 solvers <- list(
-  two_means   = function(e, a, p) power_two_means_n(e, a, p)$n_total,
-  paired      = function(e, a, p) power_paired_t_n(e, a, p)$n_total,
-  proportions = function(e, a, p) power_proportions_n(h = e, sig_level = a, power = p)$n_total,
-  correlation = function(e, a, p) power_correlation_n(e, a, p)$n_total,
-  chisq       = function(e, a, p) power_chisq_n(w = e, df = 3, sig_level = a, power = p)$n_total,
-  regression  = function(e, a, p) power_regression_n(f2 = e^2, u = 3, sig_level = a, power = p)$n_total,
-  ancova      = function(e, a, p) power_ancova_n(k = 3, f_target = e, r_cov = 0.4,
-                                                 sig_level = a, power = p)$n_total,
-  anova       = function(e, a, p) power_anova_factorial_n(f = e, df_effect = 1, n_cells = 4,
+  two_means       = function(e, a, p, k) power_two_means_n(e, a, p, allocation_ratio = k)$n_total,
+  paired          = function(e, a, p, k) power_paired_t_n(e, a, p)$n_total,
+  proportions     = function(e, a, p, k) power_proportions_n(h = e, sig_level = a, power = p,
+                                                             allocation_ratio = k)$n_total,
+  correlation     = function(e, a, p, k) power_correlation_n(min(e, 0.95), a, p)$n_total,
+  chisq           = function(e, a, p, k) power_chisq_n(w = e, df = 3, sig_level = a, power = p)$n_total,
+  regression      = function(e, a, p, k) power_regression_n(f2 = e^2, n_predictors_tested = 3,
+                                                            sig_level = a, power = p)$n_total,
+  ancova          = function(e, a, p, k) power_ancova_n(k = 3, f_target = e, r_cov = 0.4,
+                                                        sig_level = a, power = p)$n_total,
+  anova_factorial = function(e, a, p, k) power_anova_factorial_n(levels_a = 2, levels_b = 2,
+                                                                 focal = "A", f_target = e,
+                                                                 sig_level = a, power = p)$n_total,
+  rm_anova        = function(e, a, p, k) power_rm_anova_n(m = 3, f_target = e, rho = 0.5,
                                                           sig_level = a, power = p)$n_total,
-  clustered   = function(e, a, p) power_clustered_n(d = e, icc = 0.05, cluster_size = 8,
-                                                    sig_level = a, power = p)$n_total,
-  wilcoxon    = function(e, a, p) power_wilcoxon_n(p_sup = 0.5 + e / 4,
-                                                   sig_level = a, power = p)$n_total,
-  survival    = function(e, a, p) power_survival_n(hr = exp(e), p_event = 0.6,
-                                                   sig_level = a, power = p)$n_total
+  logistic        = function(e, a, p, k) power_logistic_n(p0 = 0.3,
+                                                          p1 = min(0.3 + e / 4, 0.95),
+                                                          sig_level = a, power = p)$n_total,
+  mcnemar         = function(e, a, p, k) power_mcnemar_n(p10 = 0.1 + e / 8, p01 = 0.1,
+                                                         sig_level = a, power = p)$n,
+  tost            = function(e, a, p, k) power_tost_n(delta_eq = e, theta = 0,
+                                                      sig_level = a, power = p)$n,
+  wilcoxon        = function(e, a, p, k) power_wilcoxon_n(p_sup = min(0.5 + e / 4, 0.999),
+                                                          sig_level = a, power = p)$n_total,
+  clustered       = function(e, a, p, k) power_clustered_n(d = e, icc = 0.05, cluster_size = 8,
+                                                           sig_level = a, power = p)$n_total,
+  clustered_cat   = function(e, a, p, k) power_clustered_cat_n(w = e, df = 3, icc = 0.05,
+                                                               cluster_size = 8, sig_level = a,
+                                                               power = p)$n_total,
+  survival        = function(e, a, p, k) power_survival_n(hr = exp(e), p_event = 0.6,
+                                                          alloc_ratio = k,
+                                                          sig_level = a, power = p)$n_total
 )
 
-test_that("every solver returns a finite positive N or raises -- never NA, NULL, or a hang", {
+test_that("every family covers the whole input range without hanging or returning NA", {
+  # The contract being asserted is deliberately weak on VALUE and strict on
+  # BEHAVIOUR: either a finite positive N, or an explicit error. Never a
+  # silent NA, never a non-finite number, and never a call that does not
+  # return. Time is capped per call so a regression to an unbounded loop
+  # fails the suite instead of stalling CI.
   for (nm in names(solvers)) {
-    for (i in seq_len(12)) {
-      e <- runif(1, 0.05, 1.2)
+    for (i in seq_len(SOLVER_DRAWS)) {
+      e <- rloguniform(1, 1e-5, 2)
       a <- sample(c(0.001, 0.01, 0.05, 0.10), 1)
       p <- sample(c(0.70, 0.80, 0.90, 0.95), 1)
-      n <- tryCatch(solvers[[nm]](e, a, p), error = function(err) NA_integer_)
-      # an explicit error is an acceptable outcome; a silent NA/NULL is not
+      k <- sample(c(0.1, 0.5, 1, 2, 10), 1)
+      ctx <- sprintf("%s: e=%.2e a=%.3f p=%.2f k=%.1f", nm, e, a, p, k)
+
+      t0 <- proc.time()[["elapsed"]]
+      n <- tryCatch(solvers[[nm]](e, a, p, k), error = function(err) NA_integer_)
+      expect_lt(proc.time()[["elapsed"]] - t0, 10, label = ctx)
+
       if (!is.na(n)) {
-        expect_true(is.finite(n), info = sprintf("%s: e=%.3f a=%.3f p=%.2f", nm, e, a, p))
+        expect_true(is.finite(n), info = ctx)
         expect_gt(n, 0)
+      }
+    }
+  }
+})
+
+test_that("no family refuses an ordinary design", {
+  # The invariant above deliberately accepts an explicit error, because a
+  # diverged input SHOULD be refused. That tolerance has a cost: it would
+  # equally accept a family that fails on a perfectly reasonable design.
+  # This test draws the line. Inside the plausible region -- an effect a
+  # researcher would actually plan for, at any allocation ratio the
+  # interface permits -- a solver must SUCCEED, not merely fail tidily.
+  #
+  # This is the property that the two-proportions family violated: every
+  # allocation ratio below about 0.6 raised "number of observations in the
+  # second group must be at least 2" from inside pwr, for inputs as
+  # ordinary as "my control arm is twice my treatment arm".
+  for (nm in names(solvers)) {
+    for (e in c(0.2, 0.5, 1.0)) {
+      for (k in c(0.1, 0.5, 1, 2, 10)) {
+        ctx <- sprintf("%s: e=%.2f ratio=%.1f", nm, e, k)
+        n <- tryCatch(solvers[[nm]](e, 0.05, 0.80, k),
+                      error = function(err) structure(NA_integer_, msg = conditionMessage(err)))
+        expect_false(is.na(n),
+                     info = sprintf("%s refused an ordinary design: %s", ctx, attr(n, "msg")))
       }
     }
   }
@@ -136,9 +208,8 @@ test_that("every solver returns a finite positive N or raises -- never NA, NULL,
 
 test_that("required N is non-increasing in the effect size, for every family", {
   for (nm in names(solvers)) {
-    a <- 0.05; p <- 0.80
     grid <- seq(0.15, 1.0, length.out = 6)
-    ns <- vapply(grid, function(e) tryCatch(as.numeric(solvers[[nm]](e, a, p)),
+    ns <- vapply(grid, function(e) tryCatch(as.numeric(solvers[[nm]](e, 0.05, 0.80, 1)),
                                             error = function(err) NA_real_), numeric(1))
     ns <- ns[!is.na(ns)]
     if (length(ns) >= 2) {
@@ -151,37 +222,30 @@ test_that("required N is non-increasing in the effect size, for every family", {
 test_that("required N moves the right way with alpha and with power, for every family", {
   for (nm in names(solvers)) {
     e <- 0.5
-    strict <- tryCatch(as.numeric(solvers[[nm]](e, 0.01, 0.80)), error = function(err) NA_real_)
-    loose  <- tryCatch(as.numeric(solvers[[nm]](e, 0.10, 0.80)), error = function(err) NA_real_)
+    strict <- tryCatch(as.numeric(solvers[[nm]](e, 0.01, 0.80, 1)), error = function(err) NA_real_)
+    loose  <- tryCatch(as.numeric(solvers[[nm]](e, 0.10, 0.80, 1)), error = function(err) NA_real_)
     if (!is.na(strict) && !is.na(loose)) {
       expect_gte(strict, loose, label = sprintf("%s alpha=.01 N", nm))
     }
-    hi <- tryCatch(as.numeric(solvers[[nm]](e, 0.05, 0.95)), error = function(err) NA_real_)
-    lo <- tryCatch(as.numeric(solvers[[nm]](e, 0.05, 0.70)), error = function(err) NA_real_)
+    hi <- tryCatch(as.numeric(solvers[[nm]](e, 0.05, 0.95, 1)), error = function(err) NA_real_)
+    lo <- tryCatch(as.numeric(solvers[[nm]](e, 0.05, 0.70, 1)), error = function(err) NA_real_)
     if (!is.na(hi) && !is.na(lo)) {
       expect_gte(hi, lo, label = sprintf("%s power=.95 N", nm))
     }
   }
 })
 
-test_that("a near-null effect never hangs: it resolves or raises, promptly", {
-  # The values here sit in the region the safeguard clamp can reach. Each
-  # call is wrapped so that an error counts as a pass; what is being tested
-  # is that control returns at all, and quickly.
-  near_null <- list(
-    function() power_two_means_n(1e-4, 0.05, 0.80),
-    function() power_paired_t_n(1e-4, 0.05, 0.80),
-    function() power_correlation_n(1e-4, 0.05, 0.80),
-    function() power_proportions_n(h = 1e-4, sig_level = 0.05, power = 0.80),
-    function() power_chisq_n(w = 1e-4, df = 3, sig_level = 0.05, power = 0.80),
-    function() power_survival_n(hr = exp(-1e-4), p_event = 0.5),
-    function() power_wilcoxon_n(p_sup = 0.5 + 1e-6),
-    function() power_ancova_n(k = 2, f_target = 1e-4, r_cov = 0.5)
-  )
-  for (i in seq_along(near_null)) {
-    elapsed <- system.time(
-      invisible(tryCatch(near_null[[i]](), error = function(e) NULL))
-    )[["elapsed"]]
-    expect_lt(elapsed, 10, label = sprintf("near-null case %d returned within 10s", i))
+test_that("the near-null region specifically resolves or raises, for every family", {
+  # Drawn from the region the safeguard clamp can actually reach, rather
+  # than listed by hand: the point is coverage of all sixteen families, not
+  # of the eight someone remembered to type out.
+  for (nm in names(solvers)) {
+    for (e in c(1e-5, 1e-4, 1e-3)) {
+      ctx <- sprintf("%s at e=%.0e", nm, e)
+      t0 <- proc.time()[["elapsed"]]
+      n <- tryCatch(solvers[[nm]](e, 0.05, 0.80, 1), error = function(err) NA_integer_)
+      expect_lt(proc.time()[["elapsed"]] - t0, 10, label = ctx)
+      if (!is.na(n)) expect_true(is.finite(n), info = ctx)
+    }
   }
 })

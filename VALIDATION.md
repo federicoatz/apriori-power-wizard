@@ -5,7 +5,7 @@ that every one of the sixteen closed-form analysis families computes the
 correct number, and that the decision helper routes a design description
 to the correct family. Real tolerances and reproducible scripts for both
 are below. This complements, and does not replace, the other sources of
-truth in this repository: `tests/testthat/` (1,425+ assertions: pinned
+truth in this repository: `tests/testthat/` (1,949+ assertions: pinned
 regression tests plus property-based invariants,
 run on every push and pull request -- see `.github/workflows/test.yml`),
 `validation/monte_carlo_validation.R` (formula correctness), and

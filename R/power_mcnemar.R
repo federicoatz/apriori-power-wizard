@@ -51,6 +51,9 @@ power_mcnemar_n <- function(p10, p01, sig_level = 0.05, power = 0.80, n_max = 1e
   za <- stats::qnorm(1 - sig_level / 2)
   zb <- stats::qnorm(power)
   n <- (za * sqrt(p_d) + zb * sqrt(p_d - delta^2))^2 / delta^2
+  # Checked before rounding: as delta approaches 0 this diverges, and the
+  # domain-specific message is more useful than the generic overflow one.
+  assert_solvable_n(n, "difference between the discordant proportions")
   n_total <- round_up_n(n)
   if (n_total > n_max) stop("Required N exceeds n_max; check the discordant proportions.")
 

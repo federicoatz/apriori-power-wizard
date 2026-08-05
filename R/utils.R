@@ -17,6 +17,15 @@
 #' @export
 round_up_n <- function(x) {
   if (is.null(x) || length(x) == 0 || any(is.na(x))) return(NA_integer_)
+  # as.integer() returns NA (with only a warning) above .Machine$integer.max,
+  # which turns a diverged sample size into a silently corrupt one: the NA
+  # then propagates into whatever comparison the caller makes next and
+  # surfaces as "missing value where TRUE/FALSE needed", far from its cause.
+  # A near-null effect size reaches this in several families, so it is
+  # converted here into the same explicit failure assert_solvable_n() gives.
+  if (any(ceiling(x) > .Machine$integer.max)) {
+    assert_solvable_n(Inf, "effect size")
+  }
   as.integer(ceiling(x))
 }
 

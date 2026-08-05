@@ -32,17 +32,62 @@ power_proportions_n <- function(h, sig_level = 0.05, power = 0.80,
     n1 <- round_up_n(fit$n)
     n2 <- n1
   } else {
-    n1 <- NA_integer_
-    for (cand in 2:100000) {
-      n2_cand <- round_up_n(cand * allocation_ratio)
-      p <- pwr::pwr.2p2n.test(h = h, n1 = cand, n2 = n2_cand,
-                               sig.level = sig_level,
-                               alternative = alternative)$power
-      if (p >= power) { n1 <- cand; break }
+    # Closed-form starting point rather than a linear scan from n1 = 2.
+    # The arcsine transform is variance-stabilizing, so with n2 = k*n1 the
+    # standard error of the difference is sqrt(1/n1 + 1/n2) =
+    # sqrt((1 + 1/k)/n1); setting h/SE equal to the required z gives
+    #   n1 = (z_alpha + z_beta)^2 * (1 + 1/k) / h^2.
+    # The previous implementation walked `for (cand in 2:100000)` calling
+    # pwr::pwr.2p2n.test() once per step. That was correct where it
+    # terminated but had three defects: it could run to a hundred thousand
+    # pwr calls (a frozen tab under webR, where the whole R runtime is in
+    # the browser); `n1 * n2` overflowed integer range on the way; and for
+    # any allocation ratio below about 0.6 the very first candidate made
+    # n2 = 1, which pwr rejects outright -- so an entirely ordinary design
+    # ("my control arm is twice my treatment arm", ratio = 0.5) failed with
+    # an opaque error from inside pwr. The UI permits ratios in [0.1, 10].
+    za <- if (identical(alternative, "two.sided")) {
+      stats::qnorm(1 - sig_level / 2)
+    } else {
+      stats::qnorm(1 - sig_level)
     }
-    if (is.na(n1)) stop("No feasible N found below 100000 per group; check inputs.")
-    n2 <- round_up_n(n1 * allocation_ratio)
-    fit <- pwr::pwr.2p2n.test(h = h, n1 = n1, n2 = n2, sig.level = sig_level,
+    n1_exact <- (za + stats::qnorm(power))^2 * (1 + 1 / allocation_ratio) / h^2
+    assert_solvable_n(n1_exact, "effect size h")
+
+    # Both arms need at least 2 observations before pwr will evaluate the
+    # design at all, which for a ratio below 1 binds on n2, not on n1.
+    n1 <- max(round_up_n(n1_exact), 2L, round_up_n(2 / allocation_ratio))
+
+    # n1/n2 are passed as doubles on purpose: pwr computes n1 * n2
+    # internally in whatever type it receives, and with integer arguments
+    # that product silently overflows past ~2.1e9 and returns NA power,
+    # which then propagates into the comparison below as "missing value
+    # where TRUE/FALSE needed" -- an opaque failure in place of the clean
+    # one assert_solvable_n() is there to give.
+    achieved_at <- function(cand) {
+      n2_cand <- max(round_up_n(cand * allocation_ratio), 2L)
+      pwr::pwr.2p2n.test(h = h,
+                          n1 = as.double(cand), n2 = as.double(n2_cand),
+                          sig.level = sig_level,
+                          alternative = alternative)$power
+    }
+    # Refine in whichever direction the closed form missed by, so the
+    # result is still the SMALLEST n1 meeting the target -- the property
+    # the old scan had, preserved without the scan.
+    not_reached <- function(cand) {
+      pw <- achieved_at(cand)
+      !is.finite(pw) || pw < power
+    }
+    while (not_reached(n1)) {
+      n1 <- n1 + 1L
+      assert_solvable_n(n1, "effect size h")
+    }
+    min_n1 <- max(2L, round_up_n(2 / allocation_ratio))
+    while (n1 > min_n1 && achieved_at(n1 - 1L) >= power) n1 <- n1 - 1L
+
+    n2 <- max(round_up_n(n1 * allocation_ratio), 2L)
+    fit <- pwr::pwr.2p2n.test(h = h, n1 = as.double(n1), n2 = as.double(n2),
+                               sig.level = sig_level,
                                alternative = alternative)
   }
 
@@ -63,7 +108,8 @@ power_proportions_at_n <- function(n1, n2 = n1, h, sig_level = 0.05,
     pwr::pwr.2p.test(h = h, n = n1, sig.level = sig_level,
                       alternative = alternative)$power
   } else {
-    pwr::pwr.2p2n.test(h = h, n1 = n1, n2 = n2, sig.level = sig_level,
+    pwr::pwr.2p2n.test(h = h, n1 = as.double(n1), n2 = as.double(n2),
+                        sig.level = sig_level,
                         alternative = alternative)$power
   }
 }
@@ -76,7 +122,8 @@ power_proportions_min_h <- function(n1, n2 = n1, sig_level = 0.05, power = 0.80,
     fit <- pwr::pwr.2p.test(n = n1, sig.level = sig_level, power = power,
                              alternative = alternative)
   } else {
-    fit <- pwr::pwr.2p2n.test(n1 = n1, n2 = n2, sig.level = sig_level,
+    fit <- pwr::pwr.2p2n.test(n1 = as.double(n1), n2 = as.double(n2),
+                               sig.level = sig_level,
                                power = power, alternative = alternative)
   }
   fit$h

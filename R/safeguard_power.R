@@ -99,6 +99,11 @@ safeguard_ci_d <- function(d_published, n1, n2, conf_level = 0.80,
   list(
     d_published = d_published,
     se = se,
+    # Kept for backward compatibility, but note these are the raw interval
+    # endpoints on the number line: `lower` is BELOW the estimate whatever
+    # its sign, so for a negative published effect it is the edge AWAY from
+    # the null, not the safeguard bound. Use `d_safeguard`, which is always
+    # the edge toward the null. See safeguard_shrink().
     lower = lower,
     upper = upper,
     conf_level = conf_level,
@@ -134,7 +139,10 @@ safeguard_ci_h <- function(h_published, n1, n2, conf_level = 0.80,
     upper <- h_published + z * se
   }
   list(
-    h_published = h_published, se = se, lower = lower, upper = upper,
+    h_published = h_published, se = se,
+    # See the note in safeguard_ci_d(): `lower`/`upper` are raw endpoints,
+    # `h_safeguard` is the one that respects the sign of the estimate.
+    lower = lower, upper = upper,
     conf_level = conf_level, one_sided = one_sided,
     h_safeguard = safeguard_shrink(h_published, se, conf_level, one_sided)
   )

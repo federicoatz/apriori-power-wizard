@@ -1,7 +1,22 @@
 test_that("safeguard_ci_d lower bound is below the published estimate", {
   sg <- safeguard_ci_d(d_published = 0.6, n1 = 30, n2 = 30, conf_level = 0.80, one_sided = TRUE)
   expect_lt(sg$lower, 0.6)
+  # `$lower` and `$d_safeguard` coincide ONLY in the positive half-plane,
+  # which is the sole reason this assertion held before the sign fix. It is
+  # kept, scoped to that half-plane explicitly, and paired with the negative
+  # case below -- otherwise it silently certifies the raw endpoint as if it
+  # were the safeguard bound.
   expect_equal(sg$d_safeguard, sg$lower)
+})
+
+test_that("for a negative estimate the safeguard bound is NOT the raw lower endpoint", {
+  sg <- safeguard_ci_d(d_published = -0.6, n1 = 30, n2 = 30, conf_level = 0.80, one_sided = TRUE)
+  # the raw lower endpoint runs away from the null...
+  expect_lt(sg$lower, -0.6)
+  # ...while the safeguard bound moves toward it, and the two must differ
+  expect_gt(sg$d_safeguard, -0.6)
+  expect_lt(sg$d_safeguard, 0)
+  expect_false(isTRUE(all.equal(sg$d_safeguard, sg$lower)))
 })
 
 test_that("safeguard_ci_d uses qnorm(0.80) for the default one-sided level", {

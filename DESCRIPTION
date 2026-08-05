@@ -1,7 +1,7 @@
 Package: aprioripowerwizard
 Type: project
 Title: A Priori Power Analysis Wizard
-Version: 1.0.5
+Version: 1.0.6
 Authors@R: person("Federico", "Atzori", role = c("aut", "cre"),
     comment = c(affiliation = "University of Cagliari"))
 Description: A step-by-step Shiny application that guides researchers in

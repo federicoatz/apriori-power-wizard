@@ -27,18 +27,49 @@ power_two_means_n <- function(d, sig_level = 0.05, power = 0.80,
     n1 <- round_up_n(fit$n)
     n2 <- n1
   } else {
-    # Search the smallest n1 (1..100000) such that pwr.t2n.test achieves
-    # the target power with n2 = round_up(n1 * allocation_ratio).
-    n1 <- NA_integer_
-    for (cand in 2:100000) {
-      n2_cand <- round_up_n(cand * allocation_ratio)
-      p <- pwr::pwr.t2n.test(n1 = cand, n2 = n2_cand, d = d,
-                              sig.level = sig_level,
-                              alternative = alternative)$power
-      if (p >= power) { n1 <- cand; break }
+    # Closed-form starting point, then refine -- not a scan from n1 = 2.
+    # With n2 = k*n1 the standard error of the difference is
+    # sqrt((1 + 1/k)/n1), so d/SE = z gives
+    #   n1 = (z_alpha + z_beta)^2 * (1 + 1/k) / d^2
+    # as a normal approximation to the exact noncentral-t solve, close
+    # enough that the refinement below is a few steps rather than a walk.
+    #
+    # The previous scan started at cand = 2, which for any allocation ratio
+    # below about 0.6 makes n2 = 1 and pwr rejects the design outright --
+    # so "my control arm is twice my treatment arm" (ratio = 0.5, well
+    # inside the [0.1, 10] the interface permits) failed with an opaque
+    # error from inside pwr. The two-proportions family had the identical
+    # defect; both are fixed the same way.
+    za <- if (identical(alternative, "two.sided")) {
+      stats::qnorm(1 - sig_level / 2)
+    } else {
+      stats::qnorm(1 - sig_level)
     }
-    if (is.na(n1)) stop("No feasible N found below 100000 per group; check inputs.")
-    n2 <- round_up_n(n1 * allocation_ratio)
+    n1_exact <- (za + stats::qnorm(power))^2 * (1 + 1 / allocation_ratio) / d^2
+    assert_solvable_n(n1_exact, "effect size d")
+
+    # Both arms need at least 2 observations; for a ratio below 1 that
+    # binds on n2, not on n1.
+    min_n1 <- max(2L, round_up_n(2 / allocation_ratio))
+    n1 <- max(round_up_n(n1_exact), min_n1)
+
+    achieved_at <- function(cand) {
+      n2_cand <- max(round_up_n(cand * allocation_ratio), 2L)
+      pwr::pwr.t2n.test(n1 = as.double(cand), n2 = as.double(n2_cand), d = d,
+                         sig.level = sig_level,
+                         alternative = alternative)$power
+    }
+    not_reached <- function(cand) {
+      pw <- tryCatch(achieved_at(cand), error = function(e) NA_real_)
+      !is.finite(pw) || pw < power
+    }
+    while (not_reached(n1)) {
+      n1 <- n1 + 1L
+      assert_solvable_n(n1, "effect size d")
+    }
+    while (n1 > min_n1 && !not_reached(n1 - 1L)) n1 <- n1 - 1L
+
+    n2 <- max(round_up_n(n1 * allocation_ratio), 2L)
   }
 
   # Report power at the ROUNDED-UP n1/n2 actually recruited, not at the

@@ -10,6 +10,60 @@ minor = new feature/family, major reserved for a future breaking redesign).
 > notes in `CITATION.cff`). Every entry below corresponds to a real tagged
 > release on the current history; nothing has been renumbered or backdated.
 
+## [1.0.6] - 2026-08-05
+
+Follow-up review of the v1.0.5 fixes found that two of them were partial,
+and widening the property generator then surfaced three further defects of
+the same class.
+
+- **The suppressed sample size was only suppressed in two places.**
+  v1.0.5 hid the recommendation and the achieved-power box when the
+  safeguard bound collapsed, but `safeguard_diverged()` was consumed at
+  exactly those two call sites. The attrition note, the budget panel, the
+  sensitivity analysis, both power curves and -- worst -- the paste-ready
+  report text and both downloadable reports all still emitted the diverged
+  figure. The report is precisely the artefact that ends up in a
+  pre-registration, so the number removed from the screen reappeared in the
+  text the user copies. All eleven call sites are now guarded.
+- **Any allocation ratio below about 0.6 crashed two families outright.**
+  `power_two_means_n()` and `power_proportions_n()` both searched for the
+  smallest per-arm N by scanning `for (cand in 2:100000)`, which makes
+  `n2 = 1` on the first iteration whenever the ratio is under 1; `pwr`
+  rejects that with "number of observations in the second group must be at
+  least 2". The interface permits ratios in [0.1, 10], so an ordinary
+  design ("my control arm is twice my treatment arm") failed with an opaque
+  error. Both now start from the closed-form solution and refine, which
+  also removes up to 100,000 `pwr` calls per solve -- a frozen tab under
+  webR, where R itself runs in the browser.
+- **`round_up_n()` returned NA instead of failing above integer range.**
+  `as.integer()` overflows past 2,147,483,647 with only a warning, so a
+  diverged sample size became a silent NA that surfaced later, far from its
+  cause, as "missing value where TRUE/FALSE needed". It now raises the same
+  explicit error as `assert_solvable_n()`. McNemar's test additionally
+  checks before rounding, for a message naming its own inputs.
+- **`pwr` overflowed internally on large unbalanced designs.** It computes
+  `n1 * n2` in whatever type it is handed; every call site now passes
+  doubles.
+- **Documented that `$lower`/`$upper` are raw interval endpoints**, not
+  safeguard bounds: for a negatively signed estimate `$lower` is the edge
+  *away* from the null. The field is not consumed anywhere in the app, but
+  it is exported under an MIT licence. The test that asserted
+  `d_safeguard == lower` is now scoped explicitly to the positive
+  half-plane and paired with a negative-estimate case, since it previously
+  certified the raw endpoint as if it were the safeguard bound by only ever
+  looking where the two coincide.
+- **The property generator now generates where it needs to.** It sampled
+  effect sizes from `runif(0.05, 1.2)` -- the region where nothing goes
+  wrong -- under a test named "never NA, NULL, or a hang", with the
+  pathological region covered by eight hand-written calls: a value-based
+  test wearing a property-based test's name. Sampling is now log-uniform
+  down to 1e-5, all sixteen families have adapters (was eleven), and the
+  allocation ratio is sampled rather than left at its default, which is how
+  the crash above had stayed invisible. A new invariant separates
+  "legitimately refuses a degenerate input" from "refuses an ordinary
+  design"; it found the two-means crash immediately.
+- Suite is 1,949 assertions (from 1,425), still a few seconds.
+
 ## [1.0.5] - 2026-08-05
 
 - **When the safeguard bound collapses onto the null, no sample size is
