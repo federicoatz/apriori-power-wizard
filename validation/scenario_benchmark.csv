@@ -15,3 +15,4 @@ willingness_to_pay_prepost,Same participants' yes/no willingness to pay before a
 lottery_opt_in,Predicting opt-in to a risky lottery from a continuous risk-aversion score,individual,binary,,predictor,logistic,new
 market_exit_time,Time until a participant exits a repeated market game,individual,time_to_event,,,survival,new
 clustered_survival_unsupported,Time-to-decision in interacting matching groups (declined combination),cluster,time_to_event,,,unsupported,new
+risk_reaction_time_correlation,"Is a participant's risk-aversion score related to their decision time, with no other variables involved?",individual,continuous,correlation,,correlation,new

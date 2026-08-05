@@ -397,7 +397,8 @@ ui <- page_fluid(
                               "The SAME participants measured twice (e.g., before/after)" = "paired",
                               "The SAME participants measured 3+ times (conditions, rounds, time points)" = "repeated",
                               "Two or more manipulated factors at once" = "factorial",
-                              "A continuous predictor (possibly with other control variables)" = "predictor",
+                              "Whether it's related to another continuous variable (no other variables involved)" = "correlation",
+                              "A continuous predictor, controlling for other variables (multiple regression)" = "predictor",
                               "Groups, adjusting for a covariate (e.g., a pre-test/baseline score)" = "ancova",
                               "Two separate groups, but the outcome is skewed/bounded/ordinal (use ranks)" = "nonparametric"),
                   selected = character(0))
@@ -1056,7 +1057,8 @@ server <- function(input, output, session) {
     }
     label <- switch(fam,
       two_means = "Two independent means", anova_factorial = "Factorial ANOVA (between-subjects)",
-      regression = "Multiple linear regression", logistic = "Logistic regression",
+      regression = "Multiple linear regression", correlation = "Bivariate correlation",
+      logistic = "Logistic regression",
       proportions = "Two proportions", paired_t = "Paired / repeated measures",
       clustered_rct = "Clustered: sessions / matching groups",
       chisq = "Chi-square (goodness-of-fit / independence)",

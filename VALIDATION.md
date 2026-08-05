@@ -5,7 +5,7 @@ that every one of the sixteen closed-form analysis families computes the
 correct number, and that the decision helper routes a design description
 to the correct family. Real tolerances and reproducible scripts for both
 are below. This complements, and does not replace, the other sources of
-truth in this repository: `tests/testthat/` (430+ pinned regression tests,
+truth in this repository: `tests/testthat/` (437+ pinned regression tests,
 run on every push and pull request -- see `.github/workflows/test.yml`),
 `validation/monte_carlo_validation.R` (formula correctness), and
 `validation/scenario_validation.R` (decision-helper correctness).
@@ -21,10 +21,13 @@ repository -- see the paper once it is posted). What moved: the earlier
 version of this page could only say the decision helper had never been
 checked at all; it can now say the mapping itself -- given these exact
 answers, does it recommend the family a methodologist would also pick? --
-is checked against sixteen real experimental-economics/behavioral-science
+is checked against seventeen real experimental-economics/behavioral-science
 scenarios, including every one currently shipped in the app's own worked-
-example library. What has NOT moved: whether an actual first-time user
-answers those questions correctly, unprompted, is still untested.
+example library, and covers fifteen of the sixteen families (see "Decision
+helper: scenario benchmark" below for the one exclusion and the one gap
+this exercise found and fixed). What has NOT moved: whether an actual
+first-time user answers those questions correctly, unprompted, is still
+untested.
 
 ## Decision helper: scenario benchmark
 
@@ -35,31 +38,37 @@ answers a user gives (independent vs. interacting participants; outcome
 type; how the outcome is explained) and returns a family key -- no
 Shiny session required, so it can be checked directly.
 
-`validation/scenario_benchmark.csv` lists sixteen scenarios: the answers a
-researcher would give, and the family a methodologist would expect. An
-exhaustive enumeration of every answer combination (see the header of
-`validation/scenario_validation.R`) shows the decision helper can reach
-fourteen of the sixteen closed-form families; the two it cannot reach at
-all are the TOST equivalence test and bivariate correlation. TOST is
-excluded by design -- equivalence testing is a specific analytical intent
-a researcher already has to know they want, not something inferable from
-"how is your outcome measured?" Correlation's absence was not a
-deliberate design decision documented anywhere before this validation
-exercise found it by exhaustive search; the closest existing path
-("a continuous predictor" under the continuous-outcome branch) routes to
-multiple regression, not to a simple bivariate correlation, which is a
-narrower and arguably more common first request. Flagged here as a
-genuine gap for the maintainer to decide on, not silently worked around.
+`validation/scenario_benchmark.csv` lists seventeen scenarios: the
+answers a researcher would give, and the family a methodologist would
+expect. An exhaustive enumeration of every answer combination (see the
+header of `validation/scenario_validation.R`) shows the decision helper
+now reaches fifteen of the sixteen closed-form families; the one it
+cannot reach at all is the TOST equivalence test, excluded by design --
+equivalence testing is a specific analytical intent a researcher already
+has to know they want, not something inferable from "how is your outcome
+measured?"
 
-Nine of the sixteen benchmark rows are the exact worked examples already
-shipped in the app (`R/example_library.R`, reachable from Step 1's own
-"Try a worked example" entry point), reused here rather than invented
-separately, so the same scenario is checked twice, two different ways.
-The other seven extend coverage to the remaining reachable families and
-to the one combination the helper declines outright (a
-clustered/interacting design with a time-to-event outcome -- see the
-Discussion/Limitations section of the manuscript for why that is a
-deliberate scope boundary).
+That fifteenth family, bivariate correlation, was a genuine gap until
+this exercise found it by exhaustive search: nothing in the decision tree
+routed to it, and the closest existing path ("a continuous predictor,
+possibly with other control variables") routed to multiple regression
+instead -- a narrower, and often less common, first request than simple
+correlation. The fix was to split that question's option into two
+explicit choices ("whether it's related to another continuous variable,
+no other variables involved" vs. "a continuous predictor, controlling for
+other variables") rather than leave correlation reachable only through
+the family cards on Step 1.
+
+Nine of the seventeen benchmark rows are the exact worked examples
+already shipped in the app (`R/example_library.R`, reachable from Step
+1's own "Try a worked example" entry point), reused here rather than
+invented separately, so the same scenario is checked twice, two different
+ways. The other eight extend coverage to the remaining reachable families
+(including the newly-reachable correlation family) and to the one
+combination the helper declines outright: a clustered/interacting design
+with a time-to-event outcome, a deliberate scope boundary (combining the
+design-effect correction with an events-based sample size is meaningfully
+more involved than either piece alone) rather than an oversight.
 
 ```bash
 Rscript validation/scenario_validation.R
@@ -68,12 +77,15 @@ Rscript validation/scenario_validation.R
 Unlike the Monte Carlo checks above, this one is a real pass/fail gate
 (exits 1 on any mismatch), because a decision-tree mapping is either
 right or wrong -- there is no equivalent of "known approximation,
-disclosed to the user." The same sixteen checks also run as regular
-`testthat` assertions (`tests/testthat/test-decision_helper.R`), so a
-change to the decision tree that breaks any of them fails CI on every
-push, not just when someone remembers to run the standalone script.
+disclosed to the user." The same checks also run as regular `testthat`
+assertions (`tests/testthat/test-decision_helper.R`), including an
+exhaustive-enumeration test asserting the reachable-family set exactly
+matches "all sixteen except TOST," so a change to the decision tree that
+breaks any of them, or silently drops a family's reachability, fails CI
+on every push, not just when someone remembers to run the standalone
+script.
 
-Last verified: 2026-08-04, app version 0.17.0 -- 16/16 scenarios routed
+Last verified: 2026-08-05, app version 1.0.0 -- 17/17 scenarios routed
 to the expected family.
 
 ## Two validation methods, by family
@@ -147,13 +159,14 @@ from scratch rather than take the historical claim on faith.
 
 ### Last verified run
 
-Captured 2026-08-04, app version 0.16.0, R 4.5.3. Re-run the command above
-for a current result; this snapshot exists so a reader can see what a
-passing run looks like without installing R first.
+Captured 2026-08-05, app version 1.0.0, R 4.5.3 (re-run to confirm: the
+seed is fixed, so these exact numbers are reproducible). Re-run the
+command above for a current result; this snapshot exists so a reader can
+see what a passing run looks like without installing R first.
 
 ```
 A Priori Power Analysis Wizard -- Monte Carlo validation
-App version: 0.16.0 | R version: R version 4.5.3 (2026-03-11)
+App version: 1.0.0 | R version: R version 4.5.3 (2026-03-11)
 
 McNemar's test (Connor, 1987)
   [WATCH] McNemar                      n=100 p10=0.25 p01=0.10                formula=0.7241 sim=0.7384 diff=-0.0143 (2*SE=0.0098, reps=8000)

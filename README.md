@@ -45,7 +45,7 @@ Three things follow from that:
 - **The decision helper is part of the tool, not a manual step before
   it.** Three plain-language questions (how participants are sampled,
   what the outcome looks like, how it's explained) route a first-time
-  user to the right analysis family, checked against sixteen real
+  user to the right analysis family, checked against seventeen real
   experimental-economics/behavioral-science scenarios in
   [VALIDATION.md](VALIDATION.md#decision-helper-scenario-benchmark).
 - **Choosing the analysis and computing its power are separate code, not
@@ -76,7 +76,7 @@ shiny::runApp()      # opens the app at http://127.0.0.1:<port>
 
 ```r
 source("global.R")
-testthat::test_dir("tests/testthat")   # 434 tests
+testthat::test_dir("tests/testthat")   # 437 tests
 ```
 
 `source("global.R")` first is required -- it attaches the packages and
@@ -84,13 +84,12 @@ sources every file in `R/` and `modules/` that the test suite calls into;
 running `testthat::test_dir()` on its own will fail with "could not find
 function" errors.
 
-> **Note on `renv.lock`:** this lockfile was authored by hand (the
-> development environment used to build this app had no local R
-> installation available to run `renv::snapshot()`). Package version
-> numbers are current-as-of-writing best estimates, and the lockfile does
-> not include transitive-dependency hashes. **Before relying on this for
-> a submission, run `renv::init()` followed by `renv::snapshot()` in a
-> real R session to regenerate an accurate, fully-resolved lockfile.**
+`renv.lock` is machine-generated (`renv::snapshot()`, R 4.5.3), pins all
+105 packages this repository actually uses -- app, tests, and
+maintenance scripts alike -- with exact versions and CRAN as the
+resolved source for each, and `renv::status()` reports the project
+consistent as of the last snapshot. Both CI workflows
+(`.github/workflows/*.yml`) use the same R version.
 
 No local installation needed at all: the same code runs entirely in the
 browser at <https://federicoatz.com/apriori-power-wizard/> (or your own
@@ -408,7 +407,9 @@ apriori-power-wizard/
 │   │   └── test.yml                # CI: run the full testthat suite on every push/PR
 │   └── ISSUE_TEMPLATE/
 │       └── bug_report.yml
-├── renv.lock
+├── renv.lock                  # Machine-generated (renv::snapshot()) -- see "Reproducibility"
+├── .Rprofile                  # Activates renv for this project (source("renv/activate.R"))
+├── renv/                      # renv's own bootstrap files; renv/library/ is gitignored
 ├── CHANGELOG.md
 ├── VALIDATION.md
 └── README.md

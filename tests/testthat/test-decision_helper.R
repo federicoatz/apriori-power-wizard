@@ -8,9 +8,37 @@ test_that("recommend_family covers every branch of the individual/continuous que
   expect_equal(recommend_family("individual", "continuous", "paired"), "paired_t")
   expect_equal(recommend_family("individual", "continuous", "repeated"), "rm_anova")
   expect_equal(recommend_family("individual", "continuous", "factorial"), "anova_factorial")
+  expect_equal(recommend_family("individual", "continuous", "correlation"), "correlation")
   expect_equal(recommend_family("individual", "continuous", "predictor"), "regression")
   expect_equal(recommend_family("individual", "continuous", "ancova"), "ancova")
   expect_equal(recommend_family("individual", "continuous", "nonparametric"), "wilcoxon")
+})
+
+test_that("recommend_family reaches every family except TOST (a deliberate exclusion)", {
+  # TOST is the one family the decision helper cannot reach under any
+  # combination of answers: equivalence testing is a specific analytical
+  # intent a researcher already has to know they want, not something
+  # inferable from a design description. See VALIDATION.md.
+  all_families <- c("two_means", "anova_factorial", "regression", "logistic",
+    "proportions", "paired_t", "clustered_rct", "chisq", "correlation",
+    "mcnemar", "tost", "ancova", "survival", "wilcoxon", "rm_anova", "clustered_cat")
+  continuous_opts <- c("two_groups", "paired", "factorial", "predictor", "ancova",
+    "nonparametric", "repeated", "correlation")
+  binary_opts <- c("two_groups", "paired", "predictor")
+  reachable <- character(0)
+  for (u in c("individual", "cluster")) {
+    for (o in c("continuous", "binary", "categorical", "time_to_event")) {
+      if (identical(o, "continuous")) {
+        for (c in continuous_opts) reachable <- c(reachable, recommend_family(u, o, c, NULL))
+      } else if (identical(o, "binary")) {
+        for (b in binary_opts) reachable <- c(reachable, recommend_family(u, o, NULL, b))
+      } else {
+        reachable <- c(reachable, recommend_family(u, o))
+      }
+    }
+  }
+  reachable <- unique(reachable[!is.na(reachable)])
+  expect_setequal(reachable, setdiff(all_families, "tost"))
 })
 
 test_that("recommend_family covers every branch of the individual/binary question", {

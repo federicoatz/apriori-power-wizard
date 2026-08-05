@@ -29,9 +29,9 @@
 #' @param dh_outcome "continuous", "binary", "categorical", or
 #'   "time_to_event" (question 2: outcome type), or NULL if unanswered
 #' @param dh_continuous one of "two_groups", "paired", "repeated",
-#'   "factorial", "predictor", "ancova", "nonparametric" -- only consulted
-#'   when dh_unit == "individual" and dh_outcome == "continuous"
-#'   (question 3)
+#'   "factorial", "correlation", "predictor", "ancova", "nonparametric" --
+#'   only consulted when dh_unit == "individual" and dh_outcome ==
+#'   "continuous" (question 3)
 #' @param dh_binary one of "two_groups", "paired", "predictor" -- only
 #'   consulted when dh_unit == "individual" and dh_outcome == "binary"
 #'   (question 3)
@@ -55,7 +55,7 @@ recommend_family <- function(dh_unit = NULL, dh_outcome = NULL,
     if (identical(dh_outcome, "continuous")) {
       switch(dh_continuous %||% "",
         two_groups = "two_means", paired = "paired_t", factorial = "anova_factorial",
-        predictor = "regression", ancova = "ancova",
+        correlation = "correlation", predictor = "regression", ancova = "ancova",
         nonparametric = "wilcoxon", repeated = "rm_anova", NA_character_)
     } else if (identical(dh_outcome, "binary")) {
       switch(dh_binary %||% "",
@@ -79,9 +79,8 @@ recommend_family <- function(dh_unit = NULL, dh_outcome = NULL,
 #' The only case: a clustered/interacting design with a time-to-event
 #' outcome. Combining the design-effect correction (R/power_clustered.R)
 #' with an events-based sample size (R/power_survival.R) is meaningfully
-#' more involved than either piece alone -- see the manuscript's
-#' Discussion/Limitations for why this is a deliberate scope boundary
-#' rather than an oversight.
+#' more involved than either piece alone, so this is a deliberate scope
+#' boundary rather than an oversight.
 #'
 #' @inheritParams recommend_family
 #' @export

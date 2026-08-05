@@ -14,7 +14,7 @@
 ## phone, which no script can substitute for. Automating THIS part first
 ## because it is the part a script legitimately can do.
 ##
-## Status as of 2026-08-04 (app v0.16.0): fixed since this script first
+## Status as of 2026-08-05 (app v1.0.0): fixed since this script first
 ## ran -- color-contrast (APP_PALETTES$light$muted in global.R, #8B8B96 ->
 ## #6D6D78; verified against every default-view foreground/background pair
 ## used in the app, both by direct WCAG contrast calculation and by

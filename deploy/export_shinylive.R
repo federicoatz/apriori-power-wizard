@@ -56,6 +56,21 @@ if (!requireNamespace("shinylive", quietly = TRUE)) {
   install.packages("shinylive")
 }
 
+# S7 is never called directly anywhere in this repo, but shinylive::export()
+# (specifically its WASM package-metadata step, prepare_wasm_metadata())
+# walks ggplot2's own dependency graph and errors -- "$ operator is invalid
+# for atomic vectors", from a malformed DESCRIPTION read -- if S7 (one of
+# ggplot2's own soft dependencies) isn't present in the active library. Under
+# a plain system library S7 is usually already installed as a side effect of
+# something else; under a clean `renv::restore()` it is not, since renv's
+# implicit snapshot only records packages this repo's own code references.
+# This line exists so `renv::snapshot()` records S7 as a real dependency of
+# THIS script, keeping renv.lock accurate for the one place that needs it.
+if (!requireNamespace("S7", quietly = TRUE)) {
+  message("Installing the 'S7' package (one-time; needed by shinylive::export(), not by the app itself)...")
+  install.packages("S7")
+}
+
 # Sanity check: run this from the project root (must contain app.R).
 if (!file.exists("app.R")) {
   stop(

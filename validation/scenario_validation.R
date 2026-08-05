@@ -2,35 +2,33 @@
 ## -----------------------------------------------------------------------
 ## Validates the DECISION HELPER, not the closed-form formulas -- the
 ## companion to monte_carlo_validation.R (which validates that the
-## formulas compute correctly) and the piece the manuscript's actual
-## claimed contribution rests on: not "the formulas work" (G*Power and
-## `pwr` already establish that), but "a first-time user can be routed
-## from a plain-language description of their design to the correct
-## analysis family."
+## formulas compute correctly) and the piece this project's actual
+## contribution rests on: not "the formulas work" (G*Power and `pwr`
+## already establish that), but "a first-time user can be routed from a
+## plain-language description of their design to the correct analysis
+## family."
 ##
 ## Checks every scenario in scenario_benchmark.csv: given the answers a
 ## researcher would give to the three decision-helper questions (see
 ## R/decision_helper.R and the `decision_helper_acc` accordion in app.R),
 ## does recommend_family() return the expected family?
 ##
-## Nine of the sixteen scenarios are the SAME worked examples shipped in
+## Nine of the seventeen scenarios are the SAME worked examples shipped in
 ## the app itself (R/example_library.R, reachable from Step 1's "Try a
 ## worked example" entry point) -- reusing them here, rather than writing
-## a separate set of made-up cases, is what makes this a real bridge
-## between the repository and the manuscript: the same scenario, the same
-## expected family, checked two different ways (as a runnable example in
-## the app, and as an automated assertion here). The other seven extend
-## coverage to every family and edge case the decision helper can reach
-## that the shipped examples don't already cover (see "source" column).
+## a separate set of made-up cases, means the same scenario is checked
+## twice, two different ways: as a runnable example in the app, and as an
+## automated assertion here. The other eight extend coverage to every
+## family and edge case the decision helper can reach that the shipped
+## examples don't already cover (see "source" column).
 ##
 ## This is NOT a user study. It establishes that the decision helper's
 ## MAPPING from design description to analysis family is correct and
 ## regression-tested, not that real first-time users navigate it
-## successfully -- that remains the untested design claim disclosed in
-## the manuscript's Limitations section (see VALIDATION.md's "Scope"
-## note). What it rules out is the specific, checkable failure mode of a
-## first-time user answering honestly and being routed to the wrong
-## family.
+## successfully -- that remains an untested design claim (see
+## VALIDATION.md's "Scope" note). What it rules out is the specific,
+## checkable failure mode of a first-time user answering honestly and
+## being routed to the wrong family.
 ##
 ## Usage (from the project root):
 ##   Rscript validation/scenario_validation.R
