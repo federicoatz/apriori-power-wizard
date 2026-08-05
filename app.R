@@ -1031,37 +1031,17 @@ server <- function(input, output, session) {
   # even make sense -- a cluster-randomized design in this app only has a
   # closed-form calculator for a continuous outcome (see clustered_rct).
   dh_unsupported <- reactive({
-    identical(input$dh_unit, "cluster") &&
-      identical(input$dh_outcome %||% "", "time_to_event")
+    decision_helper_unsupported(input$dh_unit, input$dh_outcome)
   })
 
+  # Decision-tree logic itself lives in R/decision_helper.R as a pure,
+  # independently testable function (see that file's header comment and
+  # design principle #2 in README.md); this reactive is just the thin
+  # Shiny wiring around it.
   recommended_family <- reactive({
-    unit <- input$dh_unit %||% ""
-    if (identical(unit, "cluster")) {
-      switch(input$dh_outcome %||% "",
-        continuous = "clustered_rct",
-        binary = "clustered_cat",
-        categorical = "clustered_cat",
-        NULL)
-    } else if (identical(unit, "individual")) {
-      if (identical(input$dh_outcome, "continuous")) {
-        switch(input$dh_continuous %||% "",
-          two_groups = "two_means", paired = "paired_t", factorial = "anova_factorial",
-          predictor = "regression", ancova = "ancova",
-          nonparametric = "wilcoxon", repeated = "rm_anova", NULL)
-      } else if (identical(input$dh_outcome, "binary")) {
-        switch(input$dh_binary %||% "",
-          two_groups = "proportions", paired = "mcnemar", predictor = "logistic", NULL)
-      } else if (identical(input$dh_outcome, "categorical")) {
-        "chisq"
-      } else if (identical(input$dh_outcome, "time_to_event")) {
-        "survival"
-      } else {
-        NULL
-      }
-    } else {
-      NULL
-    }
+    fam <- recommend_family(input$dh_unit, input$dh_outcome,
+                             input$dh_continuous, input$dh_binary)
+    if (is.na(fam)) NULL else fam
   })
 
   output$dh_recommendation <- renderUI({

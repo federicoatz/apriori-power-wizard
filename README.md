@@ -22,22 +22,26 @@ to how the accompanying manuscript frames the tool's contribution.
 1. **Start from the research question, not the statistical test.**
    Traditional tools (G\*Power, `pwr`) assume the user already knows which
    of several dozen procedures applies to their design. The decision
-   helper (Step 1; `recommended_family()` in `app.R`) instead routes a
-   first-time user from a plain-language description of their design --
-   how participants are sampled, what the outcome looks like -- to the
-   correct analysis family. See Figure 1 ("Conceptual Positioning of the
-   Wizard Within the A Priori Power-Analysis Workflow") in the manuscript
-   for this contrasted directly against the traditional workflow.
+   helper (Step 1; `recommend_family()` in `R/decision_helper.R`) instead
+   routes a first-time user from a plain-language description of their
+   design -- how participants are sampled, what the outcome looks like --
+   to the correct analysis family. See Figure 1 ("Conceptual Positioning
+   of the Wizard Within the A Priori Power-Analysis Workflow") in the
+   manuscript for this contrasted directly against the traditional
+   workflow, and [VALIDATION.md](VALIDATION.md#decision-helper-scenario-benchmark)
+   for this mapping checked against sixteen real
+   experimental-economics/behavioral-science scenarios.
 
 2. **Separate analysis selection from numerical calculation.** Deciding
    *which* family applies and *computing* that family's power are
-   different pieces of code: the decision-helper logic lives in `app.R`
-   (`recommended_family()`), while every closed-form formula lives in
-   `R/power_*.R` as a pure, independently testable function with no
-   knowledge of how it was arrived at. This mirrors the manuscript's own
-   framing of the tool's contribution: not a new statistical method, but
-   an interface layer wrapped around the same closed-form formulas
-   `pwr` and G\*Power already provide (see the manuscript's Discussion).
+   different pieces of code, in different files: the decision-helper
+   logic lives in `R/decision_helper.R` (`recommend_family()`, a pure
+   function with no Shiny dependency), while every closed-form formula
+   lives in `R/power_*.R`, each with no knowledge of how a user arrived
+   at its inputs. This mirrors the manuscript's own framing of the
+   tool's contribution: not a new statistical method, but an interface
+   layer wrapped around the same closed-form formulas `pwr` and G\*Power
+   already provide (see the manuscript's Discussion).
 
 3. **Make assumptions explicit rather than defaulting silently.** Every
    effect size is justified through one of three explicit branches
@@ -70,7 +74,7 @@ shiny::runApp()      # opens the app at http://127.0.0.1:<port>
 
 ```r
 source("global.R")
-testthat::test_dir("tests/testthat")   # 394 tests
+testthat::test_dir("tests/testthat")   # 434 tests
 ```
 
 `source("global.R")` first is required -- it attaches the packages and
@@ -337,6 +341,7 @@ apriori-power-wizard/
 ├── app.R                     # Wizard shell: Step 1, decision helper, routing, bslib theme
 ├── global.R                  # Package loading + sources R/ and modules/ + shared color palette
 ├── R/                         # Pure, testable calculation functions (no Shiny)
+│   ├── decision_helper.R           # Step 1 decision-tree logic (recommend_family())
 │   ├── utils.R
 │   ├── effect_size_conventions.R   # Cohen's (1988) benchmarks
 │   ├── safeguard_power.R           # Perugini et al. (2014) safeguard power
@@ -385,12 +390,25 @@ apriori-power-wizard/
 │   └── styles.css
 ├── tests/
 │   ├── testthat.R
-│   └── testthat/              # One test file per R/ calculation module
+│   └── testthat/              # One test file per R/ calculation module, plus test-decision_helper.R
+├── validation/                # Evidence beyond unit tests -- see VALIDATION.md
+│   ├── monte_carlo_validation.R    # Seeded Monte Carlo checks for formulas with no pwr reference
+│   ├── scenario_benchmark.csv      # Decision-helper scenarios -> expected family
+│   ├── scenario_validation.R       # Checks recommend_family() against scenario_benchmark.csv
+│   └── accessibility_check.R       # axe-core audit of the exported build
 ├── deploy/
-│   └── export_shinylive.R     # Local build script for the browser-only (webR) deployment
-├── .github/workflows/
-│   └── deploy-shinylive.yml   # CI: auto-build + publish the shinylive site to GitHub Pages
+│   ├── export_shinylive.R     # Local build script for the browser-only (webR) deployment
+│   ├── serve_static.R         # Minimal static server, used by the CI smoke test/audit
+│   └── smoke_test.R           # Headless-browser check that the exported build actually boots
+├── .github/
+│   ├── workflows/
+│   │   ├── deploy-shinylive.yml    # CI: build + smoke test + accessibility audit + publish
+│   │   └── test.yml                # CI: run the full testthat suite on every push/PR
+│   └── ISSUE_TEMPLATE/
+│       └── bug_report.yml
 ├── renv.lock
+├── CHANGELOG.md
+├── VALIDATION.md
 └── README.md
 ```
 

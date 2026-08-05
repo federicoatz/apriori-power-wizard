@@ -1,0 +1,17 @@
+scenario,title,dh_unit,dh_outcome,dh_continuous,dh_binary,expected_family,source
+public_goods,Public goods game: does punishment raise contributions?,cluster,continuous,,,clustered_rct,example_library
+cooperation_rate,Cooperation rate by matching group,cluster,binary,,,clustered_cat,example_library
+dictator,Dictator game: does framing change the amount given?,individual,continuous,two_groups,,two_means,example_library
+trust_game,Trust game: amount returned (skewed outcome),individual,continuous,nonparametric,,wilcoxon,example_library
+risk_elicitation,Risk elicitation: safe choices under two incentive schemes,individual,continuous,nonparametric,,wilcoxon,example_library
+stroop,Stroop task: congruent vs. incongruent trials,individual,continuous,paired,,paired_t,example_library
+learning_rounds,"Learning across rounds, and whether it differs by treatment",individual,continuous,repeated,,rm_anova,example_library
+pretest_posttest,"Pretest/posttest intervention, adjusting for the baseline",individual,continuous,ancova,,ancova,example_library
+choice_across_arms,Which of three strategies? Choice distribution across arms,individual,categorical,,,chisq,example_library
+incentive_framing_2x2,2x2 incentive experiment: bonus-pay vs. flat-pay crossed with public vs. private feedback,individual,continuous,factorial,,anova_factorial,new
+risk_aversion_predictor,"Does a continuous risk-aversion score predict contribution amount, controlling for age and income?",individual,continuous,predictor,,regression,new
+comprehension_check,Two independent groups' pass/fail rate on a comprehension check,individual,binary,,two_groups,proportions,new
+willingness_to_pay_prepost,Same participants' yes/no willingness to pay before and after an information treatment,individual,binary,,paired,mcnemar,new
+lottery_opt_in,Predicting opt-in to a risky lottery from a continuous risk-aversion score,individual,binary,,predictor,logistic,new
+market_exit_time,Time until a participant exits a repeated market game,individual,time_to_event,,,survival,new
+clustered_survival_unsupported,Time-to-decision in interacting matching groups (declined combination),cluster,time_to_event,,,unsupported,new

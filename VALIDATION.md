@@ -1,23 +1,80 @@
 # Validation
 
-This page documents how every one of the sixteen closed-form analysis
-families is checked for correctness, with real tolerances from the
-automated test suite and a reproducible Monte Carlo script anyone can run
-themselves. It complements, and does not replace, the two other sources of
-truth in this repository: `tests/testthat/` (393+ pinned regression tests,
-run on every push and pull request -- see
-`.github/workflows/test.yml`) and `validation/monte_carlo_validation.R`
-(the seeded simulations referenced below).
+This page documents two different things, checked two different ways:
+that every one of the sixteen closed-form analysis families computes the
+correct number, and that the decision helper routes a design description
+to the correct family. Real tolerances and reproducible scripts for both
+are below. This complements, and does not replace, the other sources of
+truth in this repository: `tests/testthat/` (430+ pinned regression tests,
+run on every push and pull request -- see `.github/workflows/test.yml`),
+`validation/monte_carlo_validation.R` (formula correctness), and
+`validation/scenario_validation.R` (decision-helper correctness).
 
-**Scope.** This page validates that the *calculations* are correct --
-that a given formula produces the sample size or power a statistician
-computing it by hand, or G\*Power, or `pwr`, would also produce. It does
-not validate that the *decision helper* routes a first-time user to the
-right family, or that the interface measurably improves anyone's
-decisions; that is a design claim, not a measured outcome, and is
+**Scope.** "The formulas are correct" and "the decision helper's mapping
+from design description to analysis family is correct" are both
+established here, deterministically and reproducibly. Neither is the same
+claim as "a first-time user, unassisted, successfully navigates this
+interface" -- that remains a design claim, not a measured outcome, and is
 described honestly as such in the "Limitations" section of the
 accompanying manuscript (`manuscript/paper.tex`, not part of this public
-repository -- see the paper once it is posted).
+repository -- see the paper once it is posted). What moved: the earlier
+version of this page could only say the decision helper had never been
+checked at all; it can now say the mapping itself -- given these exact
+answers, does it recommend the family a methodologist would also pick? --
+is checked against sixteen real experimental-economics/behavioral-science
+scenarios, including every one currently shipped in the app's own worked-
+example library. What has NOT moved: whether an actual first-time user
+answers those questions correctly, unprompted, is still untested.
+
+## Decision helper: scenario benchmark
+
+The decision-tree logic behind Step 1's "Not sure which analysis to
+choose?" helper is factored out of the Shiny app into a pure function,
+`recommend_family()` in `R/decision_helper.R`, that takes the same four
+answers a user gives (independent vs. interacting participants; outcome
+type; how the outcome is explained) and returns a family key -- no
+Shiny session required, so it can be checked directly.
+
+`validation/scenario_benchmark.csv` lists sixteen scenarios: the answers a
+researcher would give, and the family a methodologist would expect. An
+exhaustive enumeration of every answer combination (see the header of
+`validation/scenario_validation.R`) shows the decision helper can reach
+fourteen of the sixteen closed-form families; the two it cannot reach at
+all are the TOST equivalence test and bivariate correlation. TOST is
+excluded by design -- equivalence testing is a specific analytical intent
+a researcher already has to know they want, not something inferable from
+"how is your outcome measured?" Correlation's absence was not a
+deliberate design decision documented anywhere before this validation
+exercise found it by exhaustive search; the closest existing path
+("a continuous predictor" under the continuous-outcome branch) routes to
+multiple regression, not to a simple bivariate correlation, which is a
+narrower and arguably more common first request. Flagged here as a
+genuine gap for the maintainer to decide on, not silently worked around.
+
+Nine of the sixteen benchmark rows are the exact worked examples already
+shipped in the app (`R/example_library.R`, reachable from Step 1's own
+"Try a worked example" entry point), reused here rather than invented
+separately, so the same scenario is checked twice, two different ways.
+The other seven extend coverage to the remaining reachable families and
+to the one combination the helper declines outright (a
+clustered/interacting design with a time-to-event outcome -- see the
+Discussion/Limitations section of the manuscript for why that is a
+deliberate scope boundary).
+
+```bash
+Rscript validation/scenario_validation.R
+```
+
+Unlike the Monte Carlo checks above, this one is a real pass/fail gate
+(exits 1 on any mismatch), because a decision-tree mapping is either
+right or wrong -- there is no equivalent of "known approximation,
+disclosed to the user." The same sixteen checks also run as regular
+`testthat` assertions (`tests/testthat/test-decision_helper.R`), so a
+change to the decision tree that breaks any of them fails CI on every
+push, not just when someone remembers to run the standalone script.
+
+Last verified: 2026-08-04, app version 0.17.0 -- 16/16 scenarios routed
+to the expected family.
 
 ## Two validation methods, by family
 
