@@ -11,24 +11,32 @@ run on every push and pull request -- see `.github/workflows/test.yml`),
 `validation/monte_carlo_validation.R` (formula correctness), and
 `validation/scenario_validation.R` (decision-helper correctness).
 
-**Scope.** "The formulas are correct" and "the decision helper's mapping
-from design description to analysis family is correct" are both
-established here, deterministically and reproducibly. Neither is the same
-claim as "a first-time user, unassisted, successfully navigates this
-interface" -- that remains a design claim, not a measured outcome, and is
-described honestly as such in the "Limitations" section of the
-accompanying manuscript (`manuscript/paper.tex`, not part of this public
-repository -- see the paper once it is posted). What moved: the earlier
-version of this page could only say the decision helper had never been
-checked at all; it can now say the mapping itself -- given these exact
-answers, does it recommend the family a methodologist would also pick? --
-is checked against seventeen real experimental-economics/behavioral-science
-scenarios, including every one currently shipped in the app's own worked-
-example library, and covers fifteen of the sixteen families (see "Decision
-helper: scenario benchmark" below for the one exclusion and the one gap
-this exercise found and fixed). What has NOT moved: whether an actual
-first-time user answers those questions correctly, unprompted, is still
-untested.
+**Scope.** "The formulas are correct" is established here,
+deterministically and reproducibly. The decision helper is a weaker case
+and the difference matters, so it is stated plainly rather than folded in.
+
+`scenario_benchmark.csv` stores each scenario's answers **already coded**
+into the helper's own categories (`dh_unit`, `dh_outcome`, ...) next to the
+family a methodologist would expect. `recommend_family()` then maps the
+first to the second through sixteen branches containing no arithmetic. So
+what the benchmark shows is that two columns of one table agree under a
+deterministic lookup: true and reproducible, but close to uninformative,
+because the step that carries the actual risk is the one it skips. Reading
+a study description and judging that its unit of assignment is a cluster
+and its outcome continuous is exactly what a first-time user has to do and
+can get wrong -- and in every row of that file, we did it ourselves before
+the test ran.
+
+It still earns its place: exhaustive enumeration over the same logic found
+a real gap (bivariate correlation was unreachable, see below), and it fails
+CI if the routing regresses. But it is an internal-consistency check, not a
+validation of the routing. Closing the gap means collecting the answers
+rather than supplying them -- giving published Method sections to readers
+who did not write the router and recording how they code each design. That
+has not been done. Until it is, treat the routing as internally consistent,
+and treat "a first-time user, unassisted, navigates this successfully" as
+an untested design claim, described as such in the Limitations section of
+the accompanying manuscript.
 
 ## Decision helper: scenario benchmark
 
