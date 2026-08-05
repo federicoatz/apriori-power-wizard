@@ -315,6 +315,7 @@ wire_results_server <- function(input, output, session, family,
   })
 
   output$value_boxes <- renderUI({
+    if (isTRUE(safeguard_diverged())) return(NULL)
     res <- tryCatch(result_r(), error = function(e) NULL)
     if (is.null(res)) return(NULL)
     n_label <- if (family == "anova_factorial") "N per cell"
@@ -341,7 +342,10 @@ wire_results_server <- function(input, output, session, family,
     )
   })
 
-  output$n_summary <- renderUI({ n_summary_r() })
+  output$n_summary <- renderUI({
+    if (isTRUE(safeguard_diverged())) return(NULL)
+    n_summary_r()
+  })
 
   # The active UI theme, reported by the browser (see the theme-toggle
   # script at the bottom of app.R).
@@ -732,27 +736,39 @@ wire_results_server <- function(input, output, session, family,
   # advisory and sits ABOVE the number rather than replacing it, so an
   # over-eager threshold costs the user nothing.
   IMPLAUSIBLE_N <- 10000L
-  output$safeguard_uninformative_note <- renderUI({
-    if (!identical(input$es_branch %||% "sesoi", "safeguard")) return(NULL)
+
+  # TRUE when the safeguard branch has produced an effect indistinguishable
+  # from the null. Both shapes of that outcome are covered: most families
+  # error out of their root-finder, but a couple (paired, correlation)
+  # return a finite value in the hundreds of millions instead. Both are
+  # equally useless to a user, so they are treated identically -- and,
+  # critically, the NUMBER IS SUPPRESSED rather than shown alongside the
+  # explanation. Displaying "784,886,053" next to a warning would repeat
+  # the original failure in a new shape: a figure the user cannot account
+  # for, differing only in being large rather than wrongly signed.
+  safeguard_diverged <- reactive({
+    if (!identical(input$es_branch %||% "sesoi", "safeguard")) return(FALSE)
     res <- tryCatch(result_r(), error = function(e) NULL)
     n_tot <- if (is.null(res)) NA_integer_ else (res$n_total %||% res$n %||% NA_integer_)
-    solved <- !is.null(res) && !is.na(n_tot)
-    if (solved && n_tot < IMPLAUSIBLE_N) return(NULL)
+    is.null(res) || is.na(n_tot) || n_tot >= IMPLAUSIBLE_N
+  })
 
+  output$safeguard_uninformative_note <- renderUI({
+    if (!isTRUE(safeguard_diverged())) return(NULL)
     cl <- as.numeric(input$sg_conf_level %||% 0.80)
     div(class = "well well-warning", icon("triangle-exclamation"),
         HTML(sprintf(
-          " <strong>This prior study may be too imprecise to power from at a %.0f%% safeguard
-           level.</strong> Its reported effect is small relative to its own uncertainty, so the
-           lower confidence bound has collapsed toward zero and the required sample size %s.
-           This is the safeguard procedure working as intended rather than a calculation error:
-           it is telling you the original evidence is too weak to plan on.
-           Either lower the confidence level (the 80%% default is less demanding), or switch to
-           the smallest-effect-of-interest branch, which does not depend on a prior estimate
-           at all.",
-          cl * 100,
-          if (solved) sprintf("has grown to %s", format(n_tot, big.mark = ","))
-          else "grows beyond what can be solved")))
+          " <strong>This prior study is too imprecise to support a safeguard input at
+           %.0f%% confidence.</strong> Its reported effect is small relative to its own
+           uncertainty, so the confidence bound collapses onto the null and the required
+           sample size grows without limit. No sample size is shown above because there
+           is no meaningful one to show: this is the safeguard procedure working as
+           intended, telling you the original evidence is too weak to plan on rather than
+           returning a figure you could act on.
+           Either lower the confidence level (the 80%% default is less demanding), or use
+           the smallest-effect-of-interest branch, which does not depend on a prior
+           estimate at all.",
+          cl * 100)))
   })
 
   attrition_rate <- reactive(safe_numeric(input$attrition, 0, 0.95, 0))

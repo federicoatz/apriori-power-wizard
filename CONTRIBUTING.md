@@ -90,7 +90,8 @@ every file in `R/` and `modules/` that the tests call into.
 `testthat::test_dir()` on its own will fail with "could not find
 function" errors.
 
-The full suite (437 tests at the time of writing) runs automatically on
+The full suite (1,425 assertions at the time of writing, across value-based
+and property-based layers) runs automatically on
 every push and pull request via GitHub Actions
 (`.github/workflows/test.yml`); a pull request that fails it won't be
 merged. New families or calculation changes should include a

@@ -10,6 +10,32 @@ minor = new feature/family, major reserved for a future breaking redesign).
 > notes in `CITATION.cff`). Every entry below corresponds to a real tagged
 > release on the current history; nothing has been renumbered or backdated.
 
+## [1.0.5] - 2026-08-05
+
+- **When the safeguard bound collapses onto the null, no sample size is
+  shown at all.** v1.0.4 clamped the bound so it could not cross the null,
+  which was correct, but the clamped value still flowed into the solver:
+  eight of the sixteen families then errored (caught, explained) while two
+  returned a finite figure in the hundreds of millions and displayed it
+  next to the warning. That repeated the original failure in a new shape --
+  a number the user cannot account for, differing only in being large
+  rather than wrongly signed. The recommendation and the achieved-power box
+  are now suppressed in this state, leaving only the sentence: this prior
+  study is too imprecise to support a safeguard input at this confidence
+  level.
+- **Added a property-based test layer**
+  (`tests/testthat/test-properties.R`). The three defects fixed in v1.0.3
+  and v1.0.4 all survived a suite of value-based tests, because a pinned
+  reference value can only fail at the point it pins and every one of those
+  points was plausible; the failures lived in the tails. The new layer
+  samples input tuples at random across families and asserts invariants
+  instead: sign preservation, shrinkage toward the null, finite-or-explicit
+  failure from every solver, and monotonicity of N in effect size, alpha
+  and power. Re-running the pre-fix code against these reproduces the
+  hazard-ratio sign flip in ~8% of random draws and the correlation-sign
+  defect in ~50%, so either would have failed on the first CI run.
+- Suite is now 1,425 assertions (from 460), still under 5 seconds.
+
 ## [1.0.4] - 2026-08-05
 
 Two silent-wrong-answer bugs in the safeguard-power branch, both of which

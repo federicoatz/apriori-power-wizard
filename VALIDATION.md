@@ -5,7 +5,8 @@ that every one of the sixteen closed-form analysis families computes the
 correct number, and that the decision helper routes a design description
 to the correct family. Real tolerances and reproducible scripts for both
 are below. This complements, and does not replace, the other sources of
-truth in this repository: `tests/testthat/` (437+ pinned regression tests,
+truth in this repository: `tests/testthat/` (1,425+ assertions: pinned
+regression tests plus property-based invariants,
 run on every push and pull request -- see `.github/workflows/test.yml`),
 `validation/monte_carlo_validation.R` (formula correctness), and
 `validation/scenario_validation.R` (decision-helper correctness).
@@ -226,6 +227,42 @@ shift is therefore solved numerically so that p is exactly on target. The
 result is that power is close to invariant to parent shape (.888/.900/.884
 for normal/logistic/Laplace at p = .70), which is the property that makes
 p the defensible input for a rank test.
+
+## Property-based tests
+
+The checks above, and the `testthat` files behind them, are all
+*value-based*: they pin a computed number at a chosen input. That layer is
+necessary and it is what establishes the formulas are right, but it has a
+structural blind spot -- a pinned value can only fail at the point it pins,
+and the points anyone thinks to pin are the plausible ones.
+
+Three defects reached a release despite it, all of them in the tails of the
+input space rather than anywhere exotic:
+
+- a safeguard bound that could cross the null and hand back a sample size
+  for an effect of the **opposite sign** (a published `HR = 0.85` came back
+  as a safeguard `HR = 1.11`, at the default confidence level);
+- a negatively signed published estimate shrunk *away* from the null rather
+  than toward it (`r = -.30` became `-.40`);
+- refinement loops with no upper bound that did not terminate at all on a
+  near-null effect.
+
+`tests/testthat/test-properties.R` adds a second layer that samples input
+tuples at random and asserts invariants instead of values. Four are enough
+to close the class those three belong to:
+
+| Invariant | Catches |
+|---|---|
+| `sign(corrected) == sign(published)` | the sign flip |
+| `abs(corrected) <= abs(published)` | shrinking away from the null |
+| every solver returns a finite positive N **or raises explicitly** | unbounded loops, silent `NA` |
+| N is monotone in effect size, alpha, and power | solver monotonicity breaks |
+
+These are not decorative. Re-running the pre-fix code against them
+reproduces the hazard-ratio sign flip in roughly 8% of random draws and the
+correlation-sign defect in roughly 50% -- either would have failed on the
+first CI run. The seed is fixed so a failure is reproducible; raising `REPS`
+in that file searches harder before a release.
 
 ## Accessibility
 
