@@ -12,50 +12,52 @@ collection) power analysis to determine required sample size.
 
 ![Conceptual overview: the Wizard moves the starting point of a power analysis upstream, from a research question through a guided decision layer to a sample-size recommendation](assets/workflow-overview.png)
 
-## Design principles
+## What it does
 
-The Wizard follows three principles. They are the reason the tool is
-structured the way it is, not just stated intent -- each maps onto a
-specific, checkable part of the codebase, and each corresponds directly
-to how the accompanying manuscript frames the tool's contribution.
+Supports t-tests, ANOVA (including factorial, ANCOVA, and mixed/
+repeated-measures designs), linear and logistic regression, clustered/
+interacting-groups designs, equivalence tests, survival (time-to-event)
+analysis, non-parametric tests, and other common analyses in experimental
+and behavioral research -- sixteen families in total, each reachable
+directly from a card or through a plain-language decision helper.
 
-1. **Start from the research question, not the statistical test.**
-   Traditional tools (G\*Power, `pwr`) assume the user already knows which
-   of several dozen procedures applies to their design. The decision
-   helper (Step 1; `recommend_family()` in `R/decision_helper.R`) instead
-   routes a first-time user from a plain-language description of their
-   design -- how participants are sampled, what the outcome looks like --
-   to the correct analysis family. See Figure 1 ("Conceptual Positioning
-   of the Wizard Within the A Priori Power-Analysis Workflow") in the
-   manuscript for this contrasted directly against the traditional
-   workflow, and [VALIDATION.md](VALIDATION.md#decision-helper-scenario-benchmark)
-   for this mapping checked against sixteen real
-   experimental-economics/behavioral-science scenarios.
+![Step 1: choose an analysis family directly, or answer a few plain-language questions to get a recommendation](assets/screenshot-step1.png)
 
-2. **Separate analysis selection from numerical calculation.** Deciding
-   *which* family applies and *computing* that family's power are
-   different pieces of code, in different files: the decision-helper
-   logic lives in `R/decision_helper.R` (`recommend_family()`, a pure
-   function with no Shiny dependency), while every closed-form formula
-   lives in `R/power_*.R`, each with no knowledge of how a user arrived
-   at its inputs. This mirrors the manuscript's own framing of the
-   tool's contribution: not a new statistical method, but an interface
-   layer wrapped around the same closed-form formulas `pwr` and G\*Power
-   already provide (see the manuscript's Discussion).
+Every family walks through the same four steps -- design structure,
+statistical parameters, effect size, results -- shown below for one
+family; see "All sixteen analysis families" further down for the full
+per-family list and every input each one takes.
 
-3. **Make assumptions explicit rather than defaulting silently.** Every
-   effect size is justified through one of three explicit branches
-   (Cohen's convention, flagged as a last resort; safeguard power;
-   directly stated SESOI) rather than a single free-text field. Where a
-   closed-form relation is itself an approximation -- the Schoenfeld
-   log-rank formula, the asymptotic Wilcoxon-Mann-Whitney formula, the
-   first-order clustered-categorical design effect -- the app and its
-   generated report text say so, rather than presenting every number
-   with equal, unwarranted confidence. Bonferroni correction and
-   attrition inflation, when applicable, are likewise disclosed in the
-   generated report text rather than silently folded into the number.
-   See [VALIDATION.md](VALIDATION.md) for exactly which formulas are
-   exact and which are documented approximations, with tolerances.
+![Effect size step: three explicit justification branches -- Cohen's convention, a previous estimate corrected for publication bias via safeguard power, or a directly stated smallest effect of interest](assets/screenshot-effect-size.png)
+
+![Results step: required sample size, a power curve, an inverse sensitivity analysis, and a paste-ready report with full method citations](assets/screenshot-results.png)
+
+## Why this app?
+
+Most power calculators assume researchers already know which statistical
+procedure and effect size are appropriate. This wizard reverses that
+workflow: it guides users from the research question to the appropriate
+analysis, *before* computing sample size, rather than requiring that
+choice as a prerequisite for using the tool at all.
+
+Three things follow from that:
+
+- **The decision helper is part of the tool, not a manual step before
+  it.** Three plain-language questions (how participants are sampled,
+  what the outcome looks like, how it's explained) route a first-time
+  user to the right analysis family, checked against sixteen real
+  experimental-economics/behavioral-science scenarios in
+  [VALIDATION.md](VALIDATION.md#decision-helper-scenario-benchmark).
+- **Choosing the analysis and computing its power are separate code, not
+  separate concerns bolted together.** `R/decision_helper.R` decides
+  *which* family applies; `R/power_*.R` computes *that* family's power.
+  Neither knows about the other -- see "Project structure" below.
+- **Every number comes with its assumptions attached.** Effect sizes are
+  justified through one of three explicit branches (never a silent
+  default), and formulas that are approximations say so in the generated
+  report text instead of presenting every number with equal, unwarranted
+  confidence. See [VALIDATION.md](VALIDATION.md) for exactly which
+  formulas are exact and which are documented approximations.
 
 ## Reproducibility
 
@@ -98,86 +100,86 @@ Every closed-form formula's correctness is documented family-by-family,
 with real test tolerances and a reproducible, seeded Monte Carlo script,
 in [VALIDATION.md](VALIDATION.md).
 
-## What it does
+## All sixteen analysis families
 
-The app is a wizard with four conceptual steps, implemented per test
-family:
+Every family is a wizard with the same four steps: design structure,
+statistical parameters, effect size, results.
 
-1. **Main analysis** -- comparison of two independent means, factorial
-   between-subjects ANOVA, multiple linear regression, logistic
-   regression, comparison of two proportions, a paired/repeated-measures
-   comparison, a two-arm clustered design (participants interacting in
-   matching groups / lab sessions, or a cluster-randomized field trial), a
-   chi-square test (goodness-of-fit or independence) for categorical
-   outcomes across two or more groups, a bivariate correlation test,
-   McNemar's test for paired binary outcomes, a TOST equivalence test
-   for two independent means, a one-way ANCOVA (group comparison
-   adjusting for one covariate), or a two-group log-rank test for a
-   time-to-event outcome (a niche tool for this app's audience -- e.g.,
-   time-to-decision in a strategic game, or attrition/dropout timing in
-   a longitudinal study), or a Wilcoxon-Mann-Whitney rank-sum test for
-   two independent groups with a skewed, bounded, or ordinal outcome, or a
-   repeated-measures ANOVA (the same participants measured three or more
-   times, including the within x between interaction of a mixed design), or
-   a clustered design with a binary or categorical outcome (e.g. a
-   cooperation rate measured on participants who interacted in matching
-   groups).
-2. **Design structure** -- for factorial ANOVA, the number of factors and
-   levels, and (critically) which **focal contrast** power should be
-   computed for: a specific main effect or the interaction. The app
-   computes power for that contrast only, never a generic omnibus test,
-   and displays a persistent warning that interaction effects typically
-   require far larger samples than the corresponding main effect
-   (~4x the per-cell N for a "halved effect" interaction).
-3. **Statistical parameters** -- alpha (default 0.05), power (default
-   0.80, with a one-click switch to 0.90), one- vs. two-tailed test,
-   balanced or custom allocation ratio, and an optional **Bonferroni
-   correction for multiple planned comparisons**: set the number of
-   planned comparisons and the alpha entered is treated as the
-   family-wise rate, with the per-test alpha actually used (alpha /
-   n_comparisons) disclosed automatically in the generated report text.
-   This one shared input applies to every analysis family with no
-   family-specific wiring. The same panel also takes an **expected
-   attrition / exclusion rate**: the app then reports both the N your
-   analysis needs and the larger N you should actually recruit
-   (`analysis N / (1 - rate)`) so enough participants survive dropout and
-   comprehension-check exclusions, and discloses it in the report text.
-4. **Effect size** -- three explicit branches for most families (two
-   families, McNemar's test and the TOST equivalence test, use a
-   simpler, direct-entry effect-size step instead -- see below):
-   - **Cohen's conventions** (small/medium/large), flagged as arbitrary,
-     field-agnostic thresholds.
-   - **Previous study + safeguard power** (Perugini, Gallucci &
-     Costantini, 2014): enter the published effect size and the original
-     study's N; the app computes a one-sided confidence interval (default
-     80%) around the published estimate and uses its lower bound as a
-     conservative, publication-bias-corrected input. The naive N (from
-     the raw published estimate) and the safeguard-corrected N are shown
-     side by side.
-   - **SESOI** (smallest effect size of interest), in raw units (with an
-     expected SD) or already-standardized units.
+**Main analysis**, one of:
 
-   McNemar's test has a genuinely two-dimensional effect (the two
-   discordant-pair probabilities p10/p01), and the TOST equivalence
-   test's key parameter (the equivalence margin) is inherently a directly-
-   stated quantity -- neither fits the Cohen's-convention/safeguard/SESOI
-   framework, so both use a simpler, direct-entry effect-size step
-   instead of the three branches above.
+- Two independent means
+- Paired / repeated-measures comparison (two waves)
+- Repeated-measures ANOVA (three or more waves, including the within x
+  between interaction of a mixed design)
+- Factorial between-subjects ANOVA
+- One-way ANCOVA (group comparison adjusting for one covariate)
+- Multiple linear regression
+- Logistic regression
+- Two independent proportions
+- Bivariate correlation
+- Chi-square (goodness-of-fit or independence), 2+ groups
+- McNemar's test (paired binary outcomes)
+- TOST equivalence test (two independent means)
+- Wilcoxon-Mann-Whitney (two independent groups, skewed/bounded/ordinal
+  outcome)
+- Two-arm clustered design, continuous outcome (participants interacting
+  in matching groups/lab sessions, or a cluster-randomized field trial)
+- Clustered design, binary or categorical outcome
+- Time-to-event log-rank test (a niche tool for this app's audience --
+  e.g., time-to-decision in a strategic game, or attrition/dropout timing
+  in a longitudinal study)
 
-The results step shows total N and per-group/per-cell N (always rounded
-UP), a power-vs-N curve with the solution highlighted, an inverse
-sensitivity analysis (minimum detectable effect for a budget-constrained
-maximum N), an optional **budget** panel, and a paste-ready English
-report/pre-registration text block with full method citations. Reports
-can be exported as HTML or PDF.
+**Design structure.** For factorial ANOVA specifically: the number of
+factors and levels, and, critically, which **focal contrast** power
+should be computed for -- a specific main effect or the interaction,
+never a generic omnibus test. A persistent warning flags that interaction
+effects typically need far larger samples than the corresponding main
+effect (~4x the per-cell N for a "halved effect" interaction).
+
+**Statistical parameters**, shared across every family:
+
+- Alpha (default .05) and power (default .80, one-click switch to .90),
+  one- vs. two-tailed, balanced or custom allocation ratio.
+- **Bonferroni correction** for multiple planned comparisons: set the
+  number of comparisons and alpha is treated as the family-wise rate,
+  with the per-test alpha disclosed automatically in the report text.
+- **Expected attrition/exclusion rate**: the app reports both the N the
+  analysis needs and the larger N to actually recruit
+  (`analysis N / (1 - rate)`), disclosed in the report text.
+
+**Effect size**, three explicit branches for most families:
+
+- **Cohen's conventions** (small/medium/large), flagged as arbitrary,
+  field-agnostic thresholds.
+- **Previous study + safeguard power** (Perugini, Gallucci & Costantini,
+  2014): enter the published effect size and the original study's N; the
+  app computes a one-sided confidence interval (default 80%) around it
+  and uses its lower bound as a conservative, publication-bias-corrected
+  input. Naive N and safeguard-corrected N are shown side by side.
+- **SESOI** (smallest effect size of interest), in raw units (with an
+  expected SD) or already-standardized units.
+
+McNemar's test and the TOST equivalence test use a simpler, direct-entry
+effect-size step instead: McNemar's effect is genuinely two-dimensional
+(two discordant-pair probabilities), and TOST's key parameter (the
+equivalence margin) is inherently a directly-stated quantity, so neither
+fits the three-branch framework above.
+
+**Results**: total N and per-group/per-cell N (always rounded up), a
+power-vs-N curve with the solution highlighted, an inverse sensitivity
+analysis (minimum detectable effect for a budget-constrained maximum N),
+an optional **budget** panel, and a paste-ready English report/
+pre-registration text block with full method citations, exportable as
+HTML or PDF.
 
 The budget panel exists because experiments -- especially in experimental
 economics -- pay their participants, so a sample size is also a line in a
 grant application. Enter the cost of one participant (show-up fee plus
-expected average earnings) and any fixed costs to turn N into a total,
-and optionally a fixed budget to see how many participants it covers and,
+expected average earnings) and any fixed costs to turn N into a total.
+Enter a fixed budget instead to see how many participants it covers and,
 reusing the same sensitivity machinery, the smallest effect that sample
-could still detect. Amounts are labelled in euro, pound, or US dollar, selectable in the panel (the choice is cosmetic and affects no calculation).
+could still detect. Amounts are labelled in euro, pound, or US dollar
+(cosmetic only -- the choice affects no calculation).
 
 ## Saving, sharing, and resuming a project
 
@@ -517,23 +519,9 @@ step that genuinely needs to happen on your machine: nothing here was
 verified against a live webR runtime while building this app, because no
 R installation was available in that environment.
 
-**Resolved issue (kept here for the record):** an earlier version of this
-app used `WebPower::wp.logistic()` for the logistic-regression family.
-`WebPower` pulls in `lme4`, `Matrix`, `lavaan`, and `PearsonDS` as
-dependencies -- and one of those compiled packages turned out to be
-ABI-incompatible with the webR/shinylive WebAssembly build, causing a
-`call_indirect to a signature that does not match` crash at startup in
-the browser-only build (confirmed via a diagnostic build with the
-logistic module disabled: the crash disappeared). The fix was to
-reimplement the same Demidenko (2007) formula directly in
-`R/power_logistic.R` using only base R (`integrate()`, `uniroot()`,
-`pnorm()`) -- validated against WebPower's own published reference
-values (see `tests/testthat/test-power_logistic.R`) -- and drop
-`WebPower` as a dependency entirely. If you still see a
-`call_indirect`-style crash after this fix, it means a *different*
-package's WebAssembly build is at fault; isolate it the same way: comment
-out one family module at a time in `app.R`/`global.R`, re-export, and see
-which one makes the crash disappear.
+If you see a `call_indirect`-style crash at startup, that's a WebAssembly
+ABI mismatch in one of the app's compiled R package dependencies -- see
+"Troubleshooting" below for how to isolate which one.
 
 **Step 3 -- deploy to GitHub Pages.**
 
@@ -581,8 +569,10 @@ a version-mismatched WebAssembly build of one of the app's compiled
 (C/C++/Fortran) R package dependencies. This is exactly what happened
 during development: `WebPower`'s dependency chain (`lme4`, `Matrix`,
 `lavaan`, `PearsonDS`) triggered this crash, and the fix was to drop
-`WebPower` entirely -- see the "Resolved issue" note above. `R/power_logistic.R`
-no longer depends on it, so this specific cause is closed. If a *new*
+`WebPower` entirely and reimplement the same Demidenko (2007) formula
+directly in `R/power_logistic.R` using only base R, validated against
+WebPower's own published reference values
+(`tests/testthat/test-power_logistic.R`). This specific cause is closed. If a *new*
 crash like this shows up after adding a package of your own, isolate it
 the same way it was isolated here: temporarily remove the family module
 that uses the suspect package from `app.R` (its `tabPanelBody()` block
