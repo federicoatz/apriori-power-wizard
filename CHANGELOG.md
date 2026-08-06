@@ -10,6 +10,16 @@ minor = new feature/family, major reserved for a future breaking redesign).
 > notes in `CITATION.cff`). Every entry below corresponds to a real tagged
 > release on the current history; nothing has been renumbered or backdated.
 
+## [1.1.1] - 2026-08-06
+
+- **Analytics were being sent to a GoatCounter site that does not exist.**
+  The deployed page injected `federicoatz.goatcounter.com/count`, but the
+  site registered on GoatCounter is `experimenter.goatcounter.com` -- so
+  every request since the snippet was enabled returned 400 and no visit
+  was ever recorded. The site code in `deploy/export_shinylive.R` now
+  matches the registered one; verified by hitting both endpoints (the old
+  code answers 400 "no such site", the correct one accepts the hit).
+
 ## [1.1.0] - 2026-08-06
 
 Minor rather than patch: this adds user-facing output and two exported

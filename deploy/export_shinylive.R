@@ -117,7 +117,7 @@ analytics_hostname <- "federicoatz.com"
 # TO ENABLE: register the site at https://www.goatcounter.com/ and put the
 # code you are issued (the "yourcode" in yourcode.goatcounter.com) below.
 # While this is empty NOTHING is injected and no external request is made.
-goatcounter_code <- "federicoatz"
+goatcounter_code <- "experimenter"
 
 analytics_html <- if (nzchar(goatcounter_code)) {
   sprintf('
