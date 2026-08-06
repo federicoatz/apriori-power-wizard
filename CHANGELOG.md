@@ -10,6 +10,56 @@ minor = new feature/family, major reserved for a future breaking redesign).
 > notes in `CITATION.cff`). Every entry below corresponds to a real tagged
 > release on the current history; nothing has been renumbered or backdated.
 
+## [1.2.0] - 2026-08-06
+
+Minor: two new user-facing capabilities and three new exported functions.
+
+- **The Wilcoxon-Mann-Whitney safeguard branch now works entirely on the
+  test's native scale.** It used to ask for a published Cohen's d, build
+  the confidence interval on the d scale, and convert to P(X < Y) at the
+  end -- quietly assuming the normality the rank test is chosen to avoid,
+  and contradicting the app's own guidance. The published statistic can
+  now be entered as P(X < Y) itself, as the Mann-Whitney U (whose
+  U/(n1*n2) *is* the sample P(X < Y), assumption-free), or as the
+  reported z (inverted through the test's own large-sample
+  approximation); a published d remains available as a labelled last
+  resort, where only the point conversion -- not the interval -- is
+  normal-theory. The interval behind the safeguard bound is built
+  directly on the P(X < Y) scale by the new `safeguard_ci_auc()`
+  (Hanley & McNeil, 1982, via the AUC identity), with the same
+  never-cross-the-null clamping as every other safeguard metric. The
+  Hanley-McNeil standard error was checked against Monte Carlo sampling
+  of U/(n1*n2) (within 2% at n = 25-100 per group). New conversions
+  `u_to_p_superiority()` / `z_to_p_superiority()` are exported and
+  unit-tested. Older saved projects that stored a published d for this
+  family will ask to be re-entered rather than silently reinterpreting
+  the value.
+- **Šidák joins Bonferroni as a multiplicity-correction method.** A new
+  "Correction method" choice in every family's Advanced options: alpha/k
+  (default) or 1-(1-alpha)^(1/k), which is exact under independence and
+  never demands a larger sample. The results banner and the generated
+  report text name whichever method produced the per-test alpha. Older
+  saved projects restore as Bonferroni, which was the only behaviour
+  before.
+- **Protective odds ratios are accepted in the logistic family.** The
+  safeguard and SESOI odds-ratio inputs rejected values below 1, walling
+  off half the literature with no explanation; both now accept them, the
+  direction is preserved through the Chinn (2000) conversion and the
+  safeguard shrink (toward 1, never across -- mirroring the hazard-ratio
+  guarantee), and the inputs say so.
+- The safeguard branch now states, per family, how a negatively-signed
+  published effect should be entered (as a magnitude where the scale is
+  unsigned; with its sign where it matters, as in correlation/regression).
+- **New browser flow test in CI** (`tests/e2e/flow_test.R`): drives the
+  real app through the full four-step wizard in headless Chrome and
+  asserts the rendered banner, report, and figures match the solvers --
+  the layer unit tests cannot see. Covers the multiplicity banner
+  (Bonferroni and Šidák, including the reactive switch) and the new
+  Wilcoxon z-to-safeguard route.
+- Reference-value test coverage widened: correlation and two-proportions
+  now cross-check a 30-point grid against `pwr` (plus one-sided and
+  unbalanced cases) rather than a single benchmark each.
+
 ## [1.1.1] - 2026-08-06
 
 - **Analytics were being sent to a GoatCounter site that does not exist.**

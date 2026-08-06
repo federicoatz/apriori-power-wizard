@@ -140,16 +140,20 @@ build_report_text <- function(spec) {
   } else NULL
   tails_paren <- if (has_tails) sprintf(" (%s)", tails_txt) else ""
 
-  # Bonferroni multiplicity correction (see the "Advanced options" input in
-  # every family's Parameters step): when the researcher plans more than
-  # one comparison, the per-test alpha actually used for the sample-size
-  # solve is alpha_nominal / n_comparisons. spec$alpha already IS that
+  # Multiplicity correction (see the "Advanced options" inputs in every
+  # family's Parameters step): when the researcher plans more than one
+  # comparison, the per-test alpha actually used for the sample-size solve
+  # is alpha_nominal / k (Bonferroni, the default) or
+  # 1 - (1-alpha_nominal)^(1/k) (Šidák). spec$alpha already IS that
   # corrected value (it flows straight into every power_*_n() solver), so
   # this is purely a matter of disclosing the correction in the text.
+  # spec$mc_method may be absent in older saved projects; Bonferroni was
+  # the only method then, so it is the backward-compatible default.
   has_mc <- !is.null(spec$n_comparisons) && !is.na(spec$n_comparisons) && spec$n_comparisons > 1
   alpha_clause <- if (has_mc) {
-    sprintf("We set a family-wise alpha = %s, Bonferroni-corrected for %d planned comparisons to a per-test alpha = %s%s",
-            format_stat(spec$alpha_nominal, 2), spec$n_comparisons, format_stat(spec$alpha, 4), tails_paren)
+    mc_label <- if (identical(spec$mc_method, "sidak")) "Sidak-corrected" else "Bonferroni-corrected"
+    sprintf("We set a family-wise alpha = %s, %s for %d planned comparisons to a per-test alpha = %s%s",
+            format_stat(spec$alpha_nominal, 2), mc_label, spec$n_comparisons, format_stat(spec$alpha, 4), tails_paren)
   } else {
     sprintf("We set alpha = %s%s", format_stat(spec$alpha, 2), tails_paren)
   }

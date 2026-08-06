@@ -4,13 +4,20 @@
 ## groups (see R/power_wilcoxon.R for Noether's 1987 formula and its
 ## Monte Carlo validation).
 ##
-## This family reuses the standard three-branch effect-size step even
-## though its native effect size is the probability of superiority
-## P(X < Y) rather than Cohen's d: d converts to p exactly under normality
-## (d_to_p_superiority()), so Cohen's conventions and the safeguard-power
-## correction both remain meaningful, and the SESOI branch additionally
-## lets the user state p directly for the case where no normal-based d is
-## available or wanted.
+## This family reuses the standard three-branch effect-size step, but its
+## native effect size is the probability of superiority P(X < Y) rather
+## than Cohen's d, and the safeguard branch works entirely on that scale:
+## the published statistic can be entered as p itself, as the Mann-Whitney
+## U (whose p-hat = U/(n1*n2) IS the sample estimate of p, with no
+## distributional assumption), or as the reported z (inverted through the
+## large-sample U ~ normal approximation) -- and the confidence interval
+## behind the safeguard bound is built directly on the p scale via
+## safeguard_ci_auc() (Hanley & McNeil 1982), never passing through d.
+## A published Cohen's d is still accepted as a last resort, but only the
+## POINT conversion d -> p (exact under normality, d_to_p_superiority())
+## is normal-theory; the interval is then still built on the p scale.
+## Cohen's conventions and the d-input SESOI mode keep the same point
+## conversion, flagged by the existing used_d_conversion warning.
 ## -----------------------------------------------------------------------
 
 mod_wilcoxon_ui <- function(id) {
@@ -86,7 +93,20 @@ mod_wilcoxon_ui <- function(id) {
               helpText("Converted to P(X < Y) assuming both groups are normal with equal variance; the conversion is exact under that assumption.")
             )
           ),
-          safeguard_metric_label = "Published Cohen's d"
+          safeguard_pre_ui = tagList(
+            radioButtons(ns("sg_metric"),
+              help_tip("Which statistic does the paper report?",
+                "Papers rarely report P(X < Y) itself, but it is exactly recoverable from what they DO report: the Mann-Whitney U is the count of between-group pairs with X < Y, so U/(n1*n2) IS the sample P(X < Y), and a reported z inverts to the same quantity through the test's own large-sample approximation. Both routes are distribution-free. A published Cohen's d is accepted as a last resort, but converting it to p assumes normality -- the assumption a rank test is usually chosen to avoid."),
+              choices = c("Probability of superiority, P(X < Y)" = "p",
+                          "Mann-Whitney U statistic" = "u",
+                          "The reported z statistic" = "z",
+                          "Cohen's d (normal-theory conversion, last resort)" = "d"),
+              selected = "u"),
+            div(class = "field-hint", icon("circle-info"),
+                " The original study's two group sizes are taken as equal halves of the total N entered on the right. The safeguard interval itself is built directly on the P(X < Y) scale (Hanley & McNeil, 1982) -- it never assumes normality, whichever statistic you start from.")
+          ),
+          safeguard_metric_label = "Published value (in the statistic selected above)",
+          safeguard_hint = NULL
         ),
         uiOutput(ns("psup_summary")),
         wizard_nav_ui(ns, "effect_size", next_label = "Compute")
@@ -117,21 +137,47 @@ mod_wilcoxon_server <- function(id) {
 
     params <- reactive(read_params_step(input))
 
+    # The published statistic, whatever form it was entered in, resolved to
+    # the p = P(X < Y) scale. Returns list(p, n1, n2, metric, raw) or NULL
+    # while the inputs are incomplete/invalid. The original study's groups
+    # are taken as equal halves of its total N, the same balanced-design
+    # assumption every other family's safeguard branch already makes.
+    sg_published <- reactive({
+      n_pub <- safe_numeric(input$sg_published_n, 4, 1e6)
+      val <- safe_numeric(input$sg_published_value, -1e9, 1e9)
+      if (is.na(n_pub) || is.na(val)) return(NULL)
+      n1o <- n_pub / 2
+      n2o <- n_pub / 2
+      metric <- input$sg_metric %||% "u"
+      p_pub <- tryCatch(switch(metric,
+        p = val,
+        u = u_to_p_superiority(val, n1o, n2o),
+        z = z_to_p_superiority(val, n1o, n2o),
+        d = d_to_p_superiority(val)
+      ), error = function(e) NA_real_)
+      p_pub <- safe_numeric(p_pub, 0.001, 0.999)
+      if (is.na(p_pub)) return(NULL)
+      list(p = p_pub, n1 = n1o, n2 = n2o, metric = metric, raw = val)
+    })
+
     # Always returned on the > 0.5 side: the test is symmetric in
     # |p - 0.5|, and the params step's own one-/two-tailed control is what
-    # expresses directionality.
+    # expresses directionality. (For the safeguard branch the fold happens
+    # AFTER the shrink, which is equivalent by the same symmetry.)
     effect_value <- reactive({
       branch <- input$es_branch %||% "sesoi"
       p <- if (branch == "cohen") {
         d_to_p_superiority(unname(cohen_benchmarks("d")[input$cohen_size %||% "medium"]))
       } else if (branch == "safeguard") {
-        pub <- safe_numeric(input$sg_published_value, 0.0001, 5)
-        n_pub <- safe_numeric(input$sg_published_n, 4, 1e6)
-        req(pub, n_pub)
-        sg <- safeguard_ci_d(pub, n1 = n_pub / 2, n2 = n_pub / 2,
-                              conf_level = input$sg_conf_level %||% 0.80,
-                              one_sided = identical(input$sg_one_sided, "one"))
-        d_to_p_superiority(sg$d_safeguard)
+        pub <- sg_published()
+        req(pub)
+        # The interval is built directly on the p (AUC) scale -- Hanley &
+        # McNeil (1982) -- so no normality assumption enters here even when
+        # the point estimate arrived via the d conversion.
+        sg <- safeguard_ci_auc(pub$p, n1 = pub$n1, n2 = pub$n2,
+                                conf_level = input$sg_conf_level %||% 0.80,
+                                one_sided = identical(input$sg_one_sided, "one"))
+        sg$p_safeguard
       } else {
         if (identical(input$sesoi_mode %||% "psup", "d")) {
           d_to_p_superiority(safe_numeric(input$sesoi_d, 0.0001, 5, 0.5))
@@ -158,7 +204,8 @@ mod_wilcoxon_server <- function(id) {
     # and does so silently, since the converted p looks like any other p.
     used_d_conversion <- reactive({
       branch <- input$es_branch %||% "sesoi"
-      branch %in% c("cohen", "safeguard") ||
+      branch == "cohen" ||
+        (identical(branch, "safeguard") && identical(input$sg_metric %||% "u", "d")) ||
         (identical(branch, "sesoi") && identical(input$sesoi_mode %||% "psup", "d"))
     })
 
@@ -193,16 +240,21 @@ mod_wilcoxon_server <- function(id) {
              value = sprintf("P(X < Y) = %.3f (from d = %.2f)",
                               pv, unname(cohen_benchmarks("d")[input$cohen_size %||% "medium"])))
       } else if (branch == "safeguard") {
-        pub <- safe_numeric(input$sg_published_value, 0.0001, 5)
-        n_pub <- safe_numeric(input$sg_published_n, 4, 1e6)
-        naive <- tryCatch(power_wilcoxon_n(d_to_p_superiority(pub), p$alpha, p$power, p$tails, p$allocation_ratio)$n_total,
+        pub <- sg_published()
+        req(pub)
+        p_naive <- if (pub$p < 0.5) 1 - pub$p else pub$p
+        naive <- tryCatch(power_wilcoxon_n(p_naive, p$alpha, p$power, p$tails, p$allocation_ratio)$n_total,
                            error = function(e) NA)
         list(
-          published_value = sprintf("d = %.3f (P(X < Y) = %.3f)", pub, d_to_p_superiority(pub)),
-          published_n = round(n_pub),
+          published_value = switch(pub$metric,
+            p = sprintf("P(X < Y) = %.3f", pub$p),
+            u = sprintf("U = %s, hence P(X < Y) = U/(n1*n2) = %.3f", format(pub$raw, big.mark = ","), pub$p),
+            z = sprintf("z = %.2f, hence P(X < Y) = %.3f via the test's large-sample approximation", pub$raw, pub$p),
+            d = sprintf("d = %.3f, hence P(X < Y) = %.3f under normality", pub$raw, pub$p)),
+          published_n = round(pub$n1 + pub$n2),
           conf_level = input$sg_conf_level %||% 0.80,
           one_sided = identical(input$sg_one_sided, "one"),
-          safeguard_value = sprintf("P(X < Y) = %.3f", pv),
+          safeguard_value = sprintf("P(X < Y) = %.3f, interval built on the P(X < Y) scale itself (Hanley & McNeil, 1982)", pv),
           n_naive = naive,
           n_safeguard = tryCatch(power_wilcoxon_n(pv, p$alpha, p$power, p$tails, p$allocation_ratio)$n_total,
                                   error = function(e) NA)

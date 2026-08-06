@@ -49,7 +49,11 @@ mod_correlation_ui <- function(id) {
             selected = "medium"),
           sesoi_ui = numericInput(ns("sesoi_r"),
             "Smallest correlation of interest (r)", value = 0.3, min = -0.99, max = 0.99, step = 0.01),
-          safeguard_metric_label = "Published correlation (r)"
+          safeguard_metric_label = "Published correlation (r)",
+          safeguard_hint = paste(
+            "A negative published correlation is entered WITH its sign (e.g. -0.30):",
+            "the safeguard bound moves it toward zero from whichever side it starts on,",
+            "never past it.")
         ),
         wizard_nav_ui(ns, "effect_size", next_label = "Compute")
       ),

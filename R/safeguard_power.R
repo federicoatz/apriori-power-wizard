@@ -227,6 +227,73 @@ safeguard_ci_w <- function(w_published, n_published, df, conf_level = 0.80,
   )
 }
 
+#' Safeguard-corrected input for a probability of superiority (AUC scale)
+#'
+#' The Wilcoxon-Mann-Whitney family's native effect size is the
+#' probability of superiority p = P(X < Y) -- formally identical to the
+#' area under an ROC curve, since the Mann-Whitney U statistic IS the
+#' count of (X, Y) pairs with X < Y and p-hat = U/(n1*n2) is the sample
+#' AUC. That identity is what makes a distribution-free interval possible
+#' here: the sampling variance of the AUC has a standard large-sample form
+#' (Hanley & McNeil, 1982, "The meaning and use of the area under a
+#' receiver operating characteristic (ROC) curve", Radiology, 143(1),
+#' 29-36):
+#'
+#'   Var(p-hat) = [ p(1-p) + (n1-1)(Q1 - p^2) + (n2-1)(Q2 - p^2) ] / (n1*n2)
+#'   with Q1 = p/(2-p),  Q2 = 2*p^2/(1+p)
+#'
+#' (Q1/Q2 are the exponential-model values Hanley & McNeil recommend for
+#' general use; they are conservative for distributions closer to normal.)
+#' Unlike routing a published d through [safeguard_ci_d()] and converting
+#' at the end -- which silently re-imports the normality assumption the
+#' rank test exists to avoid -- this interval never leaves the scale the
+#' test actually operates on.
+#'
+#' Shrinking happens on the delta = p - 0.5 scale, whose null is 0, via
+#' [safeguard_shrink()]: a p above 0.5 is pulled down toward 0.5, a p
+#' below 0.5 is pulled up toward it, and the bound is clamped so it can
+#' never reach or cross 0.5 (the diverging-N case the results step
+#' detects and explains).
+#'
+#' @param p_published numeric in (0,1), the published probability of
+#'   superiority P(X < Y) (equivalently the sample AUC, U/(n1*n2))
+#' @param n1,n2 integer, per-group sample sizes of the ORIGINAL study
+#'   (if only a total N is known and the original design was balanced,
+#'   pass n1 = n2 = N/2)
+#' @param conf_level numeric, confidence level (default 0.80 one-sided)
+#' @param one_sided logical
+#' @return list(p_published, se, lower, upper, conf_level, one_sided,
+#'   p_safeguard)
+#' @export
+safeguard_ci_auc <- function(p_published, n1, n2, conf_level = 0.80,
+                              one_sided = TRUE) {
+  stopifnot(p_published > 0, p_published < 1, n1 > 1, n2 > 1,
+            conf_level > 0, conf_level < 1)
+  p <- p_published
+  q1 <- p / (2 - p)
+  q2 <- 2 * p^2 / (1 + p)
+  se <- sqrt((p * (1 - p) + (n1 - 1) * (q1 - p^2) + (n2 - 1) * (q2 - p^2)) /
+               (n1 * n2))
+  if (one_sided) {
+    z <- stats::qnorm(conf_level)
+    lower <- p - z * se
+    upper <- Inf
+  } else {
+    z <- stats::qnorm(1 - (1 - conf_level) / 2)
+    lower <- p - z * se
+    upper <- p + z * se
+  }
+  list(
+    p_published = p, se = se,
+    # As in safeguard_ci_d(): `lower`/`upper` are raw interval endpoints on
+    # the number line; `p_safeguard` is the edge toward the null (0.5),
+    # whichever side of it the estimate sits on.
+    lower = lower, upper = upper,
+    conf_level = conf_level, one_sided = one_sided,
+    p_safeguard = 0.5 + safeguard_shrink(p - 0.5, se, conf_level, one_sided)
+  )
+}
+
 #' Safeguard-corrected input for a hazard ratio (log-rank / survival)
 #'
 #' Uses the standard large-sample variance of the log hazard ratio from a

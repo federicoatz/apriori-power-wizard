@@ -3,7 +3,10 @@
 ## Runs the testthat suite (R/ and modules/ calculation logic, project
 ## state, example library, ...) on every push and pull request, using the
 ## exact package versions pinned in renv.lock so CI failures reflect real
-## regressions rather than an upstream package update. This does NOT build
+## regressions rather than an upstream package update. Then drives the
+## running app through the full four-step wizard in a real headless
+## Chrome (tests/e2e/flow_test.R) and asserts the rendered results match
+## the solvers -- the layer no unit test can see. This does NOT build
 ## or deploy anything -- see .github/workflows/deploy-shinylive.yml for the
 ## GitHub Pages build, which runs independently on push to main.
 ## -----------------------------------------------------------------------
@@ -47,3 +50,12 @@ jobs:
                         sum(df$error, na.rm = TRUE), sum(df$skipped, na.rm = TRUE)))
             if (failed) quit(status = 1)
           '
+
+      - name: Set up Chrome for the browser flow test
+        uses: browser-actions/setup-chrome@v1
+        id: setup-chrome
+
+      - name: Browser flow test (wizard end-to-end vs. the solvers)
+        env:
+          CHROMOTE_CHROME: ${{ steps.setup-chrome.outputs.chrome-path }}
+        run: Rscript tests/e2e/flow_test.R 7801

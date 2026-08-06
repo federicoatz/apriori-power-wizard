@@ -67,10 +67,18 @@ mod_logistic_ui <- function(id) {
                            value = 0.35, min = 0.001, max = 0.999, step = 0.01)
             ),
             conditionalPanel(condition = sprintf("input['%s'] == 'or'", ns("sesoi_mode")),
-              numericInput(ns("sesoi_or"), "Smallest odds ratio of interest", value = 1.8, min = 1.001, step = 0.1)
+              numericInput(ns("sesoi_or"),
+                           help_tip("Smallest odds ratio of interest",
+                             "Enter it exactly as you would report it. Values below 1 (a protective effect -- the outcome becomes LESS likely, e.g. OR = 0.75) are accepted; there is no need to invert them."),
+                           value = 1.8, min = 0.001, step = 0.1)
             )
           ),
-          safeguard_metric_label = "Published odds ratio"
+          safeguard_metric_label = help_tip("Published odds ratio",
+            "Enter the OR exactly as published. Values below 1 (a protective effect, e.g. OR = 0.75) are accepted -- the direction is preserved through the safeguard correction, so there is no need to invert them."),
+          safeguard_hint = paste(
+            "An odds ratio below 1 (a protective effect) is entered exactly as published:",
+            "the safeguard bound moves it toward 1 on the log-odds scale from whichever",
+            "side it starts on, never past it.")
         ),
         wizard_nav_ui(ns, "effect_size", next_label = "Compute")
       ),
@@ -112,7 +120,7 @@ mod_logistic_server <- function(id) {
         or <- unname(cohen_benchmarks("or")[input$cohen_size %||% "medium"])
         or_to_p1(base, or)
       } else if (branch == "safeguard") {
-        or_pub <- safe_numeric(input$sg_published_value, 1.001, 1000)
+        or_pub <- safe_numeric(input$sg_published_value, 0.001, 1000)
         n_pub <- safe_numeric(input$sg_published_n, 5, 1e6)
         req(or_pub, n_pub)
         d_pub <- or_to_d(or_pub)
@@ -123,7 +131,7 @@ mod_logistic_server <- function(id) {
         or_to_p1(base, or_safeguard)
       } else {
         if (identical(input$sesoi_mode, "or")) {
-          or_to_p1(base, safe_numeric(input$sesoi_or, 1.001, 1000, 1.8))
+          or_to_p1(base, safe_numeric(input$sesoi_or, 0.001, 1000, 1.8))
         } else {
           safe_numeric(input$sesoi_p1, 0.001, 0.999, 0.35)
         }
@@ -137,7 +145,7 @@ mod_logistic_server <- function(id) {
       if (branch == "cohen") {
         list(label = input$cohen_size, value = sprintf("OR ≈ %.2f (p0=%.2f, p1=%.2f)", or_val, p0(), p1_value()))
       } else if (branch == "safeguard") {
-        or_pub <- safe_numeric(input$sg_published_value, 1.001, 1000)
+        or_pub <- safe_numeric(input$sg_published_value, 0.001, 1000)
         n_pub <- safe_numeric(input$sg_published_n, 5, 1e6)
         p1_naive <- or_to_p1(p0(), or_pub)
         naive <- tryCatch(power_logistic_n(p0(), p1_naive, predictor_dist(), prop_predictor(), p$alpha, p$power, p$tails)$n_total, error = function(e) NA)

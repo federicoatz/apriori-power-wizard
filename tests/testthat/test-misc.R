@@ -31,6 +31,34 @@ test_that("read_params_step defaults n_comparisons to 1 when absent", {
   p <- read_params_step(list(alpha = 0.05, power = 0.80, tails = "two.sided", balanced = TRUE))
   expect_equal(p$alpha, 0.05)
   expect_equal(p$n_comparisons, 1)
+  # Bonferroni is the backward-compatible default method: saved projects
+  # from versions before the mc_method input existed restore without it.
+  expect_equal(p$mc_method, "bonferroni")
+})
+
+test_that("read_params_step Sidak-corrects alpha when selected", {
+  p4 <- read_params_step(list(alpha = 0.05, power = 0.80, tails = "two.sided",
+                               balanced = TRUE, n_comparisons = 4,
+                               mc_method = "sidak"))
+  expect_equal(p4$alpha, 1 - (1 - 0.05)^(1 / 4), tolerance = 1e-12)
+  expect_equal(p4$mc_method, "sidak")
+  expect_equal(p4$alpha_nominal, 0.05)
+
+  # Sidak is never MORE conservative than Bonferroni (its per-test alpha
+  # is always at least as large), so it can never demand a larger N.
+  for (k in c(2, 5, 20, 100)) {
+    sidak <- read_params_step(list(alpha = 0.05, n_comparisons = k, mc_method = "sidak"))$alpha
+    bonf <- read_params_step(list(alpha = 0.05, n_comparisons = k, mc_method = "bonferroni"))$alpha
+    expect_gte(sidak, bonf)
+    # and both control the family-wise rate at or below nominal under
+    # independence: 1 - (1-alpha_per)^k <= alpha_nominal (equality for Sidak)
+    expect_lte(1 - (1 - sidak)^k, 0.05 + 1e-12)
+    expect_lte(1 - (1 - bonf)^k, 0.05 + 1e-12)
+  }
+
+  # with a single comparison the method is irrelevant and alpha untouched
+  p1 <- read_params_step(list(alpha = 0.05, n_comparisons = 1, mc_method = "sidak"))
+  expect_equal(p1$alpha, 0.05)
 })
 
 test_that("eta2_to_f / f_to_eta2 are inverses and match Cohen's (1988) formula", {

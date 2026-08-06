@@ -809,7 +809,7 @@ wire_results_server <- function(input, output, session, family,
                                        error = function(e) NULL))
     if (is.na(corrected) || is.na(uncorrected)) return(NULL)
     list(k = p$n_comparisons, alpha_nominal = p$alpha_nominal, alpha_per = p$alpha,
-         corrected = corrected, uncorrected = uncorrected)
+         mc_method = p$mc_method, corrected = corrected, uncorrected = uncorrected)
   })
 
   output$multiplicity_note <- renderUI({
@@ -823,13 +823,15 @@ wire_results_server <- function(input, output, session, family,
     div(class = "well well-warning", icon("layer-group"),
         HTML(sprintf(
           " <strong>%s of that total is the cost of planning %d comparisons.</strong>
-           Treating &alpha; = %s as the family-wise rate gives a per-test
+           Treating &alpha; = %s as the family-wise rate gives a %s per-test
            &alpha; = %s, which raises the requirement from <strong>%s</strong>
            to <strong>%s</strong> (%s%%). The corrected figure is the one shown
            above and the one every calculation below uses -- attrition, budget,
            and the sensitivity analysis all follow from it.",
           format(extra, big.mark = ","), m$k,
-          format_stat(m$alpha_nominal, 3), format_stat(m$alpha_per, 4),
+          format_stat(m$alpha_nominal, 3),
+          if (identical(m$mc_method, "sidak")) "&Scaron;id&aacute;k" else "Bonferroni",
+          format_stat(m$alpha_per, 4),
           format(m$uncorrected, big.mark = ","), format(m$corrected, big.mark = ","),
           if (is.na(pct)) "?" else sprintf("+%.0f", pct))))
   })
@@ -912,6 +914,7 @@ wire_results_server <- function(input, output, session, family,
     if (m > 1) {
       spec$n_comparisons <- m
       spec$alpha_nominal <- safe_numeric(input$alpha, 0.0001, 0.5, 0.05)
+      spec$mc_method <- if (identical(input$mc_method, "sidak")) "sidak" else "bonferroni"
       # Carry the uncorrected requirement through as well, so the report
       # states what the correction cost rather than only that it was
       # applied -- the same disclosure the safeguard branch already makes.

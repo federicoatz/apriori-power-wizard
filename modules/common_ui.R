@@ -141,12 +141,18 @@ params_step_ui <- function(ns) {
           column(6,
             numericInput(ns("n_comparisons"),
                          help_tip("Number of planned comparisons",
-                           "If this is one of several comparisons planned in the same study (e.g., testing 4 outcomes, or 4 pairwise contrasts), each additional comparison inflates the chance of a false positive somewhere across the whole set. Set this to the TOTAL number of planned comparisons to apply a Bonferroni correction: the alpha above is treated as the family-wise rate, and the per-test alpha actually used below becomes alpha / this number. Leave at 1 if this is your only planned comparison."),
+                           "If this is one of several comparisons planned in the same study (e.g., testing 4 outcomes, or 4 pairwise contrasts), each additional comparison inflates the chance of a false positive somewhere across the whole set. Set this to the TOTAL number of planned comparisons: the alpha above is treated as the family-wise rate, and the per-test alpha actually used below is reduced accordingly (by the method chosen on the right). Leave at 1 if this is your only planned comparison."),
                          value = 1, min = 1, max = 100, step = 1)
           ),
           column(6,
+            radioButtons(ns("mc_method"),
+                         help_tip("Correction method",
+                           "Bonferroni (alpha / k) is the simplest and most conservative choice, and the one reviewers recognize on sight. Sidak (1 - (1-alpha)^(1/k)) is exact when the comparisons are independent and slightly less demanding -- it never asks for a larger sample than Bonferroni. Sequential procedures such as Holm cannot be planned for with a single per-test alpha, so for an a priori calculation Bonferroni is their conservative planning bound."),
+                         choices = c("Bonferroni (default)" = "bonferroni",
+                                     "Šidák (independent comparisons)" = "sidak"),
+                         selected = "bonferroni"),
             div(class = "field-hint", icon("circle-info"),
-                " With more than one comparison, the alpha entered above is Bonferroni-corrected before being used to solve for N, and the correction is disclosed in the report text below.")
+                " With more than one comparison, the alpha entered above is corrected before being used to solve for N, and the correction is disclosed in the report text below.")
           )
         )
       )
@@ -157,21 +163,29 @@ params_step_ui <- function(ns) {
 #' Read the params step inputs into a plain list (call from the parent
 #' module's server, e.g. `params <- read_params_step(input)`)
 #'
-#' `alpha` is already Bonferroni-corrected (alpha_nominal / n_comparisons)
-#' when `n_comparisons` > 1 -- every family's solver consumes `alpha`
-#' directly, so the correction applies automatically with no changes
-#' needed in any individual family module. `alpha_nominal` and
-#' `n_comparisons` are carried alongside it purely so
-#' [wire_results_server()] can disclose the correction in the generated
-#' report text.
+#' `alpha` is already multiplicity-corrected when `n_comparisons` > 1 --
+#' Bonferroni (alpha_nominal / k) by default, or Šidák
+#' (1 - (1-alpha_nominal)^(1/k)) when the user selects it -- and every
+#' family's solver consumes `alpha` directly, so the correction applies
+#' automatically with no changes needed in any individual family module.
+#' `alpha_nominal`, `n_comparisons`, and `mc_method` are carried alongside
+#' it purely so [wire_results_server()] can disclose the correction in the
+#' generated report text.
 #' @export
 read_params_step <- function(input) {
   alpha_nominal <- safe_numeric(input$alpha, 0.0001, 0.5, 0.05)
   n_comparisons <- max(1L, as.integer(safe_numeric(input$n_comparisons, 1, 100, 1)))
+  mc_method <- if (identical(input$mc_method, "sidak")) "sidak" else "bonferroni"
+  alpha_per <- if (n_comparisons > 1L && mc_method == "sidak") {
+    1 - (1 - alpha_nominal)^(1 / n_comparisons)
+  } else {
+    alpha_nominal / n_comparisons
+  }
   list(
-    alpha = alpha_nominal / n_comparisons,
+    alpha = alpha_per,
     alpha_nominal = alpha_nominal,
     n_comparisons = n_comparisons,
+    mc_method = mc_method,
     attrition = safe_numeric(input$attrition, 0, 0.95, 0),
     power = safe_numeric(input$power, 0.01, 0.999, 0.80),
     tails = input$tails %||% "two.sided",
@@ -188,11 +202,30 @@ read_params_step <- function(input) {
 #' @param ns namespace function
 #' @param cohen_ui tagList, Cohen's-convention branch inputs (radio choices)
 #' @param sesoi_ui tagList, SESOI branch inputs
-#' @param safeguard_metric_label character, label for the published effect
-#'   size input (e.g. "Published Cohen's d")
+#' @param safeguard_metric_label character/tagList, label for the published
+#'   effect size input (e.g. "Published Cohen's d")
+#' @param safeguard_pre_ui tagList or NULL, family-specific inputs rendered
+#'   INSIDE the safeguard branch, above the generic published-value/N pair
+#'   -- used by families whose published statistic needs interpreting
+#'   before the generic inputs make sense (e.g. Wilcoxon's choice of
+#'   p / U / z / d as the reported metric)
+#' @param safeguard_hint character or NULL, a field-hint rendered under the
+#'   safeguard inputs. The default covers the magnitude-scale families
+#'   (d, h, w, f), whose input is clamped positive: a negatively-signed
+#'   published effect is entered as its absolute value, with direction
+#'   carried by the test-direction setting. Families where the SIGN of the
+#'   published estimate is itself meaningful and accepted (correlation,
+#'   regression) must override this, and families with fully custom
+#'   safeguard UI (survival) never see it.
 #' @export
 effect_size_step_ui <- function(ns, cohen_ui, sesoi_ui,
-                                 safeguard_metric_label = "Published effect size") {
+                                 safeguard_metric_label = "Published effect size",
+                                 safeguard_pre_ui = NULL,
+                                 safeguard_hint = paste(
+                                   "If the published effect was reported with a negative sign,",
+                                   "enter its size without the sign: on this magnitude scale the",
+                                   "direction of your hypothesis is set by 'Test direction' in the",
+                                   "Parameters step, not by the sign of the effect size.")) {
   tagList(
     h3(icon("bullseye"), " Step: Effect size"),
     p(class = "step-intro",
@@ -269,12 +302,14 @@ effect_size_step_ui <- function(ns, cohen_ui, sesoi_ui,
       conditionalPanel(
         condition = sprintf("input['%s'] == 'safeguard'", ns("es_branch")),
         div(class = "well well-info", icon("circle-info"), " ", safeguard_power_explainer()),
+        safeguard_pre_ui,
         fluidRow(
           column(6, numericInput(ns("sg_published_value"), safeguard_metric_label, value = NA)),
           column(6, numericInput(ns("sg_published_n"),
                    help_tip("Original study's total N", "The total sample size (both groups combined, if applicable) of the study the published effect came from -- check its Methods section."),
                    value = NA, min = 4))
         ),
+        if (!is.null(safeguard_hint)) div(class = "field-hint", icon("circle-info"), " ", safeguard_hint),
         fluidRow(
           column(6, sliderInput(ns("sg_conf_level"),
                    help_tip("Confidence level for the safeguard bound", "How conservative the correction should be. 80% is the default recommended by Perugini et al. (2014); higher values are more cautious and require a larger sample."),

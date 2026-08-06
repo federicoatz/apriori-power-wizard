@@ -117,6 +117,76 @@ test_that("a negative published correlation is shrunk toward zero, not away from
   expect_equal(pos, -neg, tolerance = 1e-12)
 })
 
+# --- AUC-scale safeguard (Wilcoxon-Mann-Whitney's native metric) ---------
+
+test_that("safeguard_ci_auc reproduces the Hanley-McNeil (1982) standard error", {
+  # Hand-computed from the published formula at p = 0.7, n1 = n2 = 50:
+  #   Q1 = 0.7/1.3, Q2 = 2*0.49/1.7
+  #   Var = [0.21 + 49*(Q1 - 0.49) + 49*(Q2 - 0.49)] / 2500
+  expect_equal(safeguard_ci_auc(0.7, 50, 50)$se, 0.0522367, tolerance = 1e-5)
+})
+
+test_that("safeguard_ci_auc shrinks toward 0.5 from either side and never crosses it", {
+  above <- safeguard_ci_auc(0.70, 40, 40, conf_level = 0.80)$p_safeguard
+  below <- safeguard_ci_auc(0.30, 40, 40, conf_level = 0.80)$p_safeguard
+  expect_gt(above, 0.5); expect_lt(above, 0.70)
+  expect_lt(below, 0.5); expect_gt(below, 0.30)
+  # symmetric estimates shrink symmetrically around 0.5
+  expect_equal(above - 0.5, 0.5 - below, tolerance = 1e-12)
+
+  # an estimate whose interval would cross 0.5 is clamped just short of it,
+  # on its own side -- the diverging-N case the results step explains
+  expect_gt(safeguard_ci_auc(0.52, 10, 10, conf_level = 0.95)$p_safeguard, 0.5)
+  expect_lt(safeguard_ci_auc(0.48, 10, 10, conf_level = 0.95)$p_safeguard, 0.5)
+})
+
+test_that("safeguard_ci_auc tightens with the original study's size and with lower confidence", {
+  small <- safeguard_ci_auc(0.65, 15, 15)
+  large <- safeguard_ci_auc(0.65, 500, 500)
+  expect_lt(large$se, small$se)
+  expect_gt(large$p_safeguard, small$p_safeguard)
+  # as the original study grows, the bound approaches the published value
+  expect_equal(safeguard_ci_auc(0.65, 5e5, 5e5)$p_safeguard, 0.65, tolerance = 1e-3)
+  # higher confidence demands a bound closer to the null
+  expect_lt(safeguard_ci_auc(0.65, 40, 40, conf_level = 0.95)$p_safeguard,
+            safeguard_ci_auc(0.65, 40, 40, conf_level = 0.80)$p_safeguard)
+})
+
+test_that("safeguard correction increases required N for the rank test relative to the naive estimate", {
+  sg <- safeguard_ci_auc(0.64, 30, 30, conf_level = 0.80)
+  n_naive <- power_wilcoxon_n(0.64, power = 0.80)$n_total
+  n_safeguard <- power_wilcoxon_n(sg$p_safeguard, power = 0.80)$n_total
+  expect_gt(n_safeguard, n_naive)
+})
+
+test_that("u_to_p_superiority and z_to_p_superiority recover the same estimate", {
+  n1 <- 40; n2 <- 40
+  # U at the null midpoint is exactly p = 0.5
+  expect_equal(u_to_p_superiority(n1 * n2 / 2, n1, n2), 0.5)
+  # a U and the z computed FROM that U must give the same p
+  u <- 1100
+  z <- (u - n1 * n2 / 2) / sqrt(n1 * n2 * (n1 + n2 + 1) / 12)
+  expect_equal(z_to_p_superiority(z, n1, n2), u_to_p_superiority(u, n1, n2),
+               tolerance = 1e-12)
+  # the two reporting conventions for U (either group's count) land
+  # symmetrically around 0.5, so folding onto one side is convention-proof
+  expect_equal(u_to_p_superiority(u, n1, n2) - 0.5,
+               0.5 - u_to_p_superiority(n1 * n2 - u, n1, n2), tolerance = 1e-12)
+  # out-of-range U is refused rather than silently producing p outside (0,1)
+  expect_error(u_to_p_superiority(n1 * n2 + 1, n1, n2))
+})
+
+test_that("a protective odds ratio survives the Chinn conversion with its direction intact", {
+  # OR = 0.75 is a NEGATIVE effect on the log-odds/d scale; the safeguard
+  # shrink must move it toward 1, never across it (mirrors the HR test above)
+  d_pub <- or_to_d(0.75)
+  expect_lt(d_pub, 0)
+  sg <- safeguard_ci_d(d_pub, n1 = 100, n2 = 100, conf_level = 0.80)
+  or_sg <- d_to_or(sg$d_safeguard)
+  expect_lt(or_sg, 1)
+  expect_gt(or_sg, 0.75)
+})
+
 test_that("a diverged sample size raises a clean error instead of hanging", {
   # near-null effects reach the unbounded refinement loops in these
   # families; each must fail fast rather than walk upward forever

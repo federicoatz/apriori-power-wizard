@@ -157,9 +157,11 @@ effect (~4x the per-cell N for a "halved effect" interaction).
 
 - Alpha (default .05) and power (default .80, one-click switch to .90),
   one- vs. two-tailed, balanced or custom allocation ratio.
-- **Bonferroni correction** for multiple planned comparisons: set the
+- **Multiplicity correction** for multiple planned comparisons: set the
   number of comparisons and alpha is treated as the family-wise rate,
-  with the per-test alpha disclosed automatically in the report text.
+  corrected by Bonferroni (default) or Šidák, with the method, the
+  per-test alpha, and what the correction cost in participants all
+  disclosed automatically in the results and the report text.
 - **Expected attrition/exclusion rate**: the app reports both the N the
   analysis needs and the larger N to actually recruit
   (`analysis N / (1 - rate)`), disclosed in the report text.
@@ -172,7 +174,11 @@ effect (~4x the per-cell N for a "halved effect" interaction).
   2014): enter the published effect size and the original study's N; the
   app computes a one-sided confidence interval (default 80%) around it
   and uses its lower bound as a conservative, publication-bias-corrected
-  input. Naive N and safeguard-corrected N are shown side by side.
+  input. Naive N and safeguard-corrected N are shown side by side. For
+  the Wilcoxon-Mann-Whitney family the published statistic can be entered
+  as P(X < Y), the U statistic, or the reported z, and the interval is
+  built directly on the P(X < Y) scale (Hanley & McNeil, 1982) with no
+  normality assumption.
 - **SESOI** (smallest effect size of interest), in raw units (with an
   expected SD) or already-standardized units.
 
@@ -703,6 +709,12 @@ suite, and instructions to reproduce every check yourself
   the repeated-measures noncentrality/degrees-of-freedom formulation used in
   `R/power_rm_anova.R`, cross-validated against Monte Carlo simulation and,
   for the two-measurement case, against `pwr`'s paired t-test exactly.)
+- Hanley, J. A., & McNeil, B. J. (1982). The meaning and use of the area
+  under a receiver operating characteristic (ROC) curve. *Radiology*,
+  143(1), 29-36. (Source of the P(X < Y) standard error used in
+  `safeguard_ci_auc()`, `R/safeguard_power.R`, via the identity between
+  the probability of superiority and the AUC; cross-validated against
+  Monte Carlo sampling of U/(n1\*n2) before implementation.)
 - Noether, G. E. (1987). Sample size determination for some common
   nonparametric tests. *Journal of the American Statistical Association*,
   82(398), 645-647. (Closed-form Wilcoxon-Mann-Whitney sample size used in

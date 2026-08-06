@@ -75,7 +75,11 @@ mod_regression_ui <- function(id) {
               numericInput(ns("sesoi_f2"), "Smallest effect size of interest (Cohen's f²)", value = 0.05, min = 0.0001, step = 0.01)
             )
           ),
-          safeguard_metric_label = "Published (semi-partial) correlation r or standardized beta"
+          safeguard_metric_label = "Published (semi-partial) correlation r or standardized beta",
+          safeguard_hint = paste(
+            "A negative published r/beta is entered WITH its sign (e.g. -0.25):",
+            "the safeguard bound moves it toward zero from whichever side it starts on,",
+            "never past it.")
         ),
         wizard_nav_ui(ns, "effect_size", next_label = "Compute")
       ),

@@ -29,12 +29,12 @@ round_up_n <- function(x) {
   as.integer(ceiling(x))
 }
 
-#' Apply an allocation ratio to a total sample size
+#' Derive both group sizes from group 1's size and an allocation ratio
 #'
-#' Given a total N and an allocation ratio r = n2/n1, return per-group sizes
-#' such that n1 + n2 = N (approximately, after rounding up) and n2/n1 ~ r.
+#' Given group 1's (possibly fractional) size and an allocation ratio
+#' r = n2/n1, return both per-group sizes rounded up, so n2/n1 ~ r.
 #'
-#' @param n1 numeric, size of group 1 (reference)
+#' @param n1 numeric, size of group 1 (reference), possibly fractional
 #' @param ratio numeric, allocation ratio n2/n1 (1 = balanced design)
 #' @return list with n1, n2 (both rounded up)
 #' @export

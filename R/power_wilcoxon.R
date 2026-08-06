@@ -60,6 +60,42 @@ p_superiority_to_d <- function(p) {
   stats::qnorm(p) * sqrt(2)
 }
 
+#' Probability of superiority from a reported Mann-Whitney U
+#'
+#' The U statistic IS the count of between-group pairs (x, y) with x < y,
+#' so U/(n1*n2) is the sample estimate of P(X < Y) directly -- no
+#' distributional assumption of any kind. Which group's U was reported
+#' only affects which side of 0.5 the estimate lands on (U' = n1*n2 - U),
+#' not its distance from it, so callers that fold onto the > 0.5 side are
+#' insensitive to that reporting convention.
+#'
+#' @param u numeric in [0, n1*n2], the reported U statistic
+#' @param n1,n2 integer, the ORIGINAL study's per-group sizes
+#' @export
+u_to_p_superiority <- function(u, n1, n2) {
+  stopifnot(n1 > 0, n2 > 0, u >= 0, u <= n1 * n2)
+  u / (n1 * n2)
+}
+
+#' Probability of superiority from a reported Mann-Whitney z statistic
+#'
+#' Inverts the test's own large-sample normal approximation,
+#'   z = (U - n1*n2/2) / sqrt(n1*n2*(n1+n2+1)/12),
+#' giving p-hat = U/(n1*n2) = 0.5 + z * sqrt((n1+n2+1)/(12*n1*n2)).
+#' This recovers the same distribution-free estimate as
+#' [u_to_p_superiority()] from the form results are most often reported
+#' in ("Mann-Whitney, z = 2.34"). The z's sign only decides which side of
+#' 0.5 the estimate lands on; see [u_to_p_superiority()] on why callers
+#' that fold onto one side don't depend on it.
+#'
+#' @param z numeric, the reported (signed) z statistic
+#' @param n1,n2 integer, the ORIGINAL study's per-group sizes
+#' @export
+z_to_p_superiority <- function(z, n1, n2) {
+  stopifnot(n1 > 0, n2 > 0)
+  0.5 + z * sqrt((n1 + n2 + 1) / (12 * n1 * n2))
+}
+
 #' Critical z for a given alpha and test direction
 #' @keywords internal
 .wilcoxon_z_alpha <- function(sig_level, alternative = "two.sided") {
