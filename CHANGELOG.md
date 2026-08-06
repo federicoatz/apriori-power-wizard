@@ -10,6 +10,32 @@ minor = new feature/family, major reserved for a future breaking redesign).
 > notes in `CITATION.cff`). Every entry below corresponds to a real tagged
 > release on the current history; nothing has been renumbered or backdated.
 
+## [1.1.0] - 2026-08-06
+
+Minor rather than patch: this adds user-facing output and two exported
+functions rather than only correcting behaviour.
+
+- **The multiple-comparisons correction now shows what it costs, not just
+  its result.** When more than one comparison is planned, every solver
+  receives a per-test alpha and the corrected N was the only figure the
+  user ever saw, which absorbs the cost of multiplicity into a number they
+  cannot decompose. The results step now solves a second time at the
+  nominal alpha and reports both requirements side by side with the
+  difference between them, mirroring what the safeguard branch already did
+  for its own naive comparison. The generated report text states both as
+  well, so a reader of a pre-registration can reconstruct the adjustment
+  instead of taking it on trust.
+  - No family-specific code was needed: the second solve reuses each
+    family's own `solve_n_fn()`, the same entry point already backing the
+    alpha/power comparison scenarios, and a new shared `display_n()` helper
+    guarantees the two figures are the same quantity the value box reports
+    rather than a total set against a per-cell N.
+  - Verified in a real browser across the four interactions that could go
+    wrong: absent at one comparison; both figures shown at two; attrition
+    and the budget panel following the corrected figure (and saying so);
+    and fully suppressed, along with the value boxes and the report, when
+    the safeguard bound has collapsed.
+
 ## [1.0.6] - 2026-08-05
 
 Follow-up review of the v1.0.5 fixes found that two of them were partial,

@@ -37,6 +37,7 @@ results_panel_ui <- function(ns) {
 
     uiOutput(ns("safeguard_uninformative_note")),
     uiOutput(ns("value_boxes")),
+    uiOutput(ns("multiplicity_note")),
     div(class = "well well-result", uiOutput(ns("n_summary"))),
 
     accordion(
@@ -314,16 +315,27 @@ wire_results_server <- function(input, output, session, family,
     c(max(2, round(min(ns_vals) * 0.3)), round(max(ns_vals) * 1.8) + 5)
   })
 
+  # The headline quantity differs by family (per cell for factorial ANOVA,
+  # per group for ANCOVA, total otherwise). Factored out so that anything
+  # comparing two solves -- the multiplicity pair below, for instance --
+  # is guaranteed to compare the same quantity the value box reports,
+  # rather than a total against a per-cell figure.
+  n_label <- if (family == "anova_factorial") "N per cell"
+             else if (family == "ancova") "N per group"
+             else "Total N"
+  display_n <- function(res) {
+    if (is.null(res)) return(NA_integer_)
+    if (family == "anova_factorial") res$n_per_cell
+    else if (family == "ancova") res$n_per_group
+    else (res$n_total %||% NA_integer_)
+  }
+
   output$value_boxes <- renderUI({
     if (isTRUE(safeguard_diverged())) return(NULL)
     res <- tryCatch(result_r(), error = function(e) NULL)
     if (is.null(res)) return(NULL)
-    n_label <- if (family == "anova_factorial") "N per cell"
-               else if (family == "ancova") "N per group"
-               else "Total N"
-    n_display <- if (family == "anova_factorial") res$n_per_cell
-                 else if (family == "ancova") res$n_per_group
-                 else (res$n_total %||% n_solution_r())
+    n_display <- display_n(res) %||% n_solution_r()
+    if (is.na(n_display)) n_display <- n_solution_r()
 
     layout_column_wrap(
       width = 1 / 2, class = "value-box-row",
@@ -774,6 +786,54 @@ wire_results_server <- function(input, output, session, family,
           cl * 100)))
   })
 
+  # ---- Multiplicity: show what the correction costs, not just its result --
+  # When more than one comparison is planned, read_params_step() hands every
+  # solver a per-test alpha and the corrected N is the only number the user
+  # ever sees. That hides exactly the quantity Section 5.1 of the manuscript
+  # argues is easy to overlook: multiplicity is cheap to ignore precisely
+  # because its cost is absorbed silently into a single figure. The same
+  # objection applies here as applied to the safeguard branch, which already
+  # reports the naive and corrected requirements side by side, so this
+  # mirrors that: solve a second time at the NOMINAL alpha and show both.
+  #
+  # solve_n_fn() is the family's own solver at an arbitrary alpha (it already
+  # backs the alpha/power comparison scenarios), so no family-specific code
+  # is needed here; display_n() guarantees the two figures are the same
+  # quantity the value box reports rather than a total against a per-cell N.
+  multiplicity <- reactive({
+    p <- read_params_step(input)
+    if (is.null(p$n_comparisons) || is.na(p$n_comparisons) || p$n_comparisons <= 1) return(NULL)
+    if (is.null(solve_n_fn)) return(NULL)
+    corrected <- display_n(tryCatch(result_r(), error = function(e) NULL))
+    uncorrected <- display_n(tryCatch(solve_n_fn(p$alpha_nominal, p$power),
+                                       error = function(e) NULL))
+    if (is.na(corrected) || is.na(uncorrected)) return(NULL)
+    list(k = p$n_comparisons, alpha_nominal = p$alpha_nominal, alpha_per = p$alpha,
+         corrected = corrected, uncorrected = uncorrected)
+  })
+
+  output$multiplicity_note <- renderUI({
+    # Suppressed alongside everything else when the safeguard bound has
+    # collapsed: a pair of figures is no more meaningful there than one.
+    if (isTRUE(safeguard_diverged())) return(NULL)
+    m <- multiplicity()
+    if (is.null(m)) return(NULL)
+    extra <- m$corrected - m$uncorrected
+    pct <- if (m$uncorrected > 0) 100 * extra / m$uncorrected else NA_real_
+    div(class = "well well-warning", icon("layer-group"),
+        HTML(sprintf(
+          " <strong>%s of that total is the cost of planning %d comparisons.</strong>
+           Treating &alpha; = %s as the family-wise rate gives a per-test
+           &alpha; = %s, which raises the requirement from <strong>%s</strong>
+           to <strong>%s</strong> (%s%%). The corrected figure is the one shown
+           above and the one every calculation below uses -- attrition, budget,
+           and the sensitivity analysis all follow from it.",
+          format(extra, big.mark = ","), m$k,
+          format_stat(m$alpha_nominal, 3), format_stat(m$alpha_per, 4),
+          format(m$uncorrected, big.mark = ","), format(m$corrected, big.mark = ","),
+          if (is.na(pct)) "?" else sprintf("+%.0f", pct))))
+  })
+
   attrition_rate <- reactive(safe_numeric(input$attrition, 0, 0.95, 0))
   n_recruit <- reactive({
     res <- tryCatch(result_r(), error = function(e) NULL)
@@ -852,6 +912,11 @@ wire_results_server <- function(input, output, session, family,
     if (m > 1) {
       spec$n_comparisons <- m
       spec$alpha_nominal <- safe_numeric(input$alpha, 0.0001, 0.5, 0.05)
+      # Carry the uncorrected requirement through as well, so the report
+      # states what the correction cost rather than only that it was
+      # applied -- the same disclosure the safeguard branch already makes.
+      mm <- multiplicity()
+      if (!is.null(mm)) spec$n_uncorrected <- mm$uncorrected
     }
     a <- attrition_rate()
     if (a > 0) {

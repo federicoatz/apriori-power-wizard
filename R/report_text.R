@@ -154,6 +154,19 @@ build_report_text <- function(spec) {
     sprintf("We set alpha = %s%s", format_stat(spec$alpha, 2), tails_paren)
   }
 
+  # What the correction cost, not merely that it was applied. Reported for
+  # the same reason the safeguard branch reports its naive comparison: a
+  # single corrected figure conceals the size of the adjustment, and the
+  # adjustment is the part a reader of the pre-registration cannot
+  # reconstruct.
+  multiplicity_txt <- if (has_mc && !is.null(spec$n_uncorrected) &&
+                          !is.na(spec$n_uncorrected)) {
+    sprintf(" Without that correction the same design would have required N = %s; the correction therefore accounts for %s of the total reported below.",
+            spec$n_uncorrected,
+            format(max(0, as.numeric(spec$n_total) - as.numeric(spec$n_uncorrected)),
+                   big.mark = ","))
+  } else ""
+
   # Attrition / exclusion inflation (see the shared "Expected attrition"
   # input in params_step_ui()). Purely a recruitment adjustment applied
   # AFTER the statistical solve -- it never changes alpha, power, or the
@@ -178,10 +191,10 @@ build_report_text <- function(spec) {
     effect_txt,
     "",
     sprintf(
-      "This yields a required sample size of N = %s (%s), achieving %s%% power (%s).%s",
+      "This yields a required sample size of N = %s (%s), achieving %s%% power (%s).%s%s",
       spec$n_total, spec$n_per_group_txt,
       format_stat(spec$power_achieved * 100, 1), format_stat(spec$power_achieved, 4),
-      attrition_txt
+      multiplicity_txt, attrition_txt
     ),
     "",
     sprintf("Method: %s", citation),
