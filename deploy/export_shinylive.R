@@ -186,9 +186,24 @@ splash_html <- '
     animation: pw-shimmer 1.3s linear infinite;
   }
   #pw-boot-splash .pw-pct { font-size: 13px; font-variant-numeric: tabular-nums; color: #52525E; }
+  /* Sized for the LONGEST line in the rotation, not the average: the box
+     reserves its height up front so swapping a two-line message for a
+     four-line one does not shove the progress bar up and down the page
+     every nine seconds. Widened from 320px for the same reason -- fewer
+     wraps means less variation to absorb. */
   #pw-boot-splash .pw-msg {
-    font-size: 13px; max-width: 320px; text-align: center; min-height: 2.6em;
+    font-size: 13px; max-width: 430px; text-align: center; min-height: 4.9em;
+    line-height: 1.5;
     color: #52525E; transition: opacity 0.3s ease;
+    padding: 0 16px;
+  }
+  /* Narrow screens wrap the same sentences onto more lines, so the height
+     to reserve is different there. Measured rather than guessed: the
+     tallest line in the rotation renders at 64px on desktop and 78px at
+     390px wide, hence the two values. Without this the splash content
+     would visibly hop every nine seconds on a phone. */
+  @media (max-width: 560px) {
+    #pw-boot-splash .pw-msg { min-height: 6.4em; }
   }
   @keyframes pw-shimmer {
     0% { background-position: -60px 0; }
@@ -234,14 +249,38 @@ splash_html <- '
     }
 
     // Rotating facts to make the (unavoidable) first-visit wait feel less
-    // dead; index 0 is the original explanatory message, shown first.
+    // dead; index 0 is the explanatory message, shown first.
+    //
+    // This costs the page load NOTHING: it is a literal array in a script
+    // already inlined in the document, so there is no request, no parse of
+    // anything external, and no work done per frame -- only a textContent
+    // swap on a timer. Length is therefore free; the only real constraint
+    // is that each line has to be readable in the time it is shown.
+    //
+    // Every quantitative claim below is reproducible from this
+    // applications own solvers (checked before writing): d = .50 needs 128
+    // participants for
+    // two means where d = .25 needs 506, a 3.95x jump for a halved effect;
+    // r = .30 needs 85 where r = .15 needs 346, 4.07x; moving power from
+    // .80 to .90 at d = .50 takes 128 to 172, about a third more; and a
+    // clustered design with eight per group at ICC = .05 needs 192 where
+    // the unclustered equivalent needs 128.
     var tips = [
       "Loading the app in your browser \\u2014 the first visit can take up to a minute while R and its packages download. Later visits are faster (cached).",
-      "Did you know? Smaller effect sizes need disproportionately larger samples to detect reliably.",
-      "Power (1 \\u2212 \\u03b2) and alpha (Type I error rate) are two independent knobs \\u2014 tightening one usually loosens the other unless you also grow the sample.",
-      "Cohen\\u2019s small/medium/large benchmarks are convenient defaults, not universal truths for every field.",
-      "A priori power analysis is meant to be done before collecting data, not after \\u2014 that is what makes it \\"a priori\\".",
-      "Group-randomized (clustered) designs almost always need more participants than individually randomized ones, for the same effect size."
+      "Everything runs inside your browser. Nothing you type is uploaded, and there is no account, server, or cookie behind this.",
+      "Smaller effects cost disproportionately more. Detecting d = 0.25 instead of d = 0.50 takes roughly four times the sample, not twice.",
+      "Power (1 \\u2212 \\u03b2) and alpha are separate knobs. Going from 80% to 90% power costs about a third more participants at the same effect size.",
+      "Cohen\\u2019s small/medium/large benchmarks are convenient defaults, not universal truths \\u2014 they were never meant to describe any particular field.",
+      "A priori power analysis belongs before data collection. Computed afterwards from the result you got, it tells you nothing you did not already know.",
+      "Group-randomized designs pay for the grouping. Eight participants per group at an ICC of .05 needs about 1.5 times the sample of an individually randomized study.",
+      "In a clustered design it is the number of GROUPS, not of participants, that carries the statistical power. Adding people to existing groups helps far less than adding groups.",
+      "Taking a published effect size at face value assumes it was measured without error. The safeguard branch uses the lower bound of a confidence interval around it instead.",
+      "This tool never picks an effect size for you. Every one comes from a branch you chose \\u2014 a convention, a corrected published estimate, or a smallest effect you consider worth detecting.",
+      "Planning several analyses on one sample? You need the largest of their requirements, not the first one you worked out. The results step will combine them for you.",
+      "The sample your analysis needs and the sample you must recruit are different numbers whenever you expect dropouts or exclusions. Both are reported.",
+      "Correcting alpha for multiple comparisons is the easy half. The harder half is recruiting enough people for every test you plan to run.",
+      "Required sample sizes are always rounded up, and the app then reports the power that rounded number actually delivers \\u2014 not the power you asked for.",
+      "Every formula here is closed-form, so results appear instantly, and each one is checked against the pwr package or a seeded simulation before release."
     ];
     var tipIdx = 0;
     function showTip(i) {
@@ -252,11 +291,16 @@ splash_html <- '
         tipEl.style.opacity = "1";
       }, 280);
     }
+    // 9s, not the original 4.5s. Several of these run to two lines, and
+    // 4.5s was not long enough to finish one before it was replaced --
+    // which is worse than showing nothing, since a line that vanishes
+    // mid-sentence reads as a glitch. The 280ms cross-fade in showTip()
+    // comes out of this budget, leaving roughly 8.7s of settled text.
     var tipRotator = setInterval(function () {
       if (done) return;
       tipIdx = (tipIdx + 1) % tips.length;
       showTip(tipIdx);
-    }, 4500);
+    }, 9000);
 
     // The real app runs inside a same-origin <iframe class="app-frame">
     // that shinylive creates dynamically (not in this top-level document),

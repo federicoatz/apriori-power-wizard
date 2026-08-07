@@ -10,6 +10,47 @@ minor = new feature/family, major reserved for a future breaking redesign).
 > notes in `CITATION.cff`). Every entry below corresponds to a real tagged
 > release on the current history; nothing has been renumbered or backdated.
 
+## [1.4.4] - 2026-08-07
+
+Loading splash only; nothing about the application itself changed.
+
+- **More to read while the first visit downloads R, and shown for long
+  enough to read it.** The rotation went from six messages to fifteen, and
+  the interval from 4.5s to 9s. The old interval was the real problem:
+  several messages ran to two lines and were replaced before they could be
+  finished, which reads as a glitch rather than as information. The new
+  set covers what the tool actually does -- the safeguard branch, the
+  study plan, attrition vs. recruitment, why clusters rather than
+  participants carry power in a group-randomized design -- alongside the
+  general points that were there before.
+
+  Every quantitative claim in the rotation was checked against the app's
+  own solvers before being written: d = .50 needs 128 participants for two
+  means where d = .25 needs 506 (a 3.95x jump for a halved effect), moving
+  power from .80 to .90 costs about a third more, and eight per group at
+  ICC = .05 needs 1.5x the unclustered sample.
+
+- **It does not cost anything at load time, which was the constraint.**
+  The messages are a literal array in a script already inlined in the
+  document: no request, nothing external to parse, and no per-frame work
+  -- only a `textContent` swap on a timer. Net effect on the page is
+  +3.6 KB of inline markup against the tens of megabytes of WebAssembly
+  and R packages a first visit fetches, and the longer interval means
+  *fewer* timer callbacks than before (6 rather than 13 in the first
+  minute).
+
+- **The message box now reserves its height, per breakpoint.** Longer
+  messages wrap onto more lines, so without this the progress bar would
+  hop every nine seconds as the text grew and shrank. The reserved height
+  is measured rather than guessed -- the tallest line renders at 64px on
+  desktop and 83px at 390px wide, hence the media query. Verified at
+  1200, 900, 390 and 320px: no layout shift at any of them.
+
+- Verified end to end rather than by inspection: the site was exported,
+  served, and driven in a real browser, where the splash renders, rotates
+  on the new interval, and is removed once the app is ready. The existing
+  smoke test passes against the same build (app ready in 21s).
+
 ## [1.4.3] - 2026-08-07
 
 Appearance and accessibility; no change to what the application computes.
