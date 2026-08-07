@@ -10,13 +10,3 @@ _site/
 
 # macOS
 .DS_Store
-
-# Local Claude Code tooling state (not part of the app)
-.claude/
-
-# Manuscript drafts (paper.tex, APA submission version, bibliography, figures) --
-# kept local only, not part of the public repo history.
-manuscript/
-
-# Reviewer feedback on the manuscript -- same reasoning as manuscript/ above.
-Review.md
