@@ -299,4 +299,93 @@ for (cfg in list(list(k = 3, n = 20, f = 0.25),
               "Factorial ANOVA (1-way)", sprintf("k=%d n=%d f=%.2f", cfg$k, cfg$n, cfg$f),
               ours, ref, ours - ref))
 }
+cat("\n")
+
+## ---- Clustered design, continuous outcome -------------------------------
+## Added in v1.3.0, when this family stopped being a pure pwr wrapper.
+##
+## It used to inflate N by the design effect and hand the deflated figure
+## to pwr::pwr.t.test(), which made pwr the reference and simulation
+## unnecessary. That was wrong in one specific way: pwr took its DEGREES
+## OF FREEDOM from the deflated individual N, whereas a cluster-randomized
+## design supports only k1 + k2 - 2 -- one per cluster. Power is now built
+## from the noncentral t on cluster df directly (R/power_clustered.R), so
+## there is no longer an external implementation computing the same
+## quantity, and this family belongs with the base-R ones that get checked
+## against a simulation of the actual test.
+##
+## The simulation generates genuinely clustered data -- a random cluster
+## intercept with variance ICC and residual variance 1 - ICC, so the total
+## variance is 1 and the intraclass correlation is exactly the ICC asked
+## for -- assigns WHOLE CLUSTERS to arms, and runs the analysis a
+## researcher would actually run on it: a two-sample t-test on cluster
+## means. That is the analysis whose degrees of freedom the fix is about,
+## which is the point of checking it this way rather than against a
+## formula.
+##
+## The configurations deliberately span the regime where the old and new
+## answers diverge most (few large clusters), because that is where a
+## mistake in the fix would show up.
+##
+## Reps are higher here than for the other families because the quantity
+## being checked is small: the whole point is a difference of a few
+## hundredths, so a margin of a few hundredths would not resolve it. At
+## the 4,000 reps used elsewhere the m = 4 / ICC = .30 configuration
+## flagged WATCH at 2.6 SE; re-run at 40,000 reps across four seeds it
+## agrees with the formula to within +-0.002 (sim = .8002, .8035, .8044,
+## .8028 against a formula value of .8024), so that flag was sampling
+## noise, not bias.
+cat("Clustered design, continuous outcome (Donner & Klar, 2000; cluster-level df)\n")
+set.seed(SEED)
+
+CLUSTER_REPS <- 12000
+
+sim_clustered <- function(k_per_arm, m, icc, d, sig_level = 0.05, reps = CLUSTER_REPS) {
+  sd_between <- sqrt(icc)
+  sd_within <- sqrt(1 - icc)
+  rejects <- vapply(seq_len(reps), function(i) {
+    # One cluster mean per cluster: cluster intercept + mean of m residuals.
+    cm <- function(k, shift) {
+      shift + stats::rnorm(k, 0, sd_between) +
+        stats::rnorm(k, 0, sd_within / sqrt(m))
+    }
+    a <- cm(k_per_arm, 0)
+    b <- cm(k_per_arm, d)
+    tt <- stats::t.test(b, a, var.equal = TRUE)
+    isTRUE(tt$p.value < sig_level)
+  }, logical(1))
+  mean(rejects)
+}
+
+for (cfg in list(list(m = 4,  icc = 0.30, k = 31),
+                  list(m = 8,  icc = 0.15, k = 17),
+                  list(m = 20, icc = 0.05, k = 7),
+                  list(m = 30, icc = 0.02, k = 4))) {
+  fpow <- power_clustered_at_n(n1 = cfg$k * cfg$m, n2 = cfg$k * cfg$m,
+                                d = 0.5, icc = cfg$icc, cluster_size = cfg$m)
+  s <- sim_clustered(cfg$k, cfg$m, cfg$icc, d = 0.5)
+  .report("Clustered (continuous)",
+          sprintf("m=%d icc=%.2f k=%d/arm d=0.50", cfg$m, cfg$icc, cfg$k),
+          fpow, s, CLUSTER_REPS)
+}
+
+## The same four configurations under the PRE-1.3.0 calculation, printed
+## so the change is auditable rather than asserted. These take df from the
+## design-effect-deflated N; each should sit visibly above the simulation,
+## and by more as the cluster count falls.
+cat("\n  Pre-v1.3.0 calculation (df from the deflated individual N), same designs:\n")
+set.seed(SEED)
+for (cfg in list(list(m = 4,  icc = 0.30, k = 31),
+                  list(m = 8,  icc = 0.15, k = 17),
+                  list(m = 20, icc = 0.05, k = 7),
+                  list(m = 30, icc = 0.02, k = 4))) {
+  de <- cluster_design_effect(cfg$m, cfg$icc)
+  old <- power_two_means_at_n(n1 = cfg$k * cfg$m / de, n2 = cfg$k * cfg$m / de, d = 0.5)
+  s <- sim_clustered(cfg$k, cfg$m, cfg$icc, d = 0.5)
+  .report("Clustered (pre-1.3.0)",
+          sprintf("m=%d icc=%.2f k=%d/arm d=0.50", cfg$m, cfg$icc, cfg$k),
+          old, s, CLUSTER_REPS)
+}
+cat("\n")
+
 cat("\nDone. See VALIDATION.md for how this fits into the full sixteen-family picture.\n")

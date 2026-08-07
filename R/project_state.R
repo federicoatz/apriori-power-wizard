@@ -55,6 +55,34 @@ capture_family_state <- function(all_inputs, family) {
        saved_at = as.character(Sys.time()))
 }
 
+#' The subset of a loaded state's input names that may be restored
+#'
+#' The mirror image of the filter [capture_family_state()] applies, and it
+#' exists because the two sides were asymmetric: capture excluded the
+#' click-counter ids, restore did not. A project file this app wrote can
+#' never contain one, so the asymmetry was invisible in normal use -- but a
+#' hand-edited file or a crafted `?state=` link is untrusted input, and the
+#' restore loop would have aimed an input-update at the very ids the
+#' exclusion list exists to keep it away from. Nothing happens today (an
+#' actionButton's binding has no `value` handler and drops the message),
+#' which makes this cheap insurance rather than a fix for a live defect:
+#' the guarantee belongs in the exclusion list, not in a detail of one
+#' input binding's receiveMessage().
+#'
+#' Kept here, next to the regex and to the capture side, rather than
+#' inlined in app.R's restore closure -- so the two can never drift apart
+#' again, and so the property is testable without a Shiny session.
+#'
+#' @param inputs named list (or character vector of names) from a loaded
+#'   state's `$inputs`, with the "<family>-" prefix already stripped
+#' @return character vector of restorable names, in their original order
+#' @export
+restorable_state_inputs <- function(inputs) {
+  nms <- if (is.character(inputs)) inputs else names(inputs)
+  if (is.null(nms)) return(character(0))
+  nms[!grepl(.state_exclude_re, nms)]
+}
+
 #' Serialize a captured state to a JSON string
 #' @export
 state_to_json <- function(state) {

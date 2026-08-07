@@ -64,3 +64,43 @@ test_that("the full round-trip (capture -> json -> query -> json -> state) is lo
   expect_equal(back$inputs$p01, 0.10)
   expect_equal(back$inputs$alpha, 0.05)
 })
+
+test_that("restorable_state_inputs applies the SAME exclusions capture does", {
+  # The asymmetry this closes: .state_exclude_re filtered on capture but not
+  # on restore, so a hand-edited project file or a crafted ?state= link
+  # could name ids the capture side excludes by design.
+  crafted <- list(
+    d = 0.5, alpha = 0.05, wiz = "results",   # legitimate, must survive
+    nav_next_design = 7, nav_back_params = 3, # click counters, must not
+    use_90 = 1, back_to_step1 = 2, es_helper_use = 4,
+    share_link = 1, save_project = 1, load_project_file = "x"
+  )
+  keep <- restorable_state_inputs(crafted)
+  expect_setequal(keep, c("d", "alpha", "wiz"))
+
+  # The invariant, stated directly: whatever capture would drop, restore
+  # drops too. Anything capture keeps, restore keeps.
+  all_inputs <- stats::setNames(as.list(seq_along(crafted)),
+                                 paste0("two_means-", names(crafted)))
+  captured <- capture_family_state(all_inputs, "two_means")
+  expect_setequal(names(captured$inputs), restorable_state_inputs(names(crafted)))
+})
+
+test_that("restorable_state_inputs is a no-op for a state this app wrote", {
+  all_inputs <- list(
+    `two_means-d` = 0.5, `two_means-alpha` = 0.05, `two_means-wiz` = "effect_size",
+    `two_means-nav_next_design` = 1
+  )
+  captured <- capture_family_state(all_inputs, "two_means")
+  round_trip <- json_to_state(state_to_json(captured))
+  expect_setequal(restorable_state_inputs(round_trip$inputs),
+                  names(round_trip$inputs))
+})
+
+test_that("restorable_state_inputs handles an empty or malformed state", {
+  expect_length(restorable_state_inputs(list()), 0)
+  expect_length(restorable_state_inputs(NULL), 0)
+  expect_length(restorable_state_inputs(character(0)), 0)
+  # An unnamed list carries nothing restorable, rather than erroring.
+  expect_length(restorable_state_inputs(list(1, 2, 3)), 0)
+})

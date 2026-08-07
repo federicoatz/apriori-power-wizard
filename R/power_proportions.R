@@ -86,15 +86,22 @@ power_proportions_n <- function(h, sig_level = 0.05, power = 0.80,
     while (n1 > min_n1 && achieved_at(n1 - 1L) >= power) n1 <- n1 - 1L
 
     n2 <- max(round_up_n(n1 * allocation_ratio), 2L)
-    fit <- pwr::pwr.2p2n.test(h = h, n1 = as.double(n1), n2 = as.double(n2),
-                               sig.level = sig_level,
-                               alternative = alternative)
   }
+
+  # Recompute achieved power at the rounded (integer) n1/n2 -- same pattern
+  # used by every other family. In the balanced branch pwr.2p.test() was
+  # asked to SOLVE for n, so its $power is just the target handed back
+  # unchanged (h = 0.5 gives 0.8013 at n = 63, not 0.8000); the unbalanced
+  # branch already refined against integer arms, and recomputing here costs
+  # one extra pwr call and keeps a single definition of the reported number.
+  power_achieved <- power_proportions_at_n(n1 = n1, n2 = n2, h = h,
+                                            sig_level = sig_level,
+                                            alternative = alternative)
 
   list(
     n1 = n1, n2 = n2, n_total = n1 + n2,
     h = h, sig_level = sig_level, power_target = power,
-    power_achieved = fit$power,
+    power_achieved = power_achieved,
     alternative = alternative, allocation_ratio = allocation_ratio,
     method = "Two independent proportions, pwr::pwr.2p.test/pwr.2p2n.test"
   )

@@ -10,6 +10,108 @@ minor = new feature/family, major reserved for a future breaking redesign).
 > notes in `CITATION.cff`). Every entry below corresponds to a real tagged
 > release on the current history; nothing has been renumbered or backdated.
 
+## [1.3.0] - 2026-08-07
+
+Acts on an external code review. Each item below was reproduced against
+the running code before being changed; two of the review's claims did not
+survive that check and are recorded here as well, since the reasons are
+worth keeping.
+
+- **Clustered continuous outcome: power is now evaluated on cluster-level
+  degrees of freedom.** `power_clustered_at_n()` inflated N by the design
+  effect and handed the deflated figure to `pwr::pwr.t.test()`. That gets
+  the noncentrality exactly right but takes the DEGREES OF FREEDOM from
+  the effective individual count, while the analysis a researcher will
+  actually run -- a *t*-test on cluster means, or a mixed model -- has
+  df = k1 + k2 - 2, one per cluster. The gap is negligible with many
+  small clusters and severe with few large ones, which is precisely the
+  regime this app's audience works in: at m = 30, ICC = .02 and four
+  clusters per arm the app reported .865 where the design delivers .729.
+  This was the only approximation in the app that was both undocumented
+  **and** optimistic. Power is now computed from the noncentral *t* on
+  cluster df directly, and the solver refines the Donner & Klar starting
+  point upward until the target is genuinely met.
+
+  Sample sizes go UP in the few-large-clusters regime -- at d = 0.5,
+  ICC = .02, m = 30 the requirement moves from 4 clusters per arm to 5.
+  ICC = 0 no longer collapses to the individually-randomized answer,
+  because cluster-level df is a property of assigning whole clusters to
+  condition rather than of the ICC. The exact reduction that anchors this
+  family to `pwr` is now `cluster_size = 1`, which agrees to machine
+  precision. Rationale, the cost of the change, and the numbers above are
+  in the header of `R/power_clustered.R`.
+
+- **The clustered binary and categorical families were checked and
+  deliberately left alone.** The review flagged them alongside the
+  continuous case. They have no n-derived degrees of freedom to correct:
+  `pwr::pwr.2p.test()` is a pure z-test, and `pwr::pwr.chisq.test()`
+  takes its df from the contingency table, not from N. Both remain
+  large-sample approximations that get optimistic with few clusters, in a
+  way no df substitution can fix -- now stated plainly in the header of
+  `R/power_clustered_cat.R` instead of being left implicit.
+
+- **`power_achieved` is now the power at the reported N in every family.**
+  Multiple regression and the balanced branch of two proportions reported
+  `fit$power` straight from the `pwr` object that had just solved for N,
+  which is the power that was *asked for*, returned unchanged -- not what
+  the rounded-up integer N delivers. Regression at f² = 0.15 reported
+  .8000 where N = 55 gives .8051; two proportions at h = 0.5 reported
+  .8000 where n = 63 gives .8013. The other fourteen families already
+  recomputed, and `R/power_chisq.R` documents it as an invariant.
+
+- **New property-based invariant covering that whole class.** The defect
+  above was invisible to 2,000-odd value-based assertions for a
+  structural reason: each family's tests check its own number against its
+  own solver, so a family that is self-consistently wrong passes.
+  `tests/testthat/test-properties.R` now asserts, across all seventeen
+  solvers and a grid of alpha/power/allocation, that `power_achieved`
+  equals what the family's own `*_at_n()` returns at the N reported
+  beside it, and that it never falls below the target. Verified
+  non-vacuous against the pre-fix implementation.
+
+- **Attrition is applied to the design unit, not the grand total.** The
+  recruitment target was `n_total / (1 - a)` for every family, which for
+  a clustered design produces a figure that is not a whole number of
+  participants per cluster, and for a factorial design one that cannot be
+  split evenly across cells -- breaking the structure the power
+  calculation assumed. New `recruitment_target()` (`R/utils.R`) inflates
+  the cluster, cell, group or arm and rebuilds the total, dispatching on
+  the structural fields a result carries rather than on a family key. The
+  on-screen note and the generated Method sentence now say where the
+  extra participants go ("9 per cluster across 24 clusters, holding the
+  number of clusters fixed"), and the per-unit phrasing is suppressed for
+  unbalanced allocations, where it would be a false statement.
+
+- **`survival` moved from `Imports` to `Suggests`.** It is used only by
+  `validation/monte_carlo_validation.R`, which already guards it with
+  `requireNamespace()`. Listing it as a runtime dependency contradicted
+  `global.R` and `R/power_survival.R`, and made `renv::restore()` compile
+  a heavy package the app never loads -- the same class of dependency
+  that caused the documented wasm ABI crash.
+
+- **Project restore now applies the same exclusion list as capture.**
+  `.state_exclude_re` filtered the click-counter inputs on capture but not
+  on restore, so a hand-edited project file or a crafted `?state=` link
+  could aim an input update at ids the capture side excludes by design.
+  Inert in practice -- an `actionButton`'s binding has no `value` handler
+  and drops the message -- so this is insurance, not a fix for a live
+  defect: the guarantee belongs in the exclusion list rather than in one
+  input binding's internals. Extracted as `restorable_state_inputs()` in
+  `R/project_state.R` so the two sides are tested together and cannot
+  drift apart again.
+
+- **`tests/testthat.R` works again.** The standard entry point sourced
+  `R/` and `modules/common_ui.R` but not `global.R`, so running it
+  directly failed five tests with `object 'APP_VERSION' not found`. CI
+  never saw it because `.github/workflows/test.yml` sources `global.R`
+  itself. The entry point now parses the `APP_*` constants out of
+  `global.R` rather than duplicating them or attaching shiny.
+
+- **Assertion counts aligned.** README and CONTRIBUTING said 1,949 while
+  VALIDATION said "2,050+"; the verified figure at the time was 2,050 and
+  is now 2,442. All three are stated with the version they were measured
+  at, the way the decision-helper verification date already is.
+
 ## [1.2.3] - 2026-08-07
 
 - **Fixed a rounding bug in `validation/eq2_audit.R`'s own summary line.**

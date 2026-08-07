@@ -837,13 +837,15 @@ wire_results_server <- function(input, output, session, family,
   })
 
   attrition_rate <- reactive(safe_numeric(input$attrition, 0, 0.95, 0))
-  n_recruit <- reactive({
+
+  # Inflated at the level of the DESIGN UNIT (cluster, cell, arm), not on
+  # the grand total -- see recruitment_target() in R/utils.R for why the
+  # difference matters for the structured families.
+  recruitment <- reactive({
     res <- tryCatch(result_r(), error = function(e) NULL)
-    if (is.null(res) || is.null(res$n_total)) return(NA_integer_)
-    a <- attrition_rate()
-    if (a <= 0) return(res$n_total)
-    round_up_n(res$n_total / (1 - a))
+    recruitment_target(res, attrition_rate())
   })
+  n_recruit <- reactive(recruitment()$n_recruit)
 
   output$attrition_note <- renderUI({
     if (isTRUE(safeguard_diverged())) return(NULL)
@@ -851,9 +853,29 @@ wire_results_server <- function(input, output, session, family,
     if (is.na(a) || a <= 0) return(NULL)
     res <- tryCatch(result_r(), error = function(e) NULL)
     if (is.null(res) || is.null(res$n_total)) return(NULL)
+    rt <- recruitment()
+    if (is.na(rt$n_recruit)) return(NULL)
+
+    # Say WHERE the extra participants go whenever the design has a
+    # structure to preserve. "Recruit 320" is not actionable for a
+    # cluster-randomized trial; "recruit 10 per cluster instead of 8,
+    # keeping 40 clusters" is, and it is also the only reading under which
+    # the power calculation still holds.
+    structure_txt <- if (identical(rt$unit, "participant")) {
+      NULL
+    } else if (identical(rt$unit, "arm")) {
+      sprintf(" Split it as %d and %d, keeping the allocation the calculation assumed.",
+              rt$per_unit_recruit, rt$n_recruit - rt$per_unit_recruit)
+    } else {
+      sprintf(" Recruit %d per %s rather than %d, keeping all %d %ss -- the %s count is what carries the power here, so replace the losses inside each one rather than adding to the total.",
+              rt$per_unit_recruit, rt$unit, rt$per_unit_analytic,
+              rt$n_units, rt$unit, rt$unit)
+    }
+
     div(class = "well well-warning", icon("user-minus"),
         sprintf(" Allowing for %.0f%% attrition/exclusions, recruit N = %d to retain the %d your analysis needs (%d extra).",
-                a * 100, n_recruit(), res$n_total, n_recruit() - res$n_total))
+                a * 100, rt$n_recruit, res$n_total, rt$n_recruit - res$n_total),
+        structure_txt)
   })
 
   # ---- Budget ----------------------------------------------------------
@@ -923,8 +945,14 @@ wire_results_server <- function(input, output, session, family,
     }
     a <- attrition_rate()
     if (a > 0) {
+      rt <- recruitment()
       spec$attrition <- a
-      spec$n_recruit <- n_recruit()
+      spec$n_recruit <- rt$n_recruit
+      # Carried through so the Method sentence can name the design unit the
+      # over-recruitment applies to, not just the total (see report_text.R).
+      spec$n_recruit_unit <- rt$unit
+      spec$n_recruit_per_unit <- rt$per_unit_recruit
+      spec$n_recruit_units <- rt$n_units
     }
     spec
   }

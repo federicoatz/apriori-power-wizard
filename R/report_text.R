@@ -178,8 +178,31 @@ build_report_text <- function(spec) {
   # folded into the design description.
   has_attr <- !is.null(spec$attrition) && !is.na(spec$attrition) && spec$attrition > 0
   attrition_txt <- if (has_attr) {
-    sprintf(" Anticipating that %s%% of recruited participants will be lost to attrition or excluded before analysis, we plan to recruit N = %s in order to retain the required analytic sample.",
-            format_stat(spec$attrition * 100, 0), spec$n_recruit)
+    # For a design with structure to preserve -- clusters, cells, arms --
+    # the over-recruitment has to be stated per unit, not only as a grand
+    # total: "recruit 216" does not tell a reader (or the author, six
+    # months later) that the 24 clusters stay fixed and each one grows.
+    # The unstructured families set no unit and get the plain sentence.
+    # Guarded on the per-unit figure actually accounting for the whole
+    # total: "54 per arm across 2 arms" would be a false statement for an
+    # unbalanced design, where the two arms differ by construction. Every
+    # uniform unit (cluster, cell, equal group, balanced arm) passes.
+    uniform_units <- !is.null(spec$n_recruit_per_unit) && !is.null(spec$n_recruit_units) &&
+      isTRUE(spec$n_recruit_per_unit * spec$n_recruit_units == spec$n_recruit)
+    unit_txt <- if (!is.null(spec$n_recruit_unit) &&
+                      !identical(spec$n_recruit_unit, "participant") &&
+                      uniform_units) {
+      sprintf(" (%s per %s across %s %ss%s)",
+              format(spec$n_recruit_per_unit, big.mark = ","), spec$n_recruit_unit,
+              format(spec$n_recruit_units, big.mark = ","), spec$n_recruit_unit,
+              # Worth spelling out only where a reader might otherwise
+              # assume the extra participants bought extra units: the
+              # number of clusters is what the power rests on, so it is
+              # exactly the thing that must NOT absorb the inflation.
+              if (identical(spec$n_recruit_unit, "cluster")) ", holding the number of clusters fixed" else "")
+    } else ""
+    sprintf(" Anticipating that %s%% of recruited participants will be lost to attrition or excluded before analysis, we plan to recruit N = %s%s in order to retain the required analytic sample.",
+            format_stat(spec$attrition * 100, 0), spec$n_recruit, unit_txt)
   } else ""
 
   lines <- c(

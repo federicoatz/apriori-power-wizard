@@ -44,11 +44,21 @@ power_regression_n <- function(f2, n_predictors_tested = 1, n_covariates = 0,
   # fit$v = n - u - 1  =>  n = v + u + 1
   n_total <- round_up_n(fit$v + n_predictors_tested + 1)
 
+  # Recompute achieved power at the rounded (integer) N -- same pattern used
+  # by every other family. fit$power is the power that was ASKED FOR, which
+  # the continuous solve returns unchanged; rounding N up always lands
+  # slightly above it (f2 = 0.15 gives 0.8051 at N = 55, not 0.8000), and
+  # the number reported to the user should describe the sample they will
+  # actually collect.
+  power_achieved <- power_regression_at_n(n_total, f2 = f2,
+                                           n_predictors_tested = n_predictors_tested,
+                                           sig_level = sig_level)
+
   list(
     n_total = n_total,
     u = n_predictors_tested, v_achieved = fit$v,
     f2 = f2, sig_level = sig_level, power_target = power,
-    power_achieved = fit$power,
+    power_achieved = power_achieved,
     n_covariates = n_covariates,
     method = "Multiple linear regression, pwr::pwr.f2.test (Cohen 1988, ch. 9)"
   )

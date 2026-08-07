@@ -123,3 +123,82 @@ test_that("APP_VERSION (global.R) matches the version: field in CITATION.cff", {
   cff_version <- gsub('"', "", trimws(sub("^version:", "", version_line[[1]])))
   expect_equal(APP_VERSION, cff_version)
 })
+
+test_that("recruitment_target is the identity when there is no attrition", {
+  for (res in list(power_two_means_n(d = 0.5),
+                   power_clustered_n(d = 0.5, icc = 0.05, cluster_size = 8),
+                   power_anova_factorial_n(levels_a = 2, levels_b = 3, focal = "A", f_target = 0.3),
+                   power_regression_n(f2 = 0.15))) {
+    expect_equal(recruitment_target(res, 0)$n_recruit, res$n_total)
+  }
+})
+
+test_that("recruitment_target inflates the DESIGN UNIT, not the grand total", {
+  # The defect this closes: attrition was applied as n_total / (1 - a) for
+  # every family, which for a clustered design produces a recruitment
+  # target that is not a whole number of participants per cluster, and for
+  # a factorial design one that cannot be split evenly across cells. Both
+  # break the structure the power calculation assumed.
+  a <- 0.10
+
+  cl <- power_clustered_n(d = 0.5, icc = 0.05, cluster_size = 8)
+  rt <- recruitment_target(cl, a)
+  expect_equal(rt$unit, "cluster")
+  # Cluster COUNT is preserved (it is what carries the power); cluster SIZE
+  # absorbs the losses, as a whole number of participants.
+  expect_equal(rt$n_units, cl$n_clusters_total)
+  expect_equal(rt$per_unit_recruit, ceiling(cl$cluster_size / (1 - a)))
+  expect_equal(rt$n_recruit, cl$n_clusters_total * rt$per_unit_recruit)
+  # Divisible by the cluster count, which the naive total need not be.
+  expect_equal(rt$n_recruit %% rt$n_units, 0)
+  expect_false(round_up_n(cl$n_total / (1 - a)) %% cl$n_clusters_total == 0)
+
+  fac <- power_anova_factorial_n(levels_a = 2, levels_b = 3, focal = "A", f_target = 0.3)
+  rt <- recruitment_target(fac, a)
+  expect_equal(rt$unit, "cell")
+  expect_equal(rt$n_units, fac$n_cells)
+  expect_equal(rt$per_unit_recruit, ceiling(fac$n_per_cell / (1 - a)))
+  expect_equal(rt$n_recruit %% fac$n_cells, 0)
+
+  anc <- power_ancova_n(k = 3, f_target = 0.3, r_cov = 0.4)
+  rt <- recruitment_target(anc, a)
+  expect_equal(rt$unit, "group")
+  expect_equal(rt$n_recruit %% anc$k, 0)
+})
+
+test_that("recruitment_target preserves an unbalanced allocation across arms", {
+  res <- power_two_means_n(d = 0.5, allocation_ratio = 2)
+  rt <- recruitment_target(res, 0.10)
+  expect_equal(rt$unit, "arm")
+  expect_equal(rt$per_unit_recruit, ceiling(res$n1 / (1 - 0.10)))
+  expect_equal(rt$n_recruit, ceiling(res$n1 / 0.9) + ceiling(res$n2 / 0.9))
+})
+
+test_that("recruitment_target never asks for fewer participants than the analytic N", {
+  designs <- list(power_two_means_n(d = 0.5),
+                  power_two_means_n(d = 0.5, allocation_ratio = 0.5),
+                  power_clustered_n(d = 0.5, icc = 0.05, cluster_size = 8),
+                  power_clustered_cat_n(w = 0.3, df = 3, icc = 0.05, cluster_size = 8),
+                  power_anova_factorial_n(levels_a = 2, levels_b = 2, focal = "A", f_target = 0.3),
+                  power_ancova_n(k = 3, f_target = 0.3, r_cov = 0.4),
+                  power_rm_anova_n(m = 3, f_target = 0.3, rho = 0.5),
+                  power_regression_n(f2 = 0.15),
+                  power_correlation_n(r = 0.3))
+  for (res in designs) {
+    for (a in c(0, 0.05, 0.2, 0.5)) {
+      rt <- recruitment_target(res, a)
+      expect_gte(rt$n_recruit, res$n_total)
+      # Rounding up per unit can exceed the naive total, but never by more
+      # than one extra participant per design unit.
+      expect_lte(rt$n_recruit, ceiling(res$n_total / (1 - a)) + rt$n_units)
+    }
+  }
+})
+
+test_that("recruitment_target refuses nonsense rather than returning a wrong number", {
+  res <- power_two_means_n(d = 0.5)
+  expect_true(is.na(recruitment_target(res, 1)$n_recruit))
+  expect_true(is.na(recruitment_target(res, -0.1)$n_recruit))
+  expect_true(is.na(recruitment_target(NULL, 0.1)$n_recruit))
+  expect_equal(recruitment_target(res, NA)$n_recruit, res$n_total)
+})

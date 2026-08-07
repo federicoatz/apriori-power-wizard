@@ -986,7 +986,11 @@ server <- function(input, output, session) {
     navigate_to_family(fam)
     updateRadioButtons(session, "analysis_choice", selected = fam)
     session$onFlushed(function() {
-      for (nm in names(st$inputs)) {
+      # Restore is filtered by the same exclusion list capture is -- see
+      # restorable_state_inputs() in R/project_state.R for why the two
+      # sides have to agree, and why it matters only for a project file
+      # this app did not write.
+      for (nm in restorable_state_inputs(st$inputs)) {
         full_id <- paste0(fam, "-", nm)
         val <- st$inputs[[nm]]
         if (identical(nm, "wiz")) {

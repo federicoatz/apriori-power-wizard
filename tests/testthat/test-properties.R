@@ -219,6 +219,100 @@ test_that("required N is non-increasing in the effect size, for every family", {
   }
 })
 
+# Pairs each family's solver with a recomputation of power at the N it
+# returned, using the family's own *_at_n() helper. Separate from `solvers`
+# above because that list deliberately projects everything down to a single
+# n_total, and this invariant needs the WHOLE result object -- for the
+# families whose curve/at-n helper is parameterized on per-arm, per-pair or
+# per-cell N rather than on the total.
+achieved_checks <- list(
+  two_means       = function(a, p, k) { r <- power_two_means_n(0.5, a, p, allocation_ratio = k)
+                                        list(r$power_achieved, power_two_means_at_n(r$n1, r$n2, 0.5, a)) },
+  paired          = function(a, p, k) { r <- power_paired_t_n(0.5, a, p)
+                                        list(r$power_achieved, power_paired_t_at_n(r$n_pairs, 0.5, a)) },
+  proportions     = function(a, p, k) { r <- power_proportions_n(h = 0.5, sig_level = a, power = p,
+                                                                  allocation_ratio = k)
+                                        list(r$power_achieved, power_proportions_at_n(r$n1, r$n2, 0.5, a)) },
+  correlation     = function(a, p, k) { r <- power_correlation_n(0.3, a, p)
+                                        list(r$power_achieved, power_correlation_at_n(r$n_total, 0.3, a)) },
+  chisq           = function(a, p, k) { r <- power_chisq_n(w = 0.3, df = 3, sig_level = a, power = p)
+                                        list(r$power_achieved, power_chisq_at_n(r$n_total, 0.3, 3, a)) },
+  regression      = function(a, p, k) { r <- power_regression_n(f2 = 0.15, n_predictors_tested = 3,
+                                                                 sig_level = a, power = p)
+                                        list(r$power_achieved, power_regression_at_n(r$n_total, 0.15, 3, a)) },
+  ancova          = function(a, p, k) { r <- power_ancova_n(k = 3, f_target = 0.3, r_cov = 0.4,
+                                                             sig_level = a, power = p)
+                                        list(r$power_achieved, power_ancova_at_n(r$n_per_group, 3, 0.3, 0.4, a)) },
+  anova_factorial = function(a, p, k) { r <- power_anova_factorial_n(levels_a = 2, levels_b = 2,
+                                                                      focal = "A", f_target = 0.3,
+                                                                      sig_level = a, power = p)
+                                        list(r$power_achieved,
+                                             power_anova_factorial_at_n(r$n_per_cell, 2, 2, "A", 0.3,
+                                                                         sig_level = a)) },
+  rm_anova        = function(a, p, k) { r <- power_rm_anova_n(m = 3, f_target = 0.3, rho = 0.5,
+                                                               sig_level = a, power = p)
+                                        list(r$power_achieved,
+                                             power_rm_anova_at_n(r$n_total, 3, 0.3, 0.5, sig_level = a)) },
+  logistic        = function(a, p, k) { r <- power_logistic_n(p0 = 0.3, p1 = 0.5, sig_level = a, power = p)
+                                        list(r$power_achieved,
+                                             power_logistic_at_n(r$n_total, 0.3, 0.5, sig_level = a)) },
+  mcnemar         = function(a, p, k) { r <- power_mcnemar_n(p10 = 0.2, p01 = 0.1, sig_level = a, power = p)
+                                        list(r$power_achieved, power_mcnemar_at_n(r$n, 0.2, 0.1, a)) },
+  tost            = function(a, p, k) { r <- power_tost_n(delta_eq = 0.5, theta = 0, sig_level = a, power = p)
+                                        list(r$power_achieved, power_tost_at_n(r$n, 0.5, 0, a)) },
+  wilcoxon        = function(a, p, k) { r <- power_wilcoxon_n(p_sup = 0.65, sig_level = a, power = p)
+                                        list(r$power_achieved, power_wilcoxon_at_n(r$n1, 0.65, a)) },
+  clustered       = function(a, p, k) { r <- power_clustered_n(d = 0.5, icc = 0.05, cluster_size = 8,
+                                                                sig_level = a, power = p,
+                                                                allocation_ratio = k)
+                                        list(r$power_achieved,
+                                             power_clustered_at_n(r$n1, r$n2, 0.5, 0.05, 8, a)) },
+  clustered_bin   = function(a, p, k) { r <- power_clustered_binary_n(h = 0.5, icc = 0.05, cluster_size = 8,
+                                                                       sig_level = a, power = p)
+                                        list(r$power_achieved,
+                                             power_clustered_binary_at_n(r$n1, r$n2, 0.5, 0.05, 8, a)) },
+  clustered_cat   = function(a, p, k) { r <- power_clustered_cat_n(w = 0.3, df = 3, icc = 0.05,
+                                                                    cluster_size = 8, sig_level = a, power = p)
+                                        list(r$power_achieved,
+                                             power_clustered_cat_at_n(r$n_total, 0.3, 3, 0.05, 8, a)) },
+  survival        = function(a, p, k) { r <- power_survival_n(hr = 1.6, p_event = 0.6, alloc_ratio = k,
+                                                               sig_level = a, power = p)
+                                        list(r$power_achieved,
+                                             power_survival_at_n(r$n_total, 1.6, 0.6, k, a)) }
+)
+
+test_that("power_achieved is the power AT the reported N, for every family", {
+  # The defect this closes. Two families reported `fit$power` straight from
+  # the pwr object that had just SOLVED for N -- which is the power that was
+  # asked for, returned unchanged, not the power the rounded-up integer N
+  # actually delivers. Multiple regression at f2 = 0.15 reported .8000 where
+  # N = 55 gives .8051; two proportions at h = 0.5 reported .8000 where
+  # n = 63 gives .8013.
+  #
+  # Small in magnitude, and invisible to every value-based test in the suite
+  # for a structural reason: each family's tests check its own number against
+  # its own solver, so a family that is self-consistently wrong passes. The
+  # invariant is cross-family and definitional -- whatever `power_achieved`
+  # means, it has to be what *_at_n() returns at the N reported alongside it.
+  for (nm in names(achieved_checks)) {
+    for (a in c(0.01, 0.05)) {
+      for (p in c(0.80, 0.90)) {
+        for (k in c(1, 2)) {
+          got <- tryCatch(achieved_checks[[nm]](a, p, k), error = function(e) NULL)
+          if (is.null(got)) next
+          reported <- got[[1]]
+          recomputed <- got[[2]]
+          ctx <- sprintf("%s: alpha=%.2f power=%.2f ratio=%.0f", nm, a, p, k)
+          expect_equal(reported, recomputed, tolerance = 1e-8, info = ctx)
+          # And the direction: rounding N UP can only land at or above the
+          # target, never below it.
+          expect_gte(reported, p - 1e-8)
+        }
+      }
+    }
+  }
+})
+
 test_that("required N moves the right way with alpha and with power, for every family", {
   for (nm in names(solvers)) {
     e <- 0.5

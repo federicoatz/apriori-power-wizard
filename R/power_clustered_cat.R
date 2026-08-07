@@ -33,6 +33,35 @@
 ## -- appropriate for planning, where the ICC is itself an estimate, but
 ## not a substitute for a design-based analysis of the resulting data. The
 ## app says so in the module's own text rather than leaving it implicit.
+##
+## SECOND SCOPE NOTE -- why these families do NOT get the cluster-level
+## degrees-of-freedom correction that power_clustered.R applies.
+##
+## The continuous family evaluates power against a t distribution, whose
+## degrees of freedom are derived from a sample size, so handing it a
+## design-effect-deflated N silently claimed more df than the number of
+## clusters supports; power_clustered.R now builds that t on k1 + k2 - 2
+## instead. Neither family here has the equivalent handle:
+##
+##   binary       pwr::pwr.2p.test is a pure z-test (qnorm/pnorm). There
+##                are no degrees of freedom in it to get wrong.
+##   categorical  pwr::pwr.chisq.test takes df from the CONTINGENCY TABLE
+##                (rows/columns), not from N; N enters only the
+##                noncentrality. Deflating N by the design effect leaves
+##                that df untouched, which is already correct.
+##
+## What remains true, and is not fixable by a df substitution, is that both
+## rest on large-sample approximations that get optimistic when the number
+## of CLUSTERS (not participants) is small -- the normal approximation to
+## the sampling distribution of a difference in proportions, and the
+## chi-square approximation, are both justified by cluster-level
+## replication here. The literature on cluster-randomized trials
+## conventionally treats fewer than roughly 30-40 total clusters as the
+## regime needing a small-sample correction. Planning a clustered binary
+## outcome with a handful of large clusters should therefore be read as
+## optimistic by an amount this closed-form approach cannot quantify;
+## simulation is the honest tool there, and is outside this app's declared
+## no-Monte-Carlo perimeter.
 ## -----------------------------------------------------------------------
 
 #' Sample size for a clustered two-arm design with a BINARY outcome

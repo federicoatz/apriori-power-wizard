@@ -94,7 +94,7 @@ shiny::runApp()      # opens the app at http://127.0.0.1:<port>
 
 ```r
 source("global.R")
-testthat::test_dir("tests/testthat")   # 1,949 assertions
+testthat::test_dir("tests/testthat")   # 2,442 assertions as of v1.3.0
 ```
 
 `source("global.R")` first is required -- it attaches the packages and
@@ -377,7 +377,7 @@ apriori-power-wizard/
 │   ├── power_logistic.R            # Demidenko (2007), base R only (no external dependency)
 │   ├── power_anova_factorial.R     # Noncentral-F (Cohen 1988), base R only (no external dependency)
 │   ├── power_paired_t.R            # pwr::pwr.t.test(type = "paired")
-│   ├── power_clustered.R           # Design-effect-inflated pwr::pwr.t.test (Donner & Klar, 2000)
+│   ├── power_clustered.R           # Design-effect inflation (Donner & Klar, 2000) + noncentral t on cluster-level df
 │   ├── power_chisq.R               # pwr::pwr.chisq.test (Cohen 1988, ch. 7)
 │   ├── power_correlation.R         # pwr::pwr.r.test (Cohen 1988, ch. 3)
 │   ├── power_mcnemar.R             # Connor (1987), base R only (no external dependency)
@@ -666,7 +666,14 @@ suite, and instructions to reproduce every check yourself
 - Donner, A., & Klar, N. (2000). *Design and Analysis of Cluster
   Randomization Trials in Health Research*. Arnold. (Source of the
   design-effect formula, `1 + (m-1)xICC`, used in
-  `R/power_clustered.R`.)
+  `R/power_clustered.R`. The design effect sets the noncentrality; the
+  degrees of freedom come from the number of clusters, k1 + k2 - 2, not
+  from the deflated individual N -- see that file's header for the size
+  of the difference and why it matters most in the few-large-clusters
+  regime this app targets.)
+- Hayes, R. J., & Moulton, L. H. (2017). *Cluster Randomised Trials*
+  (2nd ed.). CRC Press. (Cluster-level analysis and the small-sample
+  degrees-of-freedom conventions that `R/power_clustered.R` follows.)
 - Chinn, S. (2000). A simple method for converting an odds ratio to
   effect size for use in meta-analysis. *Statistics in Medicine*,
   19(22), 3127-3131.
