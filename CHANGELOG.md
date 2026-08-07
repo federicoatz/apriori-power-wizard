@@ -10,6 +10,18 @@ minor = new feature/family, major reserved for a future breaking redesign).
 > notes in `CITATION.cff`). Every entry below corresponds to a real tagged
 > release on the current history; nothing has been renumbered or backdated.
 
+## [1.2.3] - 2026-08-07
+
+- **Fixed a rounding bug in `validation/eq2_audit.R`'s own summary line.**
+  It stated the worst-case deviation across the four "exact" metrics as
+  "within 0.09%", produced by `sprintf("%.2f%%", ...)` rounding the true
+  0.0929% figure (log hazard ratio) to the nearest hundredth. For a
+  *bound* claim, rounding to nearest can understate it -- 0.0929% is not,
+  in fact, within 0.09%. The summary now rounds up, printing "within
+  0.093%", a figure the true maximum actually satisfies. The accompanying
+  paper is corrected to match; nothing about the audit's underlying
+  numbers changed.
+
 ## [1.2.2] - 2026-08-07
 
 No change to what the application computes or displays; this ships the
@@ -19,7 +31,7 @@ that claim.
 - **New `validation/eq2_audit.R`.** The working paper states a closed-form
   approximation for the safeguard branch's cost relative to a stated
   SESOI, together with an accuracy claim. Auditing it turned up that the
-  claim was too strong: it holds comfortably (within 0.09%) for the four
+  claim was too strong: it holds comfortably (within 0.093%) for the four
   metrics whose required N is a constant over the squared effect --
   Cohen's *h*, *w*, the log hazard ratio, and the probability of
   superiority added in v1.2.0 -- but not for *r* or *d*, where the

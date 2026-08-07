@@ -228,7 +228,11 @@ cat(sprintf("\n  Metrics whose second step is exact (h, w, log HR, p):\n"))
 for (k in c("h", "w", "hr", "p")) {
   cat(sprintf("      %-8s max |deviation| = %.4f%%\n", k, worst[[k]]))
 }
-cat(sprintf("      -> all within %.2f%%\n", max(unlist(worst[c("h","w","hr","p")]))))
+# Rounded UP (never to nearest): "within X%" is a bound, and round-to-nearest
+# can silently understate one -- 0.0929% prints as "0.09%" under %.2f, which
+# reads as a claim the true 0.0929% figure actually violates.
+worst_exact <- max(unlist(worst[c("h", "w", "hr", "p")]))
+cat(sprintf("      -> all within %.3f%%\n", ceiling(worst_exact * 1000) / 1000))
 cat(sprintf("\n  Metrics whose second step is approximate, on fractional n:\n"))
 cat(sprintf("      %-8s %.3f%% at d = 0.20 rising to %.3f%% at d = 3.07\n",
             "d", abs(d_err[1]), abs(d_err[length(d_err)])))
