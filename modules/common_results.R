@@ -233,14 +233,22 @@ results_panel_ui <- function(ns) {
 #' @export
 #' Human-readable name for a family key
 #'
-#' `family_titles` is defined at the top level of app.R, so it is in scope
-#' whenever the app is running but not when this file is sourced on its own
-#' (the test suite does exactly that). Falls back to the key rather than
-#' erroring, since this feeds display text only.
+#' `family_titles` is defined in global.R, which is sourced into the same
+#' (global) environment as this file -- so the lookup is ordinary lexical
+#' scoping and works both in the running app and in the test suite. It
+#' deliberately does NOT live in app.R: runApp() evaluates that inside an
+#' environment INWARD of globalenv, which this function could never see,
+#' and the resulting silent fallback put raw keys like "two_means" into the
+#' study plan and into the generated Method text.
+#'
+#' Still falls back to the key rather than erroring, since this feeds
+#' display text -- but a fallback now means a genuinely unknown family,
+#' not a scoping accident.
 #' @keywords internal
 .family_title <- function(family) {
-  titles <- tryCatch(get("family_titles", inherits = TRUE), error = function(e) NULL)
-  if (!is.null(titles) && !is.null(titles[[family]])) titles[[family]] else family
+  if (!exists("family_titles", inherits = TRUE)) return(family)
+  titles <- get("family_titles", inherits = TRUE)
+  if (!is.null(titles[[family]])) titles[[family]] else family
 }
 
 wire_results_server <- function(input, output, session, family,
@@ -1027,8 +1035,13 @@ wire_results_server <- function(input, output, session, family,
         tags$tr(
           tags$td(if (identical(e$family, family)) tags$strong(e$title) else e$title),
           tags$td(style = "text-align:right;", fmt(e$n_total)),
+          # The design-unit column: "24 clusters", "6 cells". Suppressed for
+          # families whose unit is the participant or the arm (where it says
+          # nothing) and, deliberately, when there is only ONE unit -- a
+          # repeated-measures design with a single group was rendering
+          # "1 groups", which is both ungrammatical and information-free.
           tags$td(style = "text-align:right;",
-                  if (!is.null(e$n_units) && !is.na(e$n_units) &&
+                  if (!is.null(e$n_units) && !is.na(e$n_units) && e$n_units > 1 &&
                         !identical(e$unit_label, "participant") &&
                         !identical(e$unit_label, "arm")) {
                     sprintf("%s %ss", fmt(e$n_units), e$unit_label)

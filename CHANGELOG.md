@@ -10,6 +10,36 @@ minor = new feature/family, major reserved for a future breaking redesign).
 > notes in `CITATION.cff`). Every entry below corresponds to a real tagged
 > release on the current history; nothing has been renumbered or backdated.
 
+## [1.4.6] - 2026-08-07
+
+- **The study plan showed raw family keys instead of names.** A plan
+  containing two analyses listed them as `two_means` and `rm_anova` --
+  in the results panel, in the Step-1 banner, and, worst of all, in the
+  generated Method text, which is the one output that ends up in
+  somebody's manuscript.
+
+  The cause was scoping, not a typo. `shiny::runApp()` evaluates `app.R`
+  inside an environment whose *parent* is the global environment, while
+  `global.R` sources `R/` and `modules/` with `source(local = FALSE)` --
+  straight into the global environment. A function defined in `modules/`
+  therefore looks outward from globalenv and can never see an object
+  defined at the top level of `app.R`. `family_titles` lived in `app.R`,
+  so the lookup always failed and always took its fallback, which
+  returned the key. It looked like a deliberate design in every code
+  reading; only running the app showed otherwise. `family_titles` now
+  lives in `global.R`, next to the other things modules need to see, and
+  the lookup is ordinary lexical scoping.
+
+- **A repeated-measures row rendered "1 groups".** The design-unit column
+  now appears only when there is more than one unit, since a single group
+  is both ungrammatical and information-free.
+
+- **Four new end-to-end assertions**, because the reason this reached a
+  release is that every existing assertion about the study plan checked a
+  *number*. The panel, the Step-1 banner and the report text are now each
+  checked for the family's prose name and against the raw key appearing
+  anywhere.
+
 ## [1.4.5] - 2026-08-07
 
 - **"Add another analysis to this plan", where you actually are.** Building

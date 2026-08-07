@@ -16,7 +16,7 @@ library(htmltools)
 # `version:` field in CITATION.cff -- tests/testthat/test-misc.R asserts
 # the two match, so a mismatch fails the test suite instead of drifting
 # silently.
-APP_VERSION <- "1.4.5"
+APP_VERSION <- "1.4.6"
 ## NOTE: neither the logistic-regression nor the factorial-ANOVA family
 ## depends on an external power-analysis package, and this is deliberate.
 ## Logistic regression used to depend on WebPower::wp.logistic(), whose
@@ -139,6 +139,39 @@ source_dir <- function(path) {
   files <- list.files(path, pattern = "\\.R$", full.names = TRUE)
   invisible(lapply(sort(files), source))
 }
+
+
+## Human-readable name for each analysis family.
+##
+## Lives HERE, not in app.R, for a scoping reason that cost a real bug.
+## shiny::runApp() evaluates app.R inside its own environment whose PARENT
+## is the global environment, while this file sources R/ and modules/ with
+## source(local = FALSE) -- straight into the global environment. So a
+## function defined in modules/ can never see an object defined at the top
+## level of app.R: the lookup walks outward from globalenv and the app
+## environment is inward of it. When this list lived in app.R, the study
+## plan fell back to raw family keys ("two_means", "rm_anova") on screen
+## AND in the generated Method text, which is the one output that ends up
+## in someone else manuscript. Defined before source_dir() below so the
+## modules that read it are guaranteed to find it.
+family_titles <- list(
+  two_means = "Two independent means",
+  anova_factorial = "Factorial ANOVA",
+  regression = "Multiple linear regression",
+  logistic = "Logistic regression",
+  proportions = "Two proportions",
+  paired_t = "Paired / repeated measures",
+  clustered_rct = "Clustered: sessions / matching groups",
+  chisq = "Chi-square (goodness-of-fit / independence)",
+  correlation = "Bivariate correlation",
+  mcnemar = "McNemar's test",
+  tost = "Equivalence test (TOST)",
+  ancova = "ANCOVA (with a covariate)",
+  survival = "Time-to-event (log-rank test)",
+  wilcoxon = "Mann-Whitney (nonparametric)",
+  rm_anova = "Repeated-measures ANOVA",
+  clustered_cat = "Clustered: binary or categorical outcome"
+)
 
 source_dir("R")
 source_dir("modules")

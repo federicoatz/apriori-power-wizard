@@ -151,24 +151,6 @@ family_page_header <- function(id, title) {
 # key. Kept as plain named lists (not vectors of function names) so the
 # actual mod_<family>_ui/mod_<family>_server functions stay easy to find via
 # a simple text search.
-family_titles <- list(
-  two_means = "Two independent means",
-  anova_factorial = "Factorial ANOVA",
-  regression = "Multiple linear regression",
-  logistic = "Logistic regression",
-  proportions = "Two proportions",
-  paired_t = "Paired / repeated measures",
-  clustered_rct = "Clustered: sessions / matching groups",
-  chisq = "Chi-square (goodness-of-fit / independence)",
-  correlation = "Bivariate correlation",
-  mcnemar = "McNemar's test",
-  tost = "Equivalence test (TOST)",
-  ancova = "ANCOVA (with a covariate)",
-  survival = "Time-to-event (log-rank test)",
-  wilcoxon = "Mann-Whitney (nonparametric)",
-  rm_anova = "Repeated-measures ANOVA",
-  clustered_cat = "Clustered: binary or categorical outcome"
-)
 family_ui_fns <- list(
   two_means = mod_two_means_ui, anova_factorial = mod_anova_factorial_ui,
   regression = mod_regression_ui, logistic = mod_logistic_ui,

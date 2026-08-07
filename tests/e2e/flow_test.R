@@ -271,6 +271,9 @@ ev("document.getElementById('clustered_rct-plan_next_analysis').click()"); Sys.s
 banner <- txt("plan_in_progress")
 check("Step 1 says a plan is in progress after using that button",
       grepl("Study plan in progress: 1 analysis", banner), banner)
+check("Step 1 banner names the family rather than its key",
+      grepl("Clustered: sessions / matching groups", banner, fixed = TRUE) &&
+        !grepl("clustered_rct", banner), banner)
 
 setradio("analysis_choice", "clustered_cat"); Sys.sleep(1)
 clickTxt("Start"); Sys.sleep(2.5)
@@ -292,6 +295,21 @@ ev("(function(){var e=document.getElementById('clustered_cat-in_study_plan');
 panel2 <- txt("clustered_cat-study_plan_panel")
 check(sprintf("second family's panel shows the combined requirement (%s)", fmt(expect$sp_total)),
       grepl(sprintf("Recruit %s participants", fmt(expect$sp_total)), panel2), panel2)
+
+## Families are named, not keyed. This is asserted because it silently
+## regressed once: `family_titles` lived at the top level of app.R, which
+## runApp() evaluates INWARD of the global environment, while
+## modules/common_results.R is sourced straight INTO it -- so the lookup
+## could never resolve and quietly fell back to the raw key. The panel,
+## the Step-1 banner and the generated Method text all read "two_means".
+## Nothing caught it because every existing assertion checked numbers.
+for (nm in c("Clustered: sessions / matching groups",
+             "Clustered: binary or categorical outcome")) {
+  check(sprintf("plan names the family in prose (%s)", nm),
+        grepl(nm, panel2, fixed = TRUE), panel2)
+}
+check("plan never shows a raw family key",
+      !grepl("clustered_rct|clustered_cat", panel2), panel2)
 check("panel states the max rule rather than summing",
       grepl("largest requirement among them, not their sum", panel2), panel2)
 
@@ -306,6 +324,11 @@ check("the binding analysis shows no shortfall warning",
 sreport <- txt("clustered_cat-report_text")
 check("report text carries the combined requirement",
       grepl("largest of them rather than their sum", sreport), substr(sreport, 1, 400))
+## The Method text is the one output that ends up in somebody's manuscript,
+## so a raw key leaking here is worse than on screen.
+check("report text names the binding family rather than its key",
+      grepl("set by Clustered: binary or categorical outcome", sreport, fixed = TRUE) &&
+        !grepl("clustered_cat", sreport), substr(sreport, 1, 500))
 
 ## The cross-module assertion this scenario exists for. Note the revisit:
 ## a family's tab stays mounted but HIDDEN once you move to another, and
