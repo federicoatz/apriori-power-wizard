@@ -343,6 +343,11 @@ ui <- page_fluid(
           "This is the type of statistical test you plan to run once your data are",
           "collected. If you already know, pick it below. If not, use the helper",
           "underneath the options first."),
+        # Shown only while a study plan has something in it. Coming back
+        # here to add a second analysis otherwise looks identical to
+        # starting from scratch, which invites the reasonable fear that
+        # the first one was lost.
+        uiOutput("plan_in_progress"),
         radioButtons("analysis_choice", NULL,
           choiceNames = unname(analysis_choice_names),
           choiceValues = names(analysis_choice_names),
@@ -483,9 +488,9 @@ ui <- page_fluid(
              target = "_blank", rel = "noopener noreferrer",
              "https://doi.org/10.5281/zenodo.21804595")),
     p(icon("file-lines"), " A working paper describing the design and validation behind this tool is available on SSRN: ",
-      tags$a(href = "https://papers.ssrn.com/sol3/papers.cfm?abstract_id=7237018",
+      tags$a(href = "https://papers.ssrn.com/sol3/papers.cfm?abstract_id=7247658",
              target = "_blank", rel = "noopener noreferrer",
-             "papers.ssrn.com/sol3/papers.cfm?abstract_id=7237018"))
+             "papers.ssrn.com/sol3/papers.cfm?abstract_id=7247658"))
   ),
 
   # =====================================================================
@@ -879,6 +884,19 @@ ui <- page_fluid(
 
 server <- function(input, output, session) {
 
+  # ---- Study-plan store, created EAGERLY ------------------------------
+  # The plan lives in session$userData so every family module reaches the
+  # same one (module sessions delegate userData to the root session). It
+  # has to exist before anything reads it, not be created by whichever
+  # family module happens to load first: `output$plan_in_progress` below
+  # renders on Step 1 at page load, and if the store were still NULL then
+  # it would return early having taken no reactive dependency at all --
+  # and so would never re-render when a plan was later started. The banner
+  # would be permanently invisible on exactly the sessions that need it.
+  # wire_results_server() keeps its own defensive creation for the case of
+  # a module used outside this shell.
+  session$userData$study_plan <- shiny::reactiveValues(entries = list())
+
   # ---- Active colour theme, shared with every family module -----------
   # The browser reports the theme as a root-level input (see the
   # theme-toggle script at the end of the UI). Module sessions cannot read
@@ -914,6 +932,30 @@ server <- function(input, output, session) {
       )
       family_server_fns[[fam]](fam)
       observeEvent(input[[NS(fam)("back_to_step1")]], {
+        updateTabsetPanel(session, "main_nav", selected = "choose_analysis")
+      }, ignoreInit = TRUE)
+
+      # "Add another analysis to this plan" -- same destination as the
+      # header link above, registered separately because it lives at the
+      # BOTTOM of the results step, inside the study-plan card. Building a
+      # plan otherwise meant scrolling a long results page back to the top
+      # to find a link whose label ("Change analysis type") gives no hint
+      # that it is how you continue. The plan itself lives in
+      # session$userData and is untouched by navigating, so returning here
+      # never costs the user what they already added.
+      observeEvent(input[[NS(fam)("plan_next_analysis")]], {
+        updateTabsetPanel(session, "main_nav", selected = "choose_analysis")
+      }, ignoreInit = TRUE)
+
+      # Same destination as the header link above, wired separately because
+      # it is offered from the study-plan card at the BOTTOM of the results
+      # step. Registered here rather than inside the family module for the
+      # same reason the link is: the tabset it drives belongs to the root
+      # session, not to any family. The radio is cleared on the way so the
+      # chooser does not open showing the family just left, which reads as
+      # "nothing happened" when the intent was to pick a different one.
+      observeEvent(input[[NS(fam)("plan_next_analysis")]], {
+        updateRadioButtons(session, "analysis_choice", selected = character(0))
         updateTabsetPanel(session, "main_nav", selected = "choose_analysis")
       }, ignoreInit = TRUE)
 
@@ -980,6 +1022,40 @@ server <- function(input, output, session) {
   # the restore until the CURRENT reactive flush (which includes that
   # insertTab() call) has been sent to the client, so the input elements
   # already exist by the time the update messages for them arrive.
+  # ---- Study-plan context on Step 1 -------------------------------------
+  # The plan itself lives in session$userData (see wire_results_server in
+  # modules/common_results.R, and R/study_plan.R for the arithmetic). This
+  # only reports it: what is in the plan so far and what it currently
+  # requires, so that returning here to add an analysis is visibly a
+  # continuation rather than a fresh start. Reads defensively because the
+  # store is created by the first family module to load, which may be
+  # never -- a visitor who has not opened any family yet has no plan.
+  output$plan_in_progress <- renderUI({
+    store <- session$userData$study_plan
+    if (is.null(store)) return(NULL)
+    plan <- tryCatch(study_plan_requirement(store$entries), error = function(e) NULL)
+    if (is.null(plan) || plan$n_entries == 0) return(NULL)
+
+    titles <- unlist(lapply(plan$groups, function(g) {
+      vapply(g$entries, function(e) e$title, character(1))
+    }), use.names = FALSE)
+
+    div(class = "well well-info plan-in-progress", icon("layer-group"),
+      tags$strong(sprintf(" Study plan in progress: %d %s.",
+                          plan$n_entries,
+                          if (plan$n_entries == 1) "analysis" else "analyses")),
+      tags$div(class = "field-hint", style = "margin-top: 4px;",
+               paste(titles, collapse = " · ")),
+      tags$div(class = "field-hint", style = "margin-top: 4px;",
+        if (plan$n_entries == 1) {
+          "Pick the next analysis below. On its results step, tick \"Include this analysis in my study plan\" to add it."
+        } else {
+          sprintf("Currently binding at %s participants. Pick the next analysis below, or reopen any of the above from the cards.",
+                  format(plan$total, big.mark = ","))
+        })
+    )
+  })
+
   apply_saved_state <- function(st) {
     if (is.null(st) || is.null(st$family) || !st$family %in% names(family_ui_fns)) return(invisible(NULL))
     fam <- st$family

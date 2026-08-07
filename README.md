@@ -122,7 +122,7 @@ shiny::runApp()      # opens the app at http://127.0.0.1:<port>
 
 ```r
 source("global.R")
-testthat::test_dir("tests/testthat")   # 2,592 assertions as of v1.4.3
+testthat::test_dir("tests/testthat")   # 2,592 assertions as of v1.4.5
 ```
 
 `source("global.R")` first is required -- it attaches the packages and
@@ -796,4 +796,4 @@ and by Zenodo).
 
 A working paper describing the design and validation behind the tool is
 available on SSRN:
-[papers.ssrn.com/sol3/papers.cfm?abstract_id=7237018](https://papers.ssrn.com/sol3/papers.cfm?abstract_id=7237018).
+[papers.ssrn.com/sol3/papers.cfm?abstract_id=7247658](https://papers.ssrn.com/sol3/papers.cfm?abstract_id=7247658).

@@ -255,8 +255,23 @@ panel1 <- txt("clustered_rct-study_plan_panel")
 check("with one analysis, the panel asks for a second rather than showing a total",
       grepl("at least two", panel1), panel1)
 
-## Family 2: clustered categorical, same sample.
-clickTxt("Change analysis type"); Sys.sleep(1.5)
+## Family 2: clustered categorical, same sample -- reached through the
+## study-plan card's own button rather than the header link, since that is
+## the path a user building a plan actually takes. It also exercises two
+## things nothing else does: that the button is wired at all, and that the
+## plan survives leaving the family (it lives in session$userData, not in
+## the module).
+check("study-plan card offers a way to add the next analysis",
+      isTRUE(ev("(function(){var b=document.getElementById('clustered_rct-plan_next_analysis'); return !!b && b.offsetParent!==null;})()")),
+      "button missing or hidden")
+ev("document.getElementById('clustered_rct-plan_next_analysis').click()"); Sys.sleep(2.5)
+
+## Landing on Step 1 with no sign the plan survived would be worse than
+## the extra scrolling this button removes.
+banner <- txt("plan_in_progress")
+check("Step 1 says a plan is in progress after using that button",
+      grepl("Study plan in progress: 1 analysis", banner), banner)
+
 setradio("analysis_choice", "clustered_cat"); Sys.sleep(1)
 clickTxt("Start"); Sys.sleep(2.5)
 setradio("clustered_cat-outcome_type", "categorical"); Sys.sleep(1.5)

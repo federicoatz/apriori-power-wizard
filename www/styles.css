@@ -1563,6 +1563,14 @@ hr { border-color: var(--border); opacity: 1; }
 .study-plan-table td:nth-child(3) { font-variant-numeric: tabular-nums; color: var(--text-muted); }
 .study-plan-table td:nth-child(4) { color: var(--text-muted); white-space: nowrap; }
 
+/* The "add another analysis" button sits at the end of the study-plan
+   card. Right-aligned so it reads as the forward action of that card
+   rather than as another row of its content. */
+.study-plan-next { margin-top: 10px; text-align: right; }
+
+/* Step-1 banner reporting a plan already under way. */
+.plan-in-progress { margin-bottom: 14px; }
+
 /* --- Step-1 example library --------------------------------------------
    Cards for the pre-filled worked examples. Deliberately lighter-weight
    than the .choice-card analysis picker above them: choosing an analysis

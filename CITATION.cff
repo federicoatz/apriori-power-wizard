@@ -6,7 +6,7 @@ authors:
   - family-names: "Atzori"
     given-names: "Federico"
     affiliation: "University of Cagliari"
-version: 1.4.4
+version: 1.4.5
 date-released: 2026-08-07
 license: MIT
 repository-code: "https://github.com/federicoatz/apriori-power-wizard"
@@ -24,7 +24,7 @@ identifiers:
     description: "Concept DOI: always resolves to the latest archived release"
   - type: doi
     value: 10.5281/zenodo.21834275
-    description: "Archived snapshot of version 1.2.3 on Zenodo -- STALE: this file now declares 1.4.4, whose DOI Zenodo has not minted yet. Replace both value and description once the 1.4.4 release is archived."
+    description: "Archived snapshot of version 1.2.3 on Zenodo -- STALE: this file now declares 1.4.5, whose DOI Zenodo has not minted yet. Replace both value and description once the 1.4.5 release is archived."
 abstract: >-
   A step-by-step Shiny application that guides researchers in experimental
   economics and behavioral science through an a priori (before data
@@ -45,7 +45,7 @@ references:
       - family-names: "Atzori"
         given-names: "Federico"
         affiliation: "University of Cagliari"
-    url: "https://papers.ssrn.com/sol3/papers.cfm?abstract_id=7237018"
+    url: "https://papers.ssrn.com/sol3/papers.cfm?abstract_id=7247658"
     notes: >-
       Working paper describing the design and validation of this software;
-      posted to SSRN 2026-08-05, not yet peer-reviewed.
+      posted to SSRN, revised 2026-08-07; not yet peer-reviewed.

@@ -10,6 +10,37 @@ minor = new feature/family, major reserved for a future breaking redesign).
 > notes in `CITATION.cff`). Every entry below corresponds to a real tagged
 > release on the current history; nothing has been renumbered or backdated.
 
+## [1.4.5] - 2026-08-07
+
+- **"Add another analysis to this plan", where you actually are.** Building
+  a study plan meant scrolling from the study-plan card at the bottom of a
+  long results page all the way back to the page header, to click a link
+  labelled "Change analysis type" -- which gives no hint that it is how you
+  continue. The card now carries its own button to the family chooser.
+  Same destination, offered in context and named for the thing the user is
+  trying to do.
+
+- **Step 1 now says a plan is in progress.** Arriving at a bare family
+  chooser gave no sign the plan had survived the trip. It now lists what is
+  in the plan so far and what it currently binds at, so continuing reads as
+  a continuation rather than a fresh start.
+
+- **Fixed a latent bug that would have made that banner invisible.** The
+  plan store lives in `session$userData`, and was created by whichever
+  family module loaded first. But Step 1 renders at page load, before any
+  family exists -- so the banner's `renderUI` returned early having taken
+  no reactive dependency at all, and would never have re-run when a plan
+  was later started. The store is now created eagerly in the top-level
+  server, before anything reads it. Verified by disabling the fix and
+  confirming the new end-to-end assertion fails.
+
+- Two new flow-test assertions cover the button and the banner, both
+  reached the way a user reaches them.
+
+- Working paper link updated to the current SSRN posting
+  (`abstract_id=7247658`) in `README.md`, `CITATION.cff`, and the app's own
+  footer.
+
 ## [1.4.4] - 2026-08-07
 
 Loading splash only; nothing about the application itself changed.

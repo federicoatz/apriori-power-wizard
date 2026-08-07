@@ -248,6 +248,10 @@ wire_results_server <- function(input, output, session, family,
                                  sensitivity_fn, report_spec_r, n_summary_r,
                                  solve_n_fn = NULL, effect_set_r = NULL) {
 
+  # Needed by the study-plan panel below, which builds a namespaced button
+  # inside renderUI rather than declaring it in results_panel_ui().
+  ns <- session$ns
+
   # The x-axis quantity a curve point represents, per family: n1 (per-arm/
   # per-pair N) for every family except ANOVA (n_per_cell) and the two
   # single-sample-style families (n_total). Mirrors n_solution_r()'s own
@@ -991,11 +995,29 @@ wire_results_server <- function(input, output, session, family,
     plan <- study_plan()
     if (plan$n_entries == 0) return(NULL)
 
+    # The jump back to the family chooser. Worth a button rather than
+    # leaving people to the "Change analysis type" link in the page header:
+    # this card sits at the bottom of a long results page, and the header
+    # link is at the very top, so adding a second analysis meant scrolling
+    # the whole way back up to find a control that gives no hint it is the
+    # way to continue building a plan. Same destination, offered where the
+    # user actually is and labelled for what they are trying to do.
+    # session$ns(), not ns(): `ns` is a parameter of the UI functions at the
+    # top of this file and does not exist in the server scope. The id it
+    # produces ("<family>-plan_next_analysis") is what the observer in
+    # app.R listens for at the root session.
+    next_btn <- actionButton(session$ns("plan_next_analysis"),
+                             tagList(icon("plus"), " Add another analysis to this plan"),
+                             class = "btn-outline-secondary btn-sm")
+
     if (plan$n_entries == 1) {
-      return(div(class = "well well-info", icon("circle-info"),
-                 " Added. Open the other analyses your study needs and tick the",
-                 " same box there; the combined requirement appears here once",
-                 " there are at least two."))
+      return(tagList(
+        div(class = "well well-info", icon("circle-info"),
+            " Added. Now open the other analyses your study needs and tick the",
+            " same box there; the combined requirement appears here once there",
+            " are at least two."),
+        div(class = "study-plan-next", next_btn)
+      ))
     }
 
     fmt <- function(x) format(x, big.mark = ",")
@@ -1042,7 +1064,8 @@ wire_results_server <- function(input, output, session, family,
       },
       p(class = "field-hint", icon("circle-info"),
         " Set the same number of planned comparisons in every analysis above:",
-        " this panel combines sample sizes, it does not correct alpha.")
+        " this panel combines sample sizes, it does not correct alpha."),
+      div(class = "study-plan-next", next_btn)
     )
   })
 
