@@ -141,7 +141,7 @@ params_step_ui <- function(ns) {
           column(6,
             numericInput(ns("n_comparisons"),
                          help_tip("Number of planned comparisons",
-                           "If this is one of several comparisons planned in the same study (e.g., testing 4 outcomes, or 4 pairwise contrasts), each additional comparison inflates the chance of a false positive somewhere across the whole set. Set this to the TOTAL number of planned comparisons: the alpha above is treated as the family-wise rate, and the per-test alpha actually used below is reduced accordingly (by the method chosen on the right). Leave at 1 if this is your only planned comparison."),
+                           "If this is one of several comparisons planned in the same study (e.g., testing 4 outcomes, or 4 pairwise contrasts), each additional comparison inflates the chance of a false positive somewhere across the whole set. Set this to the TOTAL number of planned comparisons: the alpha above is treated as the family-wise rate, and the per-test alpha actually used below is reduced accordingly (by the method chosen on the right). Leave at 1 if this is your only planned comparison. Important: this corrects the alpha used here, but the sample size it produces still covers only THIS analysis. If your other planned comparisons are different tests, work each one out in its own family and use the study-plan panel in the Results step to combine them -- the sample you need is the largest of them, not this one."),
                          value = 1, min = 1, max = 100, step = 1)
           ),
           column(6,

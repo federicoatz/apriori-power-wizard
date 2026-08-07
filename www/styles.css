@@ -1439,6 +1439,19 @@ hr { border-color: var(--border); opacity: 1; }
 .results-tool .form-group { margin-bottom: 12px; }
 .results-tool .shiny-input-container { width: 100%; }
 
+/* --- Study plan table ---------------------------------------------------
+   One row per analysis the user has added to the plan. Deliberately quiet:
+   the numbers and the "sets this sample" marker carry the meaning, so the
+   table itself stays out of the way rather than competing with the
+   headline figure in the .well-result above it. Colors come from the
+   theme tokens so it follows the light/dark switch like everything else. */
+.study-plan-table { margin: 4px 0 14px 0; font-size: 0.94em; }
+.study-plan-table td { padding: 4px 8px; vertical-align: middle; }
+.study-plan-table tr + tr td { border-top: 1px solid var(--bs-border-color); }
+.study-plan-table td:nth-child(2) { font-variant-numeric: tabular-nums; font-weight: 600; }
+.study-plan-table td:nth-child(3) { font-variant-numeric: tabular-nums; color: var(--bs-secondary-color); }
+.study-plan-table td:nth-child(4) { color: var(--bs-secondary-color); white-space: nowrap; }
+
 /* --- Step-1 example library --------------------------------------------
    Cards for the pre-filled worked examples. Deliberately lighter-weight
    than the .choice-card analysis picker above them: choosing an analysis

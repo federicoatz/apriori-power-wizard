@@ -50,6 +50,34 @@ per-family list and every input each one takes.
 
 ![Results step: required sample size, a power curve, an inverse sensitivity analysis, and a paste-ready report with full method citations](assets/screenshot-results.png)
 
+### Planning a study that runs more than one analysis
+
+Each family answers for one analysis. A study that plans several -- a
+secondary outcome, a manipulation check, a second experiment -- needs a
+sample large enough for all of them, and that is not something you can
+read off any single family's result. The Results step therefore carries
+an opt-in **study plan**: tick a box in each analysis that belongs to the
+study, say which participants it runs on, and the app reports the binding
+requirement, which analysis sets it, and how far the others fall short.
+The figure is carried into the generated Method text, not just shown on
+screen.
+
+The combining rule is not simply "take the largest", which is why the app
+asks rather than guesses:
+
+| how two analyses relate | what the study needs |
+|---|---|
+| same participants (two measures on one session) | the **larger** of the two requirements |
+| different participants (two experiments in one paper) | the **sum** |
+
+Guessing wrong is costly in both directions, so nothing is inferred from
+the mere fact that you have opened two families. Open five families to
+price five unrelated studies and no combined total ever appears.
+
+Note what this does *not* do: it combines sample sizes, it does not
+correct alpha across families. Set the same "number of planned
+comparisons" in each analysis for that.
+
 ## Why this app?
 
 Most power calculators assume researchers already know which statistical
@@ -94,7 +122,7 @@ shiny::runApp()      # opens the app at http://127.0.0.1:<port>
 
 ```r
 source("global.R")
-testthat::test_dir("tests/testthat")   # 2,442 assertions as of v1.3.0
+testthat::test_dir("tests/testthat")   # 2,490 assertions as of v1.4.0
 ```
 
 `source("global.R")` first is required -- it attaches the packages and
@@ -389,6 +417,7 @@ apriori-power-wizard/
 │   ├── power_clustered_cat.R       # Design-effect inflation of the proportions / chi-square families
 │   ├── example_library.R           # Pre-filled worked examples offered on Step 1
 │   ├── project_state.R             # Save/load/share-link JSON (de)serialization
+│   ├── study_plan.R                # Combining several families into one recruitment target (max within a sample, sum across samples)
 │   ├── power_curve.R               # Generic power-vs-N curve generator
 │   ├── sensitivity_analysis.R      # Generic inverse/minimum-detectable-effect
 │   └── report_text.R               # Paste-ready report text builder

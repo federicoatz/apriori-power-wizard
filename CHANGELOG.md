@@ -10,6 +10,88 @@ minor = new feature/family, major reserved for a future breaking redesign).
 > notes in `CITATION.cff`). Every entry below corresponds to a real tagged
 > release on the current history; nothing has been renumbered or backdated.
 
+## [1.4.0] - 2026-08-07
+
+Closes a gap that the accompanying paper had described but the application
+did not address: every family answers for ONE analysis, and a study that
+plans several needs a sample large enough for all of them.
+
+- **New: an opt-in study plan, the first place the app looks at more than
+  one analysis family at a time.** The shared "number of planned
+  comparisons" control asks for the *total* number of planned comparisons
+  and corrects alpha accordingly -- but the sample size it then reports
+  covers only the family the user is standing in. A researcher planning a
+  continuous primary outcome and a categorical secondary one on the same
+  participants could enter 2 in the first family, read its N, and
+  under-recruit substantially, with nothing on screen suggesting so. The
+  multiplicity control made this worse rather than better: its presence is
+  reassuring exactly where it does not reach.
+
+  Ticking a box in each analysis's Results step adds it to a plan. The
+  panel reports the binding requirement, which analysis sets it, and how
+  far each other analysis falls short if the study were powered on it
+  alone. The figure is carried into the generated Method text, not left on
+  screen -- a panel that fixed the researcher's arithmetic and let the
+  manuscript keep quoting one family's number would have fixed nothing
+  that matters.
+
+- **The combining rule is asked, never inferred, because both errors are
+  costly.** Analyses on the SAME participants share one sample, which need
+  only be large enough for the most demanding of them: the requirement is
+  their maximum. Analyses on DIFFERENT people -- two experiments in one
+  paper -- each need their own participants: the requirements add. Taking
+  a maximum where a sum was needed under-recruits by the whole of the
+  smaller study. So the user assigns each analysis to a sample explicitly,
+  and `study_plan_requirement()` (`R/study_plan.R`) takes the maximum
+  within a sample and sums across samples. Nothing is inferred from the
+  mere fact that two families have been opened: someone pricing five
+  unrelated studies never sees a combined total, because the panel is off
+  by default.
+
+- **Cross-family state without cross-session leakage.** The plan lives in
+  `session$userData`, which module sessions delegate to the root session,
+  so all sixteen families reach one store while it stays scoped to a
+  single user -- a package-level global would have leaked one researcher's
+  plan into another's on a multi-session server. The per-family observer
+  isolates its read of that store, since `entries[[family]] <- e` desugars
+  to a read followed by a write and would otherwise take a reactive
+  dependency on the value it writes, re-firing on every other family's
+  update too.
+
+- **The misleading half of the multiplicity help text is fixed.** It said
+  to enter the total number of planned comparisons without mentioning that
+  the resulting N still covers only that analysis. It now says so, and
+  points at the study plan.
+
+- **New end-to-end coverage for the one feature a unit test structurally
+  cannot reach.** `R/study_plan.R` is pure and pinned by 48 assertions,
+  including both directions of the max/sum distinction, but the wiring
+  that carries an entry from one module's session into another's panel
+  only exists at runtime. `tests/e2e/flow_test.R` gains a third scenario
+  driving two clustered families in a real headless Chrome: nothing
+  appears before opting in, the combined requirement is the larger of the
+  two rather than their sum, the non-binding analysis is told what it
+  would miss, the figure reaches the report text, and unticking removes
+  the row. It also documents why the assertion has to revisit the first
+  family: Shiny suspends outputs on hidden tabs, so the panel resumes on
+  return rather than re-rendering out of sight.
+
+- **Limits stated rather than papered over** (paper, Limitations). The
+  plan combines sample sizes; it does not adjust alpha across families,
+  and nothing enforces that the user sets the same number of planned
+  comparisons in each. It also models analyses as sharing a sample
+  entirely or not at all, with no representation of partial overlap --
+  which has no closed-form answer of the kind the rest of the app
+  provides, so a researcher in that position should read the total as a
+  lower bound.
+
+- Paper: the walkthrough's corrected continuous requirement is now 90
+  matching groups, not 88 -- v1.3.0's degrees-of-freedom change moved it,
+  and at 44 clusters per arm the correction bites where the uncorrected
+  case at 37 was unaffected. The passage stating that the application
+  would not surface the cross-analysis comparison has been rewritten,
+  since it now does.
+
 ## [1.3.0] - 2026-08-07
 
 Acts on an external code review. Each item below was reproduced against

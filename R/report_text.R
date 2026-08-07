@@ -205,6 +205,14 @@ build_report_text <- function(spec) {
             format_stat(spec$attrition * 100, 0), spec$n_recruit, unit_txt)
   } else ""
 
+  # Study plan (see R/study_plan.R). Present only when the user has
+  # explicitly grouped two or more analyses; the sentence itself is built
+  # there so the prose and the arithmetic cannot drift apart. It goes into
+  # the report rather than living only on screen -- a panel that corrects
+  # the researcher's sample size but leaves the manuscript quoting this
+  # family's number alone would have fixed nothing that matters.
+  study_plan_txt <- study_plan_report_sentence(spec$study_plan)
+
   lines <- c(
     sprintf("A priori power analysis (%s).", spec$analysis),
     "",
@@ -221,7 +229,7 @@ build_report_text <- function(spec) {
       "This yields a required sample size of N = %s (%s), achieving %s%% power (%s).%s%s",
       spec$n_total, spec$n_per_group_txt,
       format_stat(spec$power_achieved * 100, 1), format_stat(spec$power_achieved, 4),
-      multiplicity_txt, attrition_txt
+      multiplicity_txt, paste0(attrition_txt, study_plan_txt)
     ),
     "",
     sprintf("Method: %s", citation),

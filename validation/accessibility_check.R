@@ -14,7 +14,7 @@
 ## phone, which no script can substitute for. Automating THIS part first
 ## because it is the part a script legitimately can do.
 ##
-## Status as of 2026-08-07 (app v1.3.0, code-verified; the live audit run
+## Status as of 2026-08-07 (app v1.4.0, code-verified; the live audit run
 ## originally captured 2026-08-05 at v1.0.0 has not been re-run since --
 ## see the header note above about what a script can and cannot check):
 ## fixed since this script first ran -- color-contrast
@@ -29,13 +29,23 @@
 ## keeping its .step-card CSS unchanged), and landmark-one-main / region
 ## (app.R wraps the header in <header> and the wizard's tabsetPanel in
 ## <main>; the footer was already a <footer>). All four were re-confirmed
-## present in the source at v1.3.0 by direct inspection (grep for the
+## present in the source at v1.4.0 by direct inspection (grep for the
 ## specific markup this comment names), though the axe-core run itself was
 ## not repeated -- do that before relying on this note for a release
-## announcement or a compliance claim. v1.3.0 changed no markup: its only
-## UI-visible edit adds a sentence of text inside the attrition note's
-## existing `div(class = "well well-warning", ...)`, introducing no new
-## heading, landmark, control, or color.
+## announcement or a compliance claim.
+##
+## UNAUDITED SINCE: v1.4.0. Unlike v1.3.0, which changed no markup at all,
+## v1.4.0 adds genuinely new controls in the results step's study-plan card
+## (modules/common_results.R): a checkboxInput, a selectInput revealed by a
+## conditionalPanel, and a <table> of plan rows. Each uses the same Shiny
+## helpers and the same .well/.results-tool classes as the audited controls
+## around it, and the table's styling (www/styles.css, .study-plan-table)
+## sets only spacing, borders and numeric alignment via existing theme
+## tokens -- so nothing here introduces a new heading level, landmark,
+## color pair, or hand-written ARIA. That is a reasoned expectation, not a
+## measurement: the checks worth re-running against this card specifically
+## are color-contrast on the table's secondary-color cells and label
+## association on the two new inputs.
 ##
 ## Still open, left for deliberate follow-up rather than a blind
 ## mechanical fix:

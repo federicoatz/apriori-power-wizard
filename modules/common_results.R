@@ -103,6 +103,45 @@ results_panel_ui <- function(ns) {
 
     uiOutput(ns("attrition_note")),
 
+    # ---- Study plan -------------------------------------------------------
+    # Deliberately OPT-IN and off by default. Someone opening five families
+    # to price five unrelated studies must never be shown a combined total,
+    # so nothing here is inferred from the mere fact that two families have
+    # been visited -- the user says which analyses belong together, and on
+    # which participants. See R/study_plan.R for why the sample question is
+    # the one that matters (same participants -> maximum; different
+    # participants -> sum, and guessing wrong under-recruits).
+    div(class = "results-tool",
+      div(class = "results-tool-title", icon("layer-group"),
+          "Is this analysis part of a larger study?"),
+      p(class = "results-tool-intro",
+        "The sample size above covers",
+        tags$em("this analysis only"),
+        ". If your study also runs other analyses -- a secondary outcome, a",
+        "manipulation check, a second experiment -- tick this and the app",
+        "will combine them into one recruitment target. Leave it unticked",
+        "if you are simply pricing several unrelated studies."),
+      checkboxInput(ns("in_study_plan"),
+                    "Include this analysis in my study plan",
+                    value = FALSE),
+      conditionalPanel(
+        condition = sprintf("input['%s'] == true", ns("in_study_plan")),
+        fluidRow(
+          column(5, selectInput(ns("study_plan_group"),
+                    help_tip("Which participants does it run on?",
+                      "This is the question that decides the arithmetic, so it is asked rather than guessed. Analyses run on the SAME participants share one sample, and that sample only has to be big enough for the most demanding of them -- so the app takes the largest, not the total. Analyses run on DIFFERENT people (a second experiment, a separate control study) need their own participants, so those requirements add up. Put every analysis measured on the same people into the same sample."),
+                    choices = c("Sample A" = "Sample A", "Sample B" = "Sample B",
+                                 "Sample C" = "Sample C", "Sample D" = "Sample D"),
+                    selected = "Sample A")),
+          column(7, div(class = "field-hint", icon("circle-info"),
+                        " Repeat this on each analysis that belongs to the study.",
+                        " Each family keeps its own inputs, so you can move between",
+                        " them and the plan below updates as you go."))
+        )
+      ),
+      div(class = "results-tool-output", uiOutput(ns("study_plan_panel")))
+    ),
+
     div(class = "results-tool",
       div(class = "results-tool-title", icon("coins"),
           "What will it cost?"),
@@ -192,6 +231,18 @@ results_panel_ui <- function(ns) {
 #'   which silently disables the effect-comparison UI for that family,
 #'   exactly like omitting `solve_n_fn` disables alpha/power comparison.
 #' @export
+#' Human-readable name for a family key
+#'
+#' `family_titles` is defined at the top level of app.R, so it is in scope
+#' whenever the app is running but not when this file is sourced on its own
+#' (the test suite does exactly that). Falls back to the key rather than
+#' erroring, since this feeds display text only.
+#' @keywords internal
+.family_title <- function(family) {
+  titles <- tryCatch(get("family_titles", inherits = TRUE), error = function(e) NULL)
+  if (!is.null(titles) && !is.null(titles[[family]])) titles[[family]] else family
+}
+
 wire_results_server <- function(input, output, session, family,
                                  result_r, curve_extra_args_r, n_solution_r,
                                  sensitivity_fn, report_spec_r, n_summary_r,
@@ -878,6 +929,123 @@ wire_results_server <- function(input, output, session, family,
         structure_txt)
   })
 
+  # ---- Study plan ------------------------------------------------------
+  # Cross-family state, so it cannot live in this module's own session.
+  # session$userData is the right home: module sessions delegate it to the
+  # root session, so every family reaches the same store, and it is scoped
+  # to ONE user's session -- a package-level global would leak one
+  # researcher's plan into another's on a multi-session server such as
+  # shinyapps.io. (Verified: a value written from inside a module session
+  # is visible at the root and to sibling modules.)
+  plan_store <- local({
+    if (is.null(session$userData$study_plan)) {
+      session$userData$study_plan <- reactiveValues(entries = list())
+    }
+    session$userData$study_plan
+  })
+
+  # The entry this family contributes, or NULL when it is not in the plan
+  # (unticked) or has no usable result yet.
+  plan_entry <- reactive({
+    if (!isTRUE(input$in_study_plan)) return(NULL)
+    if (isTRUE(safeguard_diverged())) return(NULL)
+    res <- tryCatch(result_r(), error = function(e) NULL)
+    if (is.null(res) || is.null(res$n_total) || is.na(res$n_total)) return(NULL)
+    rt <- recruitment()
+    list(
+      family = family,
+      title = .family_title(family),
+      # The RECRUITMENT figure, not the analytic one: the plan answers
+      # "how many people do I need to sign up", and attrition is part of
+      # that question. Falls back to the analytic N when no attrition is
+      # set, where the two are equal anyway.
+      n_total = if (!is.na(rt$n_recruit)) rt$n_recruit else res$n_total,
+      n_analytic = res$n_total,
+      n_units = rt$n_units, unit_label = rt$unit,
+      group = input$study_plan_group %||% "Sample A"
+    )
+  })
+
+  observe({
+    e <- plan_entry()
+    # The read has to be ISOLATED. `plan_store$entries[[family]] <- e`
+    # desugars to a read of `entries` followed by a write, so without this
+    # the observer would take a reactive dependency on the very value it
+    # writes -- and re-fire on every OTHER family's update too, since they
+    # all share one store. Depending on plan_entry() alone is what makes
+    # sixteen writers into one store safe.
+    isolate({
+      current <- plan_store$entries
+      # Removing on untick (and when a result goes away) rather than
+      # leaving a stale row behind: a plan that quietly keeps a number the
+      # user has since revised is worse than no plan.
+      current[[family]] <- e
+      plan_store$entries <- current
+    })
+  })
+
+  study_plan <- reactive(study_plan_requirement(plan_store$entries))
+
+  output$study_plan_panel <- renderUI({
+    if (!isTRUE(input$in_study_plan)) return(NULL)
+    plan <- study_plan()
+    if (plan$n_entries == 0) return(NULL)
+
+    if (plan$n_entries == 1) {
+      return(div(class = "well well-info", icon("circle-info"),
+                 " Added. Open the other analyses your study needs and tick the",
+                 " same box there; the combined requirement appears here once",
+                 " there are at least two."))
+    }
+
+    fmt <- function(x) format(x, big.mark = ",")
+    group_blocks <- lapply(plan$groups, function(g) {
+      rows <- lapply(g$entries, function(e) {
+        is_binding <- identical(e$family, g$binding$family)
+        tags$tr(
+          tags$td(if (identical(e$family, family)) tags$strong(e$title) else e$title),
+          tags$td(style = "text-align:right;", fmt(e$n_total)),
+          tags$td(style = "text-align:right;",
+                  if (!is.null(e$n_units) && !is.na(e$n_units) &&
+                        !identical(e$unit_label, "participant") &&
+                        !identical(e$unit_label, "arm")) {
+                    sprintf("%s %ss", fmt(e$n_units), e$unit_label)
+                  } else ""),
+          tags$td(if (is_binding) tagList(icon("arrow-left"), " sets this sample") else "")
+        )
+      })
+      tagList(
+        tags$p(tags$strong(g$group),
+               sprintf(" — %s participants (the largest of %d, not their total)",
+                       fmt(g$n), length(g$entries))),
+        tags$table(class = "table table-sm study-plan-table", tags$tbody(rows))
+      )
+    })
+
+    shortfall <- study_plan_shortfall(plan, family)
+    headline <- if (plan$n_groups == 1) {
+      sprintf("Recruit %s participants. All %d analyses run on the same people, so the study needs the largest requirement among them, not their sum.",
+              fmt(plan$total), plan$n_entries)
+    } else {
+      sprintf("Recruit %s participants in total: the largest requirement within each of the %d samples, added across samples.",
+              fmt(plan$total), plan$n_groups)
+    }
+
+    div(
+      div(class = "well well-result",
+          tags$p(icon("users"), tags$strong(sprintf(" %s", headline)))),
+      group_blocks,
+      if (shortfall > 0) {
+        div(class = "well well-warning", icon("triangle-exclamation"),
+            sprintf(" Powering the study on this analysis alone would recruit %s too few. That gap is invisible from inside a single family, which is why this panel exists.",
+                    fmt(shortfall)))
+      },
+      p(class = "field-hint", icon("circle-info"),
+        " Set the same number of planned comparisons in every analysis above:",
+        " this panel combines sample sizes, it does not correct alpha.")
+    )
+  })
+
   # ---- Budget ----------------------------------------------------------
   # Experimental economics pays its participants, so the sample size a
   # power analysis produces translates directly into a line in a grant
@@ -953,6 +1121,13 @@ wire_results_server <- function(input, output, session, family,
       spec$n_recruit_unit <- rt$unit
       spec$n_recruit_per_unit <- rt$per_unit_recruit
       spec$n_recruit_units <- rt$n_units
+    }
+    # The binding requirement belongs in the Method section, not only on
+    # screen -- otherwise the panel would fix the researcher's arithmetic
+    # and leave the manuscript still quoting this family's number alone.
+    if (isTRUE(input$in_study_plan)) {
+      sp <- study_plan()
+      if (sp$n_entries >= 2) spec$study_plan <- sp
     }
     spec
   }

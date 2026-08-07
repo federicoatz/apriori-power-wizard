@@ -25,6 +25,16 @@
 ##     z statistic produces the N implied by z -> P(X<Y) ->
 ##     safeguard_ci_auc() -> power_wilcoxon_n(), and the report text
 ##     records that the interval was built on the P(X<Y) scale.
+##   Scenario 3 (clustered continuous + clustered categorical): the study
+##     plan. This is the only feature in the app that spans two family
+##     modules, so it is the only one a unit test structurally cannot
+##     reach -- R/study_plan.R pins the arithmetic, but the wiring that
+##     carries an entry from one module's session into another's panel
+##     exists only at runtime. Asserts that nothing appears before the
+##     user opts in, that the combined requirement is the LARGEST of two
+##     analyses on one sample rather than their sum, that the non-binding
+##     analysis is told what powering on it alone would miss, that the
+##     figure reaches the report text, and that unticking removes the row.
 ##
 ## Usage:  Rscript tests/e2e/flow_test.R [port]
 ## Exits nonzero on the first failed assertion, printing what differed.
@@ -200,6 +210,120 @@ check("wilcoxon report records the interval was built on the P(X<Y) scale",
       grepl("Hanley & McNeil", wreport), substr(wreport, 1, 300))
 check("wilcoxon report shows the z it started from",
       grepl(sprintf("z = %.2f", expect$wmw_z), wreport), substr(wreport, 1, 300))
+
+## ---- Scenario 3: the cross-family study plan ----------------------------
+## The one feature in this app whose whole point is that it spans two
+## family modules, so a unit test on R/study_plan.R cannot reach it: the
+## aggregation is pure and pinned there, but the wiring that carries an
+## entry from one module's session into another's panel is only exercised
+## here. Specifically at risk and only visible in a browser -- that
+## session$userData is genuinely shared between two module sessions, that
+## a second family's tick re-renders the FIRST family's panel, and that
+## unticking removes the row rather than leaving a stale number behind.
+##
+## The two families used are the ones from the paper's walkthrough, which
+## is also the case that motivated the feature: a continuous primary
+## outcome and a categorical secondary one on the same participants, where
+## the secondary measure binds and powering on the primary alone
+## under-recruits.
+expect$sp_cont <- power_clustered_n(d = 0.5, icc = 0.05, cluster_size = 4)$n_total
+expect$sp_cat <- power_clustered_cat_n(w = 0.185, df = 3, icc = 0.05, cluster_size = 4)$n_total
+expect$sp_total <- max(expect$sp_cont, expect$sp_cat)
+expect$sp_short <- expect$sp_total - min(expect$sp_cont, expect$sp_cat)
+
+## Family 1: clustered continuous. Defaults for d/ICC/cluster size are set
+## explicitly so the expectations above are not hostage to a default change.
+clickTxt("Change analysis type"); Sys.sleep(1.5)
+setradio("analysis_choice", "clustered_rct"); Sys.sleep(1)
+clickTxt("Start"); Sys.sleep(2.5)
+setnum("clustered_rct-cluster_size", "4"); Sys.sleep(1)
+setnum("clustered_rct-icc", "0.05"); Sys.sleep(1)
+clickTxt("Next"); Sys.sleep(1.5)               # design -> parameters
+clickTxt("Next"); Sys.sleep(1.5)               # parameters -> effect size
+setnum("clustered_rct-sesoi_d", "0.5"); Sys.sleep(1.5)
+clickTxt("Compute"); Sys.sleep(5)
+
+## Nothing may appear before the box is ticked: someone pricing unrelated
+## studies must never be shown a combined total.
+check("study plan panel is absent until opted in",
+      !nzchar(txt("clustered_rct-study_plan_panel")),
+      txt("clustered_rct-study_plan_panel"))
+
+ev("(function(){var e=document.getElementById('clustered_rct-in_study_plan');
+     if(!e)return false; e.click(); return true;})()"); Sys.sleep(3)
+panel1 <- txt("clustered_rct-study_plan_panel")
+check("with one analysis, the panel asks for a second rather than showing a total",
+      grepl("at least two", panel1), panel1)
+
+## Family 2: clustered categorical, same sample.
+clickTxt("Change analysis type"); Sys.sleep(1.5)
+setradio("analysis_choice", "clustered_cat"); Sys.sleep(1)
+clickTxt("Start"); Sys.sleep(2.5)
+setradio("clustered_cat-outcome_type", "categorical"); Sys.sleep(1.5)
+## df is derived, not entered: (categories - 1) * (arms - 1), so 4 and 2
+## give the df = 3 the expectation above was computed at.
+setnum("clustered_cat-n_categories", "4"); Sys.sleep(1)
+setnum("clustered_cat-n_arms", "2"); Sys.sleep(1)
+setnum("clustered_cat-cluster_size", "4"); Sys.sleep(1)
+setnum("clustered_cat-icc", "0.05"); Sys.sleep(1)
+clickTxt("Next"); Sys.sleep(1.5)
+clickTxt("Next"); Sys.sleep(1.5)
+setnum("clustered_cat-sesoi_w", "0.185"); Sys.sleep(1.5)
+clickTxt("Compute"); Sys.sleep(5)
+
+ev("(function(){var e=document.getElementById('clustered_cat-in_study_plan');
+     if(!e)return false; e.click(); return true;})()"); Sys.sleep(3)
+
+panel2 <- txt("clustered_cat-study_plan_panel")
+check(sprintf("second family's panel shows the combined requirement (%s)", fmt(expect$sp_total)),
+      grepl(sprintf("Recruit %s participants", fmt(expect$sp_total)), panel2), panel2)
+check("panel states the max rule rather than summing",
+      grepl("largest requirement among them, not their sum", panel2), panel2)
+
+## The binding analysis must NOT be warned about a shortfall it does not
+## have -- here the categorical secondary measure is the one that binds,
+## which is the walkthrough's point: the primary hypothesis is not what
+## sizes the study.
+check("the binding analysis shows no shortfall warning",
+      !grepl("too few", panel2), panel2)
+
+## The plan reaches the manuscript text, not just the screen.
+sreport <- txt("clustered_cat-report_text")
+check("report text carries the combined requirement",
+      grepl("largest of them rather than their sum", sreport), substr(sreport, 1, 400))
+
+## The cross-module assertion this scenario exists for. Note the revisit:
+## a family's tab stays mounted but HIDDEN once you move to another, and
+## Shiny suspends outputs on hidden tabs (suspendWhenHidden defaults to
+## TRUE), so the first family's panel is not re-rendered while the second
+## is on screen. That is the right behaviour -- there is nothing to see --
+## and it resumes on return, which is what a user actually experiences and
+## what is asserted here. Reading the hidden output directly would test
+## Shiny's suspension policy, not this feature.
+clickTxt("Change analysis type"); Sys.sleep(1.5)
+setradio("analysis_choice", "clustered_rct"); Sys.sleep(1)
+clickTxt("Start"); Sys.sleep(3)
+
+panel1b <- txt("clustered_rct-study_plan_panel")
+check("returning to the first family shows the plan built in the second",
+      grepl(sprintf("Recruit %s participants", fmt(expect$sp_total)), panel1b), panel1b)
+check(sprintf("first family is told what powering on it alone would miss (%s)", fmt(expect$sp_short)),
+      grepl(sprintf("recruit %s too few", fmt(expect$sp_short)), panel1b), panel1b)
+
+## Unticking must remove the row, not leave a stale number behind in the
+## other family's panel.
+clickTxt("Change analysis type"); Sys.sleep(1.5)
+setradio("analysis_choice", "clustered_cat"); Sys.sleep(1)
+clickTxt("Start"); Sys.sleep(3)
+ev("(function(){var e=document.getElementById('clustered_cat-in_study_plan');
+     if(!e)return false; e.click(); return true;})()"); Sys.sleep(3)
+
+clickTxt("Change analysis type"); Sys.sleep(1.5)
+setradio("analysis_choice", "clustered_rct"); Sys.sleep(1)
+clickTxt("Start"); Sys.sleep(3)
+panel1c <- txt("clustered_rct-study_plan_panel")
+check("unticking the second family removes its row from the first family's panel",
+      grepl("at least two", panel1c), panel1c)
 
 ## ---- Verdict ------------------------------------------------------------
 if (failures > 0L) {
