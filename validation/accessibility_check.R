@@ -14,18 +14,25 @@
 ## phone, which no script can substitute for. Automating THIS part first
 ## because it is the part a script legitimately can do.
 ##
-## Status as of 2026-08-05 (app v1.0.0): fixed since this script first
-## ran -- color-contrast (APP_PALETTES$light$muted in global.R, #8B8B96 ->
-## #6D6D78; verified against every default-view foreground/background pair
-## used in the app, both by direct WCAG contrast calculation and by
-## repeated live audits), heading-order (the four heading levels used
-## throughout the app were shifted down one, h1/h2/h3/h4, to close the
-## h1->h4 gap the original "Step: ..." headings created; the one
-## remaining case, "Step 1" on the landing tab, has no family h2 title to
-## sit under and so is exposed as level 2 via `aria-level="2"` on its h3
-## tag rather than a plain h2, keeping its .step-card CSS unchanged), and
-## landmark-one-main / region (app.R now wraps the header in <header> and
-## the wizard's tabsetPanel in <main>; the footer was already a <footer>).
+## Status as of 2026-08-07 (app v1.2.3, code-verified; the live audit run
+## originally captured 2026-08-05 at v1.0.0 has not been re-run since --
+## see the header note above about what a script can and cannot check):
+## fixed since this script first ran -- color-contrast
+## (APP_PALETTES$light$muted in global.R, #8B8B96 -> #6D6D78; verified
+## against every default-view foreground/background pair used in the app,
+## both by direct WCAG contrast calculation and by repeated live audits),
+## heading-order (the four heading levels used throughout the app were
+## shifted down one, h1/h2/h3/h4, to close the h1->h4 gap the original
+## "Step: ..." headings created; the one remaining case, "Step 1" on the
+## landing tab, has no family h2 title to sit under and so is exposed as
+## level 2 via `aria-level="2"` on its h3 tag rather than a plain h2,
+## keeping its .step-card CSS unchanged), and landmark-one-main / region
+## (app.R wraps the header in <header> and the wizard's tabsetPanel in
+## <main>; the footer was already a <footer>). All four were re-confirmed
+## present in the source at v1.2.3 by direct inspection (grep for the
+## specific markup this comment names), though the axe-core run itself was
+## not repeated -- do that before relying on this note for a release
+## announcement or a compliance claim.
 ##
 ## Still open, left for deliberate follow-up rather than a blind
 ## mechanical fix:

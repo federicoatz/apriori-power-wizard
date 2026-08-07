@@ -97,7 +97,7 @@ breaks any of them, or silently drops a family's reachability, fails CI
 on every push, not just when someone remembers to run the standalone
 script.
 
-Last verified: 2026-08-05, app version 1.0.0 -- 17/17 scenarios routed
+Last verified: 2026-08-07, app version 1.2.3 -- 17/17 scenarios routed
 to the expected family.
 
 ## Two validation methods, by family
@@ -171,14 +171,16 @@ from scratch rather than take the historical claim on faith.
 
 ### Last verified run
 
-Captured 2026-08-05, app version 1.0.2, R 4.5.3 (re-run to confirm: the
-seed is fixed, so these exact numbers are reproducible). Re-run the
+Captured 2026-08-07, app version 1.2.3, R 4.5.3 (re-run to confirm: the
+seed is fixed, so these exact numbers are reproducible -- and in fact are
+byte-identical to the snapshot from app version 1.0.2, since none of the
+releases between the two touched a validated formula). Re-run the
 command above for a current result; this snapshot exists so a reader can
 see what a passing run looks like without installing R first.
 
 ```
 A Priori Power Analysis Wizard -- Monte Carlo validation
-App version: 1.0.2 | R version: R version 4.5.3 (2026-03-11)
+App version: 1.2.3 | R version: R version 4.5.3 (2026-03-11)
 
 McNemar's test (Connor, 1987)
   [WATCH] McNemar                      n=100 p10=0.25 p01=0.10                formula=0.7241 sim=0.7384 diff=-0.0143 (2*SE=0.0098, reps=8000)
@@ -293,7 +295,7 @@ zero) and once end-to-end through this app's own solvers at a sample size
 large enough that rounding is negligible, printing each configuration's
 rounding floor alongside its residual so the two can be told apart.
 
-As of v1.2.2 it reports agreement within **0.09%** for the four metrics
+As of v1.2.3 it reports agreement within **0.093%** for the four metrics
 whose sample size is a constant over the squared effect (*h*, *w*,
 log HR, and the probability of superiority), and a systematic,
 effect-size-dependent gap for the other two: up to 3.6% for *r* (from the

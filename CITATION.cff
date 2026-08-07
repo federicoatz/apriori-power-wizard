@@ -11,13 +11,20 @@ date-released: 2026-08-07
 license: MIT
 repository-code: "https://github.com/federicoatz/apriori-power-wizard"
 doi: 10.5281/zenodo.21804595
+# The second identifier below pins the archived DOI for THIS file's own
+# `version:` field above -- Zenodo assigns it automatically a few minutes
+# after a GitHub release, so it can only be filled in as a follow-up edit,
+# not in the release commit itself. It has gone stale (pointing at an
+# earlier version than the one this file declares) three times already;
+# check it whenever `version:` changes, and update paper.tex's matching
+# Zenodo citations in the same pass.
 identifiers:
   - type: doi
     value: 10.5281/zenodo.21804595
     description: "Concept DOI: always resolves to the latest archived release"
   - type: doi
-    value: 10.5281/zenodo.21812838
-    description: "Archived snapshot of version 1.0.6 on Zenodo"
+    value: 10.5281/zenodo.21834275
+    description: "Archived snapshot of version 1.2.3 on Zenodo (this file's own version)"
 abstract: >-
   A step-by-step Shiny application that guides researchers in experimental
   economics and behavioral science through an a priori (before data
