@@ -10,6 +10,53 @@ minor = new feature/family, major reserved for a future breaking redesign).
 > notes in `CITATION.cff`). Every entry below corresponds to a real tagged
 > release on the current history; nothing has been renumbered or backdated.
 
+## [1.4.3] - 2026-08-07
+
+Appearance and accessibility; no change to what the application computes.
+
+- **Fixed near-invisible text in the dark theme, at the root rather than
+  case by case.** The app themes itself with its own tokens under
+  `[data-theme]` and does not use Bootstrap's `data-bs-theme`, so every
+  Bootstrap component the stylesheet did not explicitly restyle kept
+  reading `--bs-*` at its **light** values once the app went dark. Two
+  measured consequences: an inline `<code>` (the footer's "pwr") rendered
+  pure black on `#0B0F1A`, a contrast ratio of **1.10:1**, and every
+  `helpText()` -- including the prompts under the sensitivity and budget
+  panels -- rendered at **1.04:1**. Both are effectively invisible.
+  A variable bridge now maps the `--bs-*` set to the app's tokens in both
+  themes, which fixes the whole class at once, including any Bootstrap
+  component added later, rather than chasing each symptom.
+
+- **Selectize inputs restyled.** `selectInput()` renders a selectize
+  widget that ships its own stylesheet with hardcoded light colours and
+  consults neither this app's tokens nor Bootstrap's variables, so the
+  currency and sample pickers stayed bright white boxes in a dark page,
+  along with the dropdowns they open.
+
+- **Two further failures the audit turned up, both pre-existing and both
+  in the LIGHT theme.** The value-box labels carried `opacity: 0.75`,
+  which composites white into the tile colour: the real contrast was
+  **2.87:1** on the green box and **3.78:1** on the indigo, while a naive
+  check of `color` against `background` reported 3.93 and 5.37 and called
+  one of them a pass. The opacity is gone -- size, weight and
+  letter-spacing already de-emphasise the label -- and light-theme
+  `--positive` moved from `#00926F` to `#008062`, since white on the old
+  green was 3.93:1 even at full opacity. `APP_PALETTES$light$positive` in
+  `global.R` follows, so the plot palette and the CSS token stay in sync.
+
+- **Colour contrast is now checked on every push, in both themes.**
+  `tests/e2e/flow_test.R` gains a scan over every visible text node across
+  all four wizard steps, asserting WCAG AA (4.5:1 normal, 3:1 large).
+  Nothing previously covered this: the unit suite renders no pages, and
+  the axe-core audit runs only against the deployed build's landing page,
+  in the light theme, outside the regular suite -- which is exactly why
+  these defects survived. The scan composites inherited `opacity` into the
+  measured foreground and resolves the background by walking to the first
+  non-transparent ancestor, the two things a naive implementation gets
+  wrong. Verified non-vacuous by disabling the variable bridge and
+  confirming it fails with the original ratios. Both themes now report
+  zero failures.
+
 ## [1.4.2] - 2026-08-07
 
 Documentation only; no change to what the application computes.

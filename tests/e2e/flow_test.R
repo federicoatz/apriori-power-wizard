@@ -325,6 +325,77 @@ panel1c <- txt("clustered_rct-study_plan_panel")
 check("unticking the second family removes its row from the first family's panel",
       grepl("at least two", panel1c), panel1c)
 
+## ---- Scenario 4: colour contrast, both themes ---------------------------
+## Added after a class of bug that no existing check could see. The app
+## themes itself with its own tokens under [data-theme] and does NOT use
+## Bootstrap's data-bs-theme, so every Bootstrap component the stylesheet
+## does not explicitly restyle kept reading `--bs-*` at its LIGHT values
+## once the app went dark: an inline <code> came out pure black on
+## #0B0F1A (contrast 1.10, invisible) and every helpText() at 1.04. The
+## unit suite cannot see this -- it renders no pages -- and the axe-core
+## audit runs only against the deployed shinylive build, on the landing
+## page, outside this suite.
+##
+## Two details matter for this to mean anything. Contrast is measured on
+## the ACTUAL rendered foreground, compositing any inherited `opacity`
+## into it: reading `color` alone reported the value-box labels as a pass
+## at 3.93:1 when white at opacity .75 over the tile is really 2.87:1.
+## And the background is resolved by walking up to the first non-
+## transparent ancestor, since most text sits on a transparent element.
+##
+## Thresholds are WCAG AA: 4.5:1 for normal text, 3:1 for large (>=24px,
+## or >=18.66px bold).
+contrast_scan <- '
+(function(){
+  function lum(c){var m=c.match(/[\\d.]+/g); if(!m) return null;
+    if (m.length>3 && parseFloat(m[3])===0) return null;
+    var f=[m[0],m[1],m[2]].map(function(v){v=v/255;
+      return v<=0.03928 ? v/12.92 : Math.pow((v+0.055)/1.055,2.4);});
+    return 0.2126*f[0]+0.7152*f[1]+0.0722*f[2];}
+  function bgOf(el){while(el&&el!==document.documentElement){
+      var b=getComputedStyle(el).backgroundColor, m=b.match(/[\\d.]+/g);
+      if(m&&(m.length<4||parseFloat(m[3])>0.5)) return b; el=el.parentElement;}
+    return getComputedStyle(document.documentElement).backgroundColor;}
+  var out=[];
+  document.querySelectorAll("*").forEach(function(el){
+    if(!el.offsetParent && el.tagName!=="BODY") return;
+    var t=Array.from(el.childNodes).filter(function(n){
+        return n.nodeType===3 && n.textContent.trim();})
+      .map(function(n){return n.textContent.trim();}).join(" ");
+    if(!t) return;
+    var cs=getComputedStyle(el);
+    var op=1, a=el;
+    while(a && a!==document.documentElement){
+      op*=parseFloat(getComputedStyle(a).opacity||1); a=a.parentElement;}
+    var bgc=bgOf(el);
+    var fm=(cs.color.match(/[\\d.]+/g)||[]).map(Number);
+    var bm=(bgc.match(/[\\d.]+/g)||[]).map(Number);
+    if(fm.length<3||bm.length<3) return;
+    var eff="rgb("+[0,1,2].map(function(i){return op*fm[i]+(1-op)*bm[i];}).join(",")+")";
+    var lf=lum(eff), lb=lum(bgc); if(lf===null||lb===null) return;
+    var r=(Math.max(lf,lb)+0.05)/(Math.min(lf,lb)+0.05);
+    var size=parseFloat(cs.fontSize), bold=parseInt(cs.fontWeight)>=700;
+    var need=((size>=24)||(size>=18.66&&bold))?3:4.5;
+    if(r<need) out.push(el.tagName+"."+(el.className||"").toString().split(" ")[0]+
+                        " ratio="+r.toFixed(2)+" need="+need+" text=\\""+t.substr(0,40)+"\\"");
+  });
+  return out.join(" | ");})()'
+
+theme_of <- function() ev("String(document.documentElement.getAttribute('data-theme'))")
+set_theme <- function(mode) {
+  ev(sprintf("document.getElementById('pw-theme-%s').click()", mode)); Sys.sleep(2)
+}
+
+for (mode in c("dark", "light")) {
+  set_theme(mode)
+  check(sprintf("theme switched to %s", mode), identical(theme_of(), mode), theme_of())
+  fails <- ev(contrast_scan)
+  if (is.null(fails) || is.na(fails)) fails <- "SCAN FAILED"
+  check(sprintf("%s theme: every text node meets WCAG AA contrast", mode),
+        identical(fails, ""), fails)
+}
+set_theme("dark")
+
 ## ---- Verdict ------------------------------------------------------------
 if (failures > 0L) {
   cat(sprintf("\n%d flow assertion(s) FAILED\n", failures))

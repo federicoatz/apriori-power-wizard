@@ -14,7 +14,7 @@
 ## phone, which no script can substitute for. Automating THIS part first
 ## because it is the part a script legitimately can do.
 ##
-## Status as of 2026-08-07 (app v1.4.0, code-verified; the live audit run
+## Status as of 2026-08-07 (app v1.4.3, code-verified; the live audit run
 ## originally captured 2026-08-05 at v1.0.0 has not been re-run since --
 ## see the header note above about what a script can and cannot check):
 ## fixed since this script first ran -- color-contrast
@@ -29,23 +29,42 @@
 ## keeping its .step-card CSS unchanged), and landmark-one-main / region
 ## (app.R wraps the header in <header> and the wizard's tabsetPanel in
 ## <main>; the footer was already a <footer>). All four were re-confirmed
-## present in the source at v1.4.0 by direct inspection (grep for the
+## present in the source at v1.4.3 by direct inspection (grep for the
 ## specific markup this comment names), though the axe-core run itself was
 ## not repeated -- do that before relying on this note for a release
 ## announcement or a compliance claim.
 ##
-## UNAUDITED SINCE: v1.4.0. Unlike v1.3.0, which changed no markup at all,
-## v1.4.0 adds genuinely new controls in the results step's study-plan card
-## (modules/common_results.R): a checkboxInput, a selectInput revealed by a
-## conditionalPanel, and a <table> of plan rows. Each uses the same Shiny
-## helpers and the same .well/.results-tool classes as the audited controls
-## around it, and the table's styling (www/styles.css, .study-plan-table)
-## sets only spacing, borders and numeric alignment via existing theme
-## tokens -- so nothing here introduces a new heading level, landmark,
-## color pair, or hand-written ARIA. That is a reasoned expectation, not a
-## measurement: the checks worth re-running against this card specifically
-## are color-contrast on the table's secondary-color cells and label
-## association on the two new inputs.
+## COLOR CONTRAST IS NOW MEASURED, NOT ASSUMED (v1.4.3). This script only
+## ever ran against the deployed shinylive build's LANDING page, in the
+## light theme, and it is not part of the regular suite -- which left the
+## dark theme, and every step past the first, unchecked by anything. That
+## gap hid a whole class of defect: the app themes itself with its own
+## tokens under [data-theme] and does not use Bootstrap's data-bs-theme,
+## so every Bootstrap component the stylesheet did not explicitly restyle
+## kept reading `--bs-*` at its LIGHT values once the app went dark. An
+## inline <code> rendered pure black on #0B0F1A (1.10:1, invisible) and
+## every helpText() at 1.04:1. Both are fixed at the root -- see the
+## "BOOTSTRAP VARIABLE BRIDGE" block in www/styles.css.
+##
+## tests/e2e/flow_test.R now carries a contrast scan over every visible
+## text node, on all four wizard steps, in BOTH themes, asserting WCAG AA
+## (4.5:1 normal, 3:1 large). It runs in CI on every push. Two details it
+## gets right that a naive check does not: the measured foreground
+## composites any inherited `opacity` -- reading `color` alone scored the
+## value-box labels 3.93:1 when white at opacity .75 over the tile is
+## really 2.87:1 -- and the background is resolved by walking up to the
+## first non-transparent ancestor. Verified non-vacuous by disabling the
+## variable bridge and confirming the scan fails.
+##
+## That closed two further findings this note previously could not have
+## made: the value-box labels lost their 0.75 opacity, and light-mode
+## --positive moved from #00926F to #008062, since white-on-#00926F was
+## 3.93:1. Both themes now report zero failures.
+##
+## What axe-core still adds over that scan, and why this script stays:
+## everything that is not contrast -- ARIA misuse, heading order,
+## landmarks, form-label association, the aria-prohibited-attr issue
+## below. Re-run it before making a compliance claim.
 ##
 ## Still open, left for deliberate follow-up rather than a blind
 ## mechanical fix:

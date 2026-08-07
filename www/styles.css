@@ -82,7 +82,11 @@
   --accent-ring:   rgba(91, 91, 214, 0.16);
   --on-accent:     #FFFFFF;
 
-  --positive:      #00926F;
+  /* #008062, not the brighter #00926F: the value-box label is white on
+     this colour, and #00926F gave 3.93:1 -- below the 4.5 WCAG AA needs
+     for normal text. It is also used as text on white elsewhere (the
+     safeguard "within budget" note), which had the same problem. */
+  --positive:      #008062;
   --positive-soft: #E6F5F1;
   --warning:       #B45309;
   --warning-soft:  #FEF6E7;
@@ -131,6 +135,53 @@
 
   --plot-bg: #151B2B;
   color-scheme: dark;
+}
+
+/* ------------------------------------------- BOOTSTRAP VARIABLE BRIDGE */
+/* This app themes itself with its own tokens under [data-theme], and does
+   NOT use Bootstrap's own `data-bs-theme` switch. That works for anything
+   this stylesheet paints -- but every Bootstrap component we do not
+   explicitly restyle keeps reading `--bs-*`, which stays frozen at its
+   LIGHT values when the app goes dark. The result is near-black text on a
+   near-black background in places nobody thinks to check, because the
+   component looks fine in the theme it was designed against.
+   Two real cases this fixes: an inline <code> ("pwr" in the footer) came
+   out at rgb(0,0,0) on #0B0F1A -- a contrast ratio of 1.10, effectively
+   invisible -- and every helpText() came out at rgba(29,31,33,0.75), 1.04.
+   Bridging the variables fixes the whole class at once, including any
+   Bootstrap component added later, rather than chasing each symptom.
+   Bootstrap's own dark values are not reused here: they belong to a
+   different palette, and the point is that one set of tokens drives
+   everything. */
+[data-theme="dark"] {
+  --bs-body-bg:          var(--bg);
+  --bs-body-bg-rgb:      11, 15, 26;
+  --bs-body-color:       var(--text);
+  --bs-body-color-rgb:   232, 236, 244;
+  --bs-emphasis-color:   var(--text);
+  --bs-secondary-bg:     var(--surface-2);
+  --bs-secondary-color:  var(--text-muted);
+  --bs-tertiary-bg:      var(--surface-hover);
+  --bs-tertiary-color:   var(--text-muted);
+  --bs-border-color:     var(--border);
+  --bs-code-color:       var(--accent);
+  --bs-link-color:       var(--accent);
+  --bs-link-hover-color: var(--accent-hover);
+  --bs-heading-color:    var(--text);
+  --bs-highlight-bg:     var(--warning-soft);
+}
+/* Kept symmetrical so the two themes are described the same way and a
+   future token change cannot silently apply to only one of them. */
+[data-theme="light"] {
+  --bs-body-bg:          var(--bg);
+  --bs-body-color:       var(--text);
+  --bs-emphasis-color:   var(--text);
+  --bs-secondary-bg:     var(--surface-2);
+  --bs-secondary-color:  var(--text-muted);
+  --bs-border-color:     var(--border);
+  --bs-code-color:       var(--accent);
+  --bs-link-color:       var(--accent);
+  --bs-link-hover-color: var(--accent-hover);
 }
 
 /* --------------------------------------------------------------- TOKENS */
@@ -894,6 +945,44 @@ input[type="number"], input[type="text"] {
 }
 .form-control::placeholder { color: var(--text-muted); }
 
+/* Selectize -- what Shiny's selectInput() actually renders. It ships its
+   own stylesheet with hardcoded light colours and never consults either
+   this file's tokens or Bootstrap's variables, so in dark mode the
+   currency picker and the study-plan sample picker stayed bright white
+   boxes in an otherwise dark page. Not a contrast failure (dark text on
+   white reads fine) but a glaring one visually, and the dropdown it opens
+   was white too. Restyled to match the plain inputs beside it. */
+.selectize-input,
+.selectize-input.full,
+.selectize-dropdown,
+.selectize-dropdown-content {
+  background: var(--surface);
+  color: var(--text);
+  border-color: var(--border);
+}
+.selectize-input {
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  padding: 8px 11px;
+  font-family: var(--font-sans);
+  font-size: 14px;
+  box-shadow: none;
+}
+.selectize-input.focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-ring);
+}
+.selectize-dropdown {
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  box-shadow: var(--shadow-md);
+}
+.selectize-dropdown .option { color: var(--text); }
+.selectize-dropdown .option.active,
+.selectize-dropdown .active { background: var(--accent-soft); color: var(--text); }
+.selectize-control.single .selectize-input:after { border-top-color: var(--text-2); }
+.selectize-input > input { color: var(--text); }
+
 /* Shiny ships a default `width: 300px` on .shiny-input-container (for
    non-inline inputs). That's sensible in a sidebar, but here it silently
    capped every input -- and, worse, the Step-1 choice grid, which then
@@ -1253,7 +1342,12 @@ input[type="number"], input[type="text"] {
   font-weight: 500;
   letter-spacing: 0.05em;
   text-transform: uppercase;
-  opacity: 0.75;
+  /* No opacity here. It used to be 0.75, which composites the white label
+     into the tile colour and drops the real contrast well below what the
+     computed `color` suggests -- 2.87:1 on the green, 3.78:1 on the
+     indigo, both failing AA while a naive check of color-vs-background
+     reports them as passing. The label is already de-emphasised by size,
+     weight and letter-spacing; it does not need transparency as well. */
 }
 .bslib-value-box .value-box-showcase { opacity: 0.4; }
 .value-box-row { margin-bottom: 22px; animation: slideIn 0.35s var(--ease) both; }
@@ -1300,6 +1394,23 @@ pre {
   font-family: var(--font-sans);
   font-size: 13.5px;
   line-height: 1.65;
+  color: var(--text-2);
+}
+
+/* Inline <code> -- the footer's package names and file paths. Previously
+   unstyled here, so it fell through to Bootstrap's `code { color:
+   var(--bs-code-color) }` with a light-theme value: pure black on the dark
+   background, contrast 1.10, which made "pwr" in the footer simply vanish.
+   The variable bridge above already repairs the colour; this rule gives it
+   a chip that reads as code in both themes rather than as stray text.
+   Scoped away from <pre>, which is a block and styles itself. */
+:not(pre) > code {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 0.1em 0.35em;
+  font-family: var(--font-mono);
+  font-size: 0.88em;
   color: var(--text-2);
 }
 
@@ -1446,11 +1557,11 @@ hr { border-color: var(--border); opacity: 1; }
    headline figure in the .well-result above it. Colors come from the
    theme tokens so it follows the light/dark switch like everything else. */
 .study-plan-table { margin: 4px 0 14px 0; font-size: 0.94em; }
-.study-plan-table td { padding: 4px 8px; vertical-align: middle; }
-.study-plan-table tr + tr td { border-top: 1px solid var(--bs-border-color); }
+.study-plan-table td { padding: 4px 8px; vertical-align: middle; color: var(--text); }
+.study-plan-table tr + tr td { border-top: 1px solid var(--border); }
 .study-plan-table td:nth-child(2) { font-variant-numeric: tabular-nums; font-weight: 600; }
-.study-plan-table td:nth-child(3) { font-variant-numeric: tabular-nums; color: var(--bs-secondary-color); }
-.study-plan-table td:nth-child(4) { color: var(--bs-secondary-color); white-space: nowrap; }
+.study-plan-table td:nth-child(3) { font-variant-numeric: tabular-nums; color: var(--text-muted); }
+.study-plan-table td:nth-child(4) { color: var(--text-muted); white-space: nowrap; }
 
 /* --- Step-1 example library --------------------------------------------
    Cards for the pre-filled worked examples. Deliberately lighter-weight

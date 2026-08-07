@@ -16,7 +16,7 @@ library(htmltools)
 # `version:` field in CITATION.cff -- tests/testthat/test-misc.R asserts
 # the two match, so a mismatch fails the test suite instead of drifting
 # silently.
-APP_VERSION <- "1.4.2"
+APP_VERSION <- "1.4.3"
 ## NOTE: neither the logistic-regression nor the factorial-ANOVA family
 ## depends on an external power-analysis package, and this is deliberate.
 ## Logistic regression used to depend on WebPower::wp.logistic(), whose
@@ -65,7 +65,7 @@ APP_VERSION <- "1.4.2"
 APP_PALETTES <- list(
   light = list(
     accent   = "#5B5BD6",
-    positive = "#00926F",
+    positive = "#008062",
     warning  = "#B45309",
     bg       = "#FFFFFF",
     surface  = "#FBFBFD",

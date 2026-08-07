@@ -6,7 +6,7 @@ correct number, and that the decision helper routes a design description
 to the correct family. Real tolerances and reproducible scripts for both
 are below. This complements, and does not replace, the other sources of
 truth in this repository: `tests/testthat/` (2,592 assertions as of
-v1.4.1: pinned regression tests plus property-based invariants,
+v1.4.3: pinned regression tests plus property-based invariants,
 run on every push and pull request -- see `.github/workflows/test.yml`),
 `tests/e2e/flow_test.R` (the rendered wizard, driven in a real headless
 browser, checked against the solvers),
@@ -97,7 +97,7 @@ breaks any of them, or silently drops a family's reachability, fails CI
 on every push, not just when someone remembers to run the standalone
 script.
 
-Last verified: 2026-08-07, app version 1.4.0 -- 17/17 scenarios routed
+Last verified: 2026-08-07, app version 1.4.3 -- 17/17 scenarios routed
 to the expected family.
 
 ## Two validation methods, by family
@@ -377,7 +377,25 @@ after missing `lang`, insufficient color contrast, missing landmarks, and
 heading-order violations were all fixed (see that script's header comment
 for exactly what changed). Automated tooling still cannot verify keyboard
 navigation, screen-reader usability, or mobile layout, which need a
-human. Run it yourself with:
+human.
+
+**Colour contrast is checked separately, and more thoroughly, on every
+push.** The axe-core run above only ever saw the deployed build's landing
+page in the light theme, which left the dark theme and every step past
+the first unchecked. `tests/e2e/flow_test.R` now scans every visible text
+node across all four wizard steps in **both** themes and asserts WCAG AA
+(4.5:1 normal text, 3:1 large). Two things it gets right that a naive
+check does not: the measured foreground composites any inherited
+`opacity` -- reading `color` alone scored the value-box labels 3.93:1
+when white at opacity .75 over the tile is really 2.87:1 -- and the
+background is resolved by walking up to the first non-transparent
+ancestor. Both themes currently report zero failures, and the scan is
+verified non-vacuous by disabling the fix and confirming it fails. What
+introduced the defect it caught is documented in
+[Results that changed between versions](#results-that-changed-between-versions)
+and in the "Bootstrap variable bridge" comment in `www/styles.css`.
+
+Run the axe-core audit yourself with:
 
 ```bash
 Rscript deploy/export_shinylive.R   # build _site/ first if you haven't
@@ -397,11 +415,13 @@ If you are holding an older report and re-running it gives a different
 sample size, this table is the first place to check -- **before** assuming
 a bug.
 
-| Change | Versions | Effect on reported N |
+| Change | Versions | Effect |
 |---|---|---|
 | Clustered continuous family moved from effective-individual to cluster-level degrees of freedom | up to 1.2.3 &rarr; 1.3.0 onward | **Larger N, sometimes substantially**, in the few-large-clusters regime. Negligible with many small clusters |
 | `power_achieved` recomputed at the rounded N in multiple regression and balanced two proportions | up to 1.2.3 &rarr; 1.3.0 onward | N unchanged; the *reported power* rises slightly (e.g. .8000 &rarr; .8051), because it now describes the integer sample rather than the target that was requested |
 | Attrition inflation applied to the design unit rather than the grand total | up to 1.3.0 &rarr; 1.4.0 onward | Recruitment target changes only when attrition > 0 **and** the design has structure (clusters, cells, groups, arms). Typically a few participants, always upward, so the design stays evenly divisible |
+| Light-theme `--positive` darkened #00926F &rarr; #008062, and the value-box label lost its 0.75 opacity | up to 1.4.2 &rarr; 1.4.3 onward | Appearance only; no calculation touched. White-on-green was 3.93:1 at full opacity and 2.87:1 as actually rendered, both below WCAG AA |
+| Bootstrap `--bs-*` variables bridged to the app's own tokens in dark mode | up to 1.4.2 &rarr; 1.4.3 onward | Appearance only. Previously any Bootstrap component the stylesheet did not restyle kept light-theme colours in dark mode -- inline `code` at 1.10:1, `helpText()` at 1.04:1, i.e. invisible |
 
 ### The clustered change, quantified
 
