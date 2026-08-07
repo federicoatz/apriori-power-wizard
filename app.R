@@ -302,6 +302,16 @@ ui <- page_fluid(
     id = "main_nav", type = "hidden",
 
     tabPanelBody("choose_analysis",
+      # A flex column so the three blocks below can be visually REORDERED
+      # per mode via pure CSS `order` (see ".step1-flow" / "#decision_helper_acc"
+      # in styles.css) without touching the underlying markup -- the
+      # decision-helper accordion has server-bound inputs (dh_unit,
+      # dh_outcome, ...), so it must stay a single DOM instance; moving it
+      # earlier for Guided mode is done by reordering, never by duplicating
+      # it. In the default (non-guided) mode `order` is left at its
+      # browser default (0) for every block, so visual order matches DOM
+      # order exactly as it always has.
+      div(class = "step1-flow",
       # Hidden by CSS the moment Guided mode is already on (including a
       # returning visitor whose choice was already saved) -- see
       # `html[data-guided="true"] .guided-prompt` in styles.css -- so
@@ -435,6 +445,7 @@ ui <- page_fluid(
           uiOutput("dh_recommendation")
         )
       )
+      ) # /.step1-flow
     )
   )
   ),
@@ -551,12 +562,36 @@ ui <- page_fluid(
       function currentGuided() {
         return root.getAttribute('data-guided') === 'true';
       }
+
+      /* Auto-expand the Step-1 decision-helper accordion when Guided mode
+         turns on (never auto-collapses it when turning off -- a user who
+         opened it manually keeps it open). Goes through Bootstrap's own
+         Collapse API rather than toggling the `.show` class directly, so
+         the header button's aria-expanded/chevron state stay in sync and
+         a subsequent manual click behaves normally. Silently a no-op if
+         the panel is already open or the accordion isn't mounted yet. */
+      function openHelperAccordion() {
+        var acc = document.getElementById('decision_helper_acc');
+        if (!acc) return;
+        var btn = acc.querySelector('.accordion-button');
+        var panel = acc.querySelector('.accordion-collapse');
+        if (!btn || !panel || panel.classList.contains('show')) return;
+        if (window.bootstrap && window.bootstrap.Collapse) {
+          window.bootstrap.Collapse.getOrCreateInstance(panel, { toggle: false }).show();
+        } else {
+          panel.classList.add('show');
+          btn.classList.remove('collapsed');
+          btn.setAttribute('aria-expanded', 'true');
+        }
+      }
+
       function applyGuided(on, persist) {
         root.setAttribute('data-guided', String(on));
         if (guidedBtn) guidedBtn.setAttribute('aria-pressed', String(on));
         if (persist) {
           try { window.localStorage.setItem('pw-guided', String(on)); } catch (e) {}
         }
+        if (on) openHelperAccordion();
       }
       if (guidedBtn) {
         guidedBtn.addEventListener('click', function () { applyGuided(!currentGuided(), true); });

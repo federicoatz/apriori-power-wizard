@@ -6,8 +6,8 @@ authors:
   - family-names: "Atzori"
     given-names: "Federico"
     affiliation: "University of Cagliari"
-version: 1.2.0
-date-released: 2026-08-06
+version: 1.2.1
+date-released: 2026-08-07
 license: MIT
 repository-code: "https://github.com/federicoatz/apriori-power-wizard"
 doi: 10.5281/zenodo.21804595

@@ -347,6 +347,24 @@ a:hover { color: var(--accent-hover); }
 }
 html[data-guided="true"] .guided-prompt { display: none; }
 
+/* --- Step-1 layout reordering under Guided mode ------------------------
+   The picker, the example library, and the decision-helper accordion are
+   siblings inside a flex column (see ".step1-flow" in app.R) purely so
+   Guided mode can promote the decision helper to the FIRST block via a
+   plain CSS `order` override -- no markup duplication, which matters
+   because the helper has server-bound radio inputs (dh_unit, dh_outcome,
+   ...) that must stay a single DOM instance. Default mode leaves every
+   block at the browser's default order (0), so nothing changes there. */
+.step1-flow { display: flex; flex-direction: column; }
+html[data-guided="true"] #decision_helper_acc {
+  order: -1;
+  margin-bottom: 18px;
+  --bs-accordion-border-color: var(--accent);
+  --bs-accordion-border-width: 1.5px;
+  box-shadow: 0 0 0 3px var(--accent-ring);
+  border-radius: var(--bs-accordion-border-radius);
+}
+
 /* --- Guided-mode explanation boxes -------------------------------------
    Always rendered in the DOM (so toggling Guided mode takes effect
    instantly, with no server round trip or re-render, even on steps/

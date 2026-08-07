@@ -10,6 +10,24 @@ minor = new feature/family, major reserved for a future breaking redesign).
 > notes in `CITATION.cff`). Every entry below corresponds to a real tagged
 > release on the current history; nothing has been renumbered or backdated.
 
+## [1.2.1] - 2026-08-07
+
+- **The Step-1 decision helper no longer sits buried at the bottom in
+  Guided mode.** It used to be a collapsed accordion, visually equal in
+  weight to "start from a worked example" and below the fold under the
+  full 16-option picker -- exactly backwards for the visitors most likely
+  to need it. With Guided mode on, it now opens automatically and moves
+  to the top of the page, framed with the same accent highlight as the
+  "New here?" banner; the worked-example accordion stays put, collapsed,
+  at the bottom, where it already made sense. Default (non-Guided) mode
+  is untouched: same order, same collapsed accordions, byte-for-byte.
+  Implemented as a pure CSS `order` override on a shared flex container
+  plus a client-side call to Bootstrap's own Collapse API (so the header
+  button's aria-expanded state and chevron stay correct, and a manual
+  click still closes it normally) -- no server round trip, and the
+  decision helper's server-bound inputs stay a single DOM instance rather
+  than being duplicated for the two layouts.
+
 ## [1.2.0] - 2026-08-06
 
 Minor: two new user-facing capabilities and three new exported functions.
