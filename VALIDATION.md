@@ -5,11 +5,14 @@ that every one of the sixteen closed-form analysis families computes the
 correct number, and that the decision helper routes a design description
 to the correct family. Real tolerances and reproducible scripts for both
 are below. This complements, and does not replace, the other sources of
-truth in this repository: `tests/testthat/` (1,949+ assertions: pinned
+truth in this repository: `tests/testthat/` (2,050+ assertions: pinned
 regression tests plus property-based invariants,
 run on every push and pull request -- see `.github/workflows/test.yml`),
-`validation/monte_carlo_validation.R` (formula correctness), and
-`validation/scenario_validation.R` (decision-helper correctness).
+`tests/e2e/flow_test.R` (the rendered wizard, driven in a real headless
+browser, checked against the solvers),
+`validation/monte_carlo_validation.R` (formula correctness),
+`validation/scenario_validation.R` (decision-helper correctness), and
+`validation/eq2_audit.R` (the safeguard-markup approximation).
 
 **Scope.** "The formulas are correct" is established here,
 deterministically and reproducibly. The decision helper is a weaker case
@@ -271,6 +274,38 @@ reproduces the hazard-ratio sign flip in roughly 8% of random draws and the
 correlation-sign defect in roughly 50% -- either would have failed on the
 first CI run. The seed is fixed so a failure is reproducible; raising `REPS`
 in that file searches harder before a release.
+
+## Safeguard-markup relationship (the manuscript's Equation 2)
+
+The accompanying working paper states a closed-form approximation for what
+the safeguard branch costs relative to a directly stated SESOI, depending
+on nothing but the original study's *t* statistic and the chosen
+confidence level. Because that claim is quantitative, it is auditable
+rather than asserted:
+
+```bash
+Rscript validation/eq2_audit.R
+```
+
+The script measures the deviation metric by metric, twice: once on
+fractional sample sizes (via `pwr`, where integer rounding is exactly
+zero) and once end-to-end through this app's own solvers at a sample size
+large enough that rounding is negligible, printing each configuration's
+rounding floor alongside its residual so the two can be told apart.
+
+As of v1.2.2 it reports agreement within **0.09%** for the four metrics
+whose sample size is a constant over the squared effect (*h*, *w*,
+log HR, and the probability of superiority), and a systematic,
+effect-size-dependent gap for the other two: up to 3.6% for *r* (from the
+additive `+3` term in its sample-size formula, shrinking as N grows) and
+up to 7.9% for *d* at very large effects (because the app solves the exact
+noncentral *t* rather than the normal approximation the proportionality
+assumes). In both cases the approximation *overstates* the requirement,
+so it errs toward recruiting more rather than fewer participants. A third
+block re-derives the *d* column under the pure normal approximation and
+returns exactly zero deviation, which locates the gap in the solver being
+more exact than the approximation assumes rather than in the relationship
+itself.
 
 ## Accessibility
 

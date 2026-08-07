@@ -10,6 +10,35 @@ minor = new feature/family, major reserved for a future breaking redesign).
 > notes in `CITATION.cff`). Every entry below corresponds to a real tagged
 > release on the current history; nothing has been renumbered or backdated.
 
+## [1.2.2] - 2026-08-07
+
+No change to what the application computes or displays; this ships the
+audit behind a quantitative claim in the accompanying paper, and corrects
+that claim.
+
+- **New `validation/eq2_audit.R`.** The working paper states a closed-form
+  approximation for the safeguard branch's cost relative to a stated
+  SESOI, together with an accuracy claim. Auditing it turned up that the
+  claim was too strong: it holds comfortably (within 0.09%) for the four
+  metrics whose required N is a constant over the squared effect --
+  Cohen's *h*, *w*, the log hazard ratio, and the probability of
+  superiority added in v1.2.0 -- but not for *r* or *d*, where the
+  deviation is systematic rather than a rounding artifact and reaches
+  3.6% and 7.9% respectively at large effects. The script measures each
+  metric separately, twice (on fractional sample sizes where rounding is
+  exactly zero, and end-to-end through this app's solvers at a sample
+  size large enough for rounding to be negligible), and prints each
+  configuration's rounding floor so the two can be told apart. A third
+  block re-derives the *d* column under the pure normal approximation and
+  returns exactly zero deviation, locating the gap in the solver being
+  more exact than the approximation assumes rather than in the
+  relationship itself. The manuscript has been corrected accordingly.
+  The approximation errs toward recruiting more participants, never
+  fewer, in every case measured.
+- `VALIDATION.md` documents the audit alongside the existing Monte Carlo
+  and decision-helper checks, and its test-count reference is updated to
+  match the current suite.
+
 ## [1.2.1] - 2026-08-07
 
 - **The Step-1 decision helper no longer sits buried at the bottom in
