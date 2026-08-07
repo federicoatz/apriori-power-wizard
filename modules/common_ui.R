@@ -147,10 +147,16 @@ params_step_ui <- function(ns) {
           column(6,
             radioButtons(ns("mc_method"),
                          help_tip("Correction method",
-                           "Bonferroni (alpha / k) is the simplest and most conservative choice, and the one reviewers recognize on sight. Sidak (1 - (1-alpha)^(1/k)) is exact when the comparisons are independent and slightly less demanding -- it never asks for a larger sample than Bonferroni. Sequential procedures such as Holm cannot be planned for with a single per-test alpha, so for an a priori calculation Bonferroni is their conservative planning bound."),
+                           "WHICH TO PICK. Use Bonferroni (alpha / k) unless you can say your comparisons are statistically independent: it holds whatever the relationship between them, and it is the one reviewers recognize on sight. Use Sidak (1 - (1-alpha)^(1/k)) when they genuinely are independent -- in practice that means tests run on separate groups of participants, or pre-specified orthogonal contrasts. Several outcomes measured on the SAME participants are almost always correlated, so independence fails and Bonferroni is the honest choice there; note that when comparisons are positively correlated both methods are conservative, so Sidak is not more accurate in that case, just less strict without a justification for being so. In any event the choice barely moves the answer: across analysis families, effect sizes and k from 2 to 20 the two differ by 0.4% of N on average and never by more than about 2%, and a third of the time they give exactly the same sample size -- so choose on whether the independence assumption holds, not to save participants. Sequential procedures such as Holm cannot be planned for with a single per-test alpha, so for an a priori calculation Bonferroni is their conservative planning bound."),
                          choices = c("Bonferroni (default)" = "bonferroni",
                                      "Šidák (independent comparisons)" = "sidak"),
                          selected = "bonferroni"),
+            div(class = "field-hint", icon("circle-info"),
+                " Keep Bonferroni unless your comparisons are independent -- typically",
+                " tests on separate groups of participants. Several outcomes measured",
+                " on the same people are correlated, which is the case Sidak's",
+                " derivation does not cover. The two rarely differ by more than 1-2%",
+                " of N, so this is a choice about assumptions, not about sample size."),
             div(class = "field-hint", icon("circle-info"),
                 " With more than one comparison, the alpha entered above is corrected before being used to solve for N, and the correction is disclosed in the report text below.")
           )

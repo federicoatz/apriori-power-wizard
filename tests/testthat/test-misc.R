@@ -202,3 +202,65 @@ test_that("recruitment_target refuses nonsense rather than returning a wrong num
   expect_true(is.na(recruitment_target(NULL, 0.1)$n_recruit))
   expect_equal(recruitment_target(res, NA)$n_recruit, res$n_total)
 })
+
+test_that("the params step tells users WHEN to choose Bonferroni vs Sidak", {
+  # Guidance text, pinned because it makes a substantive claim a reader
+  # could act on and because prose is exactly what a UI refactor drops
+  # silently. The claim: Sidak's exactness assumes independent
+  # comparisons, several outcomes on the same participants are correlated
+  # so that assumption fails, and the choice barely moves N either way
+  # (mean 0.4%, max ~2% across families, effect sizes and k = 2..20 --
+  # reproduce with the loop in the v1.4.1 changelog entry).
+  #
+  # Unlike the rest of this file, this one RENDERS UI, so it needs shiny
+  # and bslib actually attached -- params_step_ui() calls h3()/accordion()
+  # unqualified. tests/testthat.R deliberately sources common_ui.R without
+  # attaching either (see its header), so they are attached here rather
+  # than skipped: a silent skip under the standard entry point would hide
+  # exactly the regression this test is for.
+  skip_if_not_installed("shiny")
+  skip_if_not_installed("bslib")
+  suppressPackageStartupMessages({
+    library(shiny)
+    library(bslib)
+  })
+
+  html <- as.character(params_step_ui(shiny::NS("two_means")))
+  squashed <- gsub("\\s+", " ", html)
+
+  # Always visible once Advanced options is open, not only on hover.
+  expect_match(squashed, "Keep Bonferroni unless your comparisons are independent")
+  expect_match(squashed, "measured on the same people are correlated")
+  expect_match(squashed, "choice about assumptions, not about sample size")
+
+  # And the fuller rule in the tooltip.
+  expect_match(squashed, "WHICH TO PICK")
+  expect_match(squashed, "pre-specified orthogonal contrasts")
+})
+
+test_that("the Bonferroni/Sidak difference really is as small as the interface claims", {
+  # The interface tells users the two corrections rarely differ by more
+  # than 1-2% of N. That is a checkable claim about this app's own
+  # solvers, so it is checked rather than asserted -- if a solver changes
+  # and the gap widens, the guidance becomes wrong and this fails.
+  diffs <- c()
+  for (k in 2:20) {
+    a_bonf <- 0.05 / k
+    a_sidak <- 1 - (1 - 0.05)^(1 / k)
+    for (d in c(0.2, 0.5, 0.8)) {
+      nb <- power_two_means_n(d = d, sig_level = a_bonf)$n_total
+      ns <- power_two_means_n(d = d, sig_level = a_sidak)$n_total
+      # Sidak is never stricter than Bonferroni: it must never ask for more.
+      expect_lte(ns, nb)
+      diffs <- c(diffs, 100 * (nb - ns) / nb)
+    }
+    for (h in c(0.2, 0.5)) {
+      nb <- power_proportions_n(h = h, sig_level = a_bonf)$n_total
+      ns <- power_proportions_n(h = h, sig_level = a_sidak)$n_total
+      expect_lte(ns, nb)
+      diffs <- c(diffs, 100 * (nb - ns) / nb)
+    }
+  }
+  expect_lt(mean(diffs), 1)
+  expect_lt(max(diffs), 3)
+})

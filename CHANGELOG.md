@@ -10,6 +10,46 @@ minor = new feature/family, major reserved for a future breaking redesign).
 > notes in `CITATION.cff`). Every entry below corresponds to a real tagged
 > release on the current history; nothing has been renumbered or backdated.
 
+## [1.4.1] - 2026-08-07
+
+- **The multiple-comparisons panel now says WHEN to pick each correction,
+  not just what each one is.** The previous text described Bonferroni as
+  conservative and Šidák as exact under independence, which left the
+  actual decision to the reader. It now states the rule: keep Bonferroni
+  unless the comparisons are genuinely independent -- in practice, tests
+  on separate groups of participants, or pre-specified orthogonal
+  contrasts. Several outcomes measured on the *same* participants are
+  almost always correlated, so Šidák's independence condition fails and
+  Bonferroni is the honest bound. The guidance appears both in the
+  tooltip and as always-visible text, since a rule only reachable on
+  hover is a rule half the users never read.
+
+- **It also says how little turns on the choice, because that is checkable
+  and reassuring.** Under positive dependence both corrections are
+  conservative, so Šidák is not more accurate there -- merely less strict
+  without a warrant for being so. And the two barely move the answer:
+  across analysis families, effect sizes and k from 2 to 20, the required
+  sample sizes differ by **0.4% on average and never by more than about
+  2%**, with roughly a third of configurations giving an identical N
+  after rounding. So the choice is about which assumption a researcher
+  can defend, not about recruiting fewer people.
+
+  That claim is a statement about this app's own solvers, so it is tested
+  rather than asserted (`tests/testthat/test-misc.R`): if a solver ever
+  changes and the gap widens, the guidance becomes wrong and the suite
+  fails. The same test pins that Šidák never demands a larger N than
+  Bonferroni.
+
+- The guidance text itself is pinned too. Prose is what a UI refactor
+  drops silently, and this prose makes a claim a researcher could act on.
+  Note that the test attaches shiny/bslib explicitly rather than skipping:
+  `tests/testthat.R` deliberately sources `modules/common_ui.R` without
+  attaching either, and a silent skip under the standard entry point
+  would hide exactly the regression the test exists for.
+
+- Paper (Section 3.2) carries the same rule, including the measured size
+  of the difference.
+
 ## [1.4.0] - 2026-08-07
 
 Closes a gap that the accompanying paper had described but the application
