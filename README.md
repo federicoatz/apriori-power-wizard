@@ -678,6 +678,15 @@ for the full family-by-family breakdown, real tolerances from the test
 suite, and instructions to reproduce every check yourself
 (`Rscript validation/monte_carlo_validation.R`).
 
+**Holding an older report and getting a different number today?** Every
+report the app generates is stamped with the version that produced it, and
+[VALIDATION.md](VALIDATION.md#results-that-changed-between-versions) lists
+every release that changed a reported figure, with the size of each change.
+Check there before assuming a bug. The one to know about: v1.3.0 moved the
+clustered continuous family onto cluster-level degrees of freedom, which
+raises the required N when a design has few large clusters -- earlier
+versions overstated the power such designs deliver.
+
 ## Method references
 
 - Cohen, J. (1988). *Statistical Power Analysis for the Behavioral

@@ -385,6 +385,52 @@ Rscript deploy/serve_static.R _site 8921 &
 Rscript validation/accessibility_check.R _site 8921
 ```
 
+## Results that changed between versions
+
+Every report this application generates is stamped with the app version
+that produced it (`APP_VERSION`, see `R/report_text.R`). That is only
+useful if there is somewhere to look up what a version boundary means, so
+this section lists every release that changed a number the app reports,
+and by how much. Anything not listed here left the calculations untouched.
+
+If you are holding an older report and re-running it gives a different
+sample size, this table is the first place to check -- **before** assuming
+a bug.
+
+| Change | Versions | Effect on reported N |
+|---|---|---|
+| Clustered continuous family moved from effective-individual to cluster-level degrees of freedom | up to 1.2.3 &rarr; 1.3.0 onward | **Larger N, sometimes substantially**, in the few-large-clusters regime. Negligible with many small clusters |
+| `power_achieved` recomputed at the rounded N in multiple regression and balanced two proportions | up to 1.2.3 &rarr; 1.3.0 onward | N unchanged; the *reported power* rises slightly (e.g. .8000 &rarr; .8051), because it now describes the integer sample rather than the target that was requested |
+| Attrition inflation applied to the design unit rather than the grand total | up to 1.3.0 &rarr; 1.4.0 onward | Recruitment target changes only when attrition > 0 **and** the design has structure (clusters, cells, groups, arms). Typically a few participants, always upward, so the design stays evenly divisible |
+
+### The clustered change, quantified
+
+This is the one worth stating precisely, because it is the only change in
+the app's history that made a previously reported number **optimistic**
+rather than merely imprecise. At $d = 0.5$, $\alpha = .05$, target power
+.80:
+
+| Cluster size | ICC | Clusters/arm (&le;1.2.3) | Power actually delivered | Clusters/arm (&ge;1.3.0) |
+|---|---|---|---|---|
+| 4 | .30 | 31 | .802 | 31 |
+| 8 | .15 | 17 | .797 | 18 |
+| 12 | .10 | 12 | .799 | 13 |
+| 20 | .05 | 7 | .785 | 8 |
+| 30 | .02 | 4 | **.729** | 5 |
+
+A study planned with four large clusters per arm under v1.2.3 was told it
+had 86.5% power for a design delivering 72.9%. With 31 small clusters the
+two versions agree exactly. The reasoning, the cost of the change (ICC = 0 no longer
+collapses to the individually-randomized answer), and the Monte Carlo
+evidence are in the header of `R/power_clustered.R` and in the clustered
+block of the simulation output above.
+
+Note also what did **not** change: the clustered binary and categorical
+families. They rest on normal and chi-square approximations with no
+n-derived degrees of freedom to correct, so their numbers are identical
+across all versions -- see the header of `R/power_clustered_cat.R` for why
+that is a limitation rather than a clean bill of health.
+
 ## Running the full regression suite
 
 ```bash

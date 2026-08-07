@@ -10,6 +10,28 @@ minor = new feature/family, major reserved for a future breaking redesign).
 > notes in `CITATION.cff`). Every entry below corresponds to a real tagged
 > release on the current history; nothing has been renumbered or backdated.
 
+## [1.4.2] - 2026-08-07
+
+Documentation only; no change to what the application computes.
+
+- **New in VALIDATION.md: "Results that changed between versions".** Every
+  generated report is stamped with the app version that produced it, which
+  is only useful if there is somewhere to look up what a version boundary
+  means. There now is: a table of every release that changed a reported
+  figure, with the direction and size of each change, and an explicit
+  statement that anything not listed left the calculations untouched. A
+  reader holding an older report who re-runs it and gets a different
+  number is pointed there before assuming a bug, from both README and
+  VALIDATION.
+
+  This is the substance behind the question of whether the clustered
+  degrees-of-freedom fix warranted a 2.0. It did change what a family
+  computes -- the closest thing to a breaking change a calculator has --
+  but nothing was removed, no signature changed, and saved projects still
+  load, so the version number stays where SemVer puts it and the
+  reproducibility boundary is documented instead. Every figure in the new
+  table is reproducible from the app's own solvers.
+
 ## [1.4.1] - 2026-08-07
 
 - **The multiple-comparisons panel now says WHEN to pick each correction,
