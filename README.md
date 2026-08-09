@@ -4,6 +4,8 @@
 [![Run test suite](https://github.com/federicoatz/apriori-power-wizard/actions/workflows/test.yml/badge.svg)](https://github.com/federicoatz/apriori-power-wizard/actions/workflows/test.yml)
 [![License: MIT](https://img.shields.io/github/license/federicoatz/apriori-power-wizard)](LICENSE)
 [![R >= 4.1](https://img.shields.io/badge/R-%E2%89%A5%204.1-276DC3?logo=r)](https://www.r-project.org/)
+[![GitHub stars](https://img.shields.io/github/stars/federicoatz/apriori-power-wizard?style=flat)](https://github.com/federicoatz/apriori-power-wizard)
+[![Buy Me a Coffee](https://img.shields.io/badge/Buy%20me%20a%20coffee-☕-orange)](https://buymeacoffee.com/federicoatz)
 
 A step-by-step Shiny application that guides researchers in experimental
 economics and behavioral science through an a priori (before data
@@ -801,4 +803,5 @@ available on SSRN:
 ## Support
 
 If you find this tool useful for your research, consider supporting its development ☕️
-[![Buy Me a Coffee](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)](https://www.buymeacoffee.com/federicoatzori)
+
+[![Buy Me a Coffee](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)](https://buymeacoffee.com/federicoatz)
