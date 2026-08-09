@@ -107,7 +107,8 @@ mod_rm_anova_ui <- function(id) {
                            value = 0.25, min = 0.0001, step = 0.01)
             )
           ),
-          safeguard_metric_label = "Published Cohen's f (or partial eta-squared, converted below)"
+          safeguard_metric_label = "Published Cohen's f (or partial eta-squared, converted below)",
+          safeguard_hint = safeguard_conversion_note("f")
         ),
         conditionalPanel(
           condition = sprintf("input['%s'] == 'safeguard'", ns("es_branch")),
@@ -166,7 +167,12 @@ mod_rm_anova_server <- function(id) {
         n_pub <- safe_numeric(input$sg_published_n, 4, 1e6)
         req(pub, n_pub)
         pub_f <- if (isTRUE(input$sg_is_eta2)) eta2_to_f(pub) else pub
-        sg <- safeguard_ci_d(pub_f * 2, n1 = n_pub / 2, n2 = n_pub / 2,
+        # Within-subject, so the interval is built on the PAIRED variance
+        # over n participants rather than on two independent groups of
+        # n/2. The f <-> d step (f = d/2) is exact only for two levels and
+        # is an approximation here; it is disclosed as such in the step's
+        # own text rather than presented as an identity.
+        sg <- safeguard_ci_dz(pub_f * 2, n_pairs = n_pub,
                               conf_level = input$sg_conf_level %||% 0.80,
                               one_sided = identical(input$sg_one_sided, "one"))
         max(sg$d_safeguard / 2, 1e-4)

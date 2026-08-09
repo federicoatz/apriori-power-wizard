@@ -108,7 +108,12 @@ mod_paired_t_server <- function(id) {
         pub <- safe_numeric(input$sg_published_value, 0.0001, 5)
         n_pub <- safe_numeric(input$sg_published_n, 4, 1e6)
         req(pub, n_pub)
-        sg <- safeguard_ci_d(pub, n1 = n_pub / 2, n2 = n_pub / 2,
+        # safeguard_ci_dz(), not safeguard_ci_d() with the total split in
+        # half: this design has n PAIRS, not two independent groups of
+        # n/2, and the two variances differ by a factor of about four in
+        # the leading term. See R/safeguard_power.R for what the old route
+        # cost (980 pairs where 138 are needed, at d_z = 0.40 from 30).
+        sg <- safeguard_ci_dz(pub, n_pairs = n_pub,
                               conf_level = input$sg_conf_level %||% 0.80,
                               one_sided = identical(input$sg_one_sided, "one"))
         sg$d_safeguard

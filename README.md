@@ -124,7 +124,7 @@ shiny::runApp()      # opens the app at http://127.0.0.1:<port>
 
 ```r
 source("global.R")
-testthat::test_dir("tests/testthat")   # 2,592 assertions as of v1.4.5
+testthat::test_dir("tests/testthat")   # 2,792 assertions as of v1.5.0
 ```
 
 `source("global.R")` first is required -- it attaches the packages and

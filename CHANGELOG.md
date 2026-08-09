@@ -10,6 +10,61 @@ minor = new feature/family, major reserved for a future breaking redesign).
 > notes in `CITATION.cff`). Every entry below corresponds to a real tagged
 > release on the current history; nothing has been renumbered or backdated.
 
+## [1.5.0] - 2026-08-09
+
+Acts on an external methodological review of the manuscript. Two of its
+findings were real defects in the calculations; both are fixed here, and
+both change reported numbers, so they are recorded in VALIDATION.md's
+"Results that changed between versions" table as well.
+
+- **Multiple regression ignored covariates when converting degrees of
+  freedom back to a sample size.** The interface has always collected the
+  number of other predictors in the model and passed it to the solver,
+  which then dropped it: `N = v + u + 1` rather than
+  `N = v + n_covariates + u + 1`. Cohen's denominator df for an increment
+  test is `v = N - u - n_covariates - 1`, so every covariate costs one
+  more participant. The error ran in the optimistic direction and grew
+  with the number of covariates: at f2 = 0.15 with ten of them the app
+  reported N = 55 and .805 power for a design that delivers **.719**, and
+  actually needs 65. `power_regression_at_n()` and
+  `power_regression_min_f2()` take the covariate count too, so the power
+  curve and the sensitivity analysis agree with the headline figure.
+
+- **The safeguard branch applied the two-independent-groups variance to
+  within-subject designs.** A paired design has *n* pairs, not two groups
+  of *n*/2, and `Var(d_z) = 1/n + d_z^2/(2n)` has a leading term four
+  times smaller than the two-group expression evaluated at n/2 per group.
+  The standard error therefore came out roughly twice too large and the
+  published effect was shrunk far more than the evidence warranted: at
+  d_z = 0.40 from 30 pairs the branch asked for **980 pairs where 138 are
+  needed**. New `safeguard_ci_dz()`, used by the paired and
+  repeated-measures families. The error was conservative rather than
+  dangerous -- too many participants, not too few -- but it made the
+  safeguard branch unusable for exactly the designs where a published
+  estimate is most often the only thing available.
+
+- **Families whose safeguard interval routes through a conversion now say
+  so.** The interval is defined on Cohen's d; ANCOVA, factorial ANOVA and
+  repeated-measures ANOVA reach that scale through f = d/2, which is an
+  identity for two groups or two measurements and an approximation
+  otherwise, and logistic regression through Chinn's constant. New
+  `safeguard_conversion_note()` states this in each affected family's own
+  effect-size step. This is the disclosure alternative to restricting the
+  branch, and it matches how the application already treats the
+  Schoenfeld and Rao-Scott approximations.
+
+- Both defects are pinned by new regression tests, and the paired interval
+  joins the property-based sweep (sign preservation, shrinkage toward the
+  null, and never shrinking more than the two-group route it replaced).
+  The suite goes from 2,592 to 2,792 assertions.
+
+- Two mistakes made while fixing these are worth recording, since both
+  were caught by the suite rather than by review: inserting
+  `n_covariates` ahead of `sig_level` broke a positional call in
+  `test-properties.R`, and re-implementing the sign-and-floor logic inside
+  `safeguard_ci_dz()` instead of delegating to `safeguard_shrink()`
+  reproduced the exact sign defect the property tests exist to catch.
+
 ## [1.4.6] - 2026-08-07
 
 - **The study plan showed raw family keys instead of names.** A plan

@@ -29,3 +29,33 @@ test_that("regression: min f2 for a fixed N is the inverse of power_regression_n
   min_f2 <- power_regression_min_f2(res$n_total, n_predictors_tested = 1, power = 0.80)
   expect_equal(min_f2, 0.15, tolerance = 0.01)
 })
+
+test_that("covariates consume residual degrees of freedom", {
+  # The defect this closes: n_covariates was collected by the interface,
+  # passed to the solver, and then ignored. Cohen's denominator df for an
+  # increment test is v = N - u - n_covariates - 1, so every covariate
+  # costs one participant; omitting them understated N and, worse,
+  # overstated the power the returned N delivers.
+  base <- power_regression_n(f2 = 0.15, n_predictors_tested = 1, n_covariates = 0)$n_total
+  for (cv in c(1, 3, 10)) {
+    res <- power_regression_n(f2 = 0.15, n_predictors_tested = 1, n_covariates = cv)
+    expect_equal(res$n_total, base + cv)
+    expect_equal(
+      res$power_achieved,
+      power_regression_at_n(res$n_total, f2 = 0.15, n_predictors_tested = 1,
+                            n_covariates = cv),
+      tolerance = 1e-10
+    )
+    expect_gte(res$power_achieved, 0.80)
+  }
+})
+
+test_that("ignoring covariates would overstate power, which is why it was a bug", {
+  res <- power_regression_n(f2 = 0.15, n_predictors_tested = 1, n_covariates = 10)
+  naive_n <- power_regression_n(f2 = 0.15, n_predictors_tested = 1, n_covariates = 0)$n_total
+  true_power_at_naive_n <- power_regression_at_n(naive_n, f2 = 0.15,
+                                                  n_predictors_tested = 1,
+                                                  n_covariates = 10)
+  expect_lt(true_power_at_naive_n, 0.75)   # was reported as .805
+  expect_gte(res$power_achieved, 0.80)
+})

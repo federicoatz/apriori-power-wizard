@@ -183,13 +183,17 @@ mod_regression_server <- function(id) {
 
     curve_extra_args_r <- reactive({
       p <- params()
-      list(f2 = effect_value(), n_predictors_tested = u(), sig_level = p$alpha)
+      # n_covariates belongs here too: it changes the residual df, so a
+      # curve drawn without it would not pass through the solved point.
+      list(f2 = effect_value(), n_predictors_tested = u(),
+           n_covariates = n_cov(), sig_level = p$alpha)
     })
     n_solution_r <- reactive(result_r()$n_total)
 
     sensitivity_fn <- function(n_max) {
       p <- params()
       sensitivity_min_effect("regression", n_max = n_max, n_predictors_tested = u(),
+                              n_covariates = n_cov(),
                               sig_level = p$alpha, power = p$power)
     }
 

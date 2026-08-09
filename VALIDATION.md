@@ -5,8 +5,8 @@ that every one of the sixteen closed-form analysis families computes the
 correct number, and that the decision helper routes a design description
 to the correct family. Real tolerances and reproducible scripts for both
 are below. This complements, and does not replace, the other sources of
-truth in this repository: `tests/testthat/` (2,592 assertions as of
-v1.4.5: pinned regression tests plus property-based invariants,
+truth in this repository: `tests/testthat/` (2,792 assertions as of
+v1.5.0: pinned regression tests plus property-based invariants,
 run on every push and pull request -- see `.github/workflows/test.yml`),
 `tests/e2e/flow_test.R` (the rendered wizard, driven in a real headless
 browser, checked against the solvers),
@@ -97,7 +97,7 @@ breaks any of them, or silently drops a family's reachability, fails CI
 on every push, not just when someone remembers to run the standalone
 script.
 
-Last verified: 2026-08-07, app version 1.4.5 -- 17/17 scenarios routed
+Last verified: 2026-08-09, app version 1.5.0 -- 17/17 scenarios routed
 to the expected family.
 
 ## Two validation methods, by family
@@ -422,6 +422,8 @@ a bug.
 | Attrition inflation applied to the design unit rather than the grand total | up to 1.3.0 &rarr; 1.4.0 onward | Recruitment target changes only when attrition > 0 **and** the design has structure (clusters, cells, groups, arms). Typically a few participants, always upward, so the design stays evenly divisible |
 | Light-theme `--positive` darkened #00926F &rarr; #008062, and the value-box label lost its 0.75 opacity | up to 1.4.2 &rarr; 1.4.3 onward | Appearance only; no calculation touched. White-on-green was 3.93:1 at full opacity and 2.87:1 as actually rendered, both below WCAG AA |
 | Bootstrap `--bs-*` variables bridged to the app's own tokens in dark mode | up to 1.4.2 &rarr; 1.4.3 onward | Appearance only. Previously any Bootstrap component the stylesheet did not restyle kept light-theme colours in dark mode -- inline `code` at 1.10:1, `helpText()` at 1.04:1, i.e. invisible |
+| Multiple regression: covariates now consume residual degrees of freedom | up to 1.4.6 &rarr; 1.5.0 onward | **Larger N whenever covariates > 0**, by exactly the number of covariates, and the reported power falls into line with what that N delivers. The old figure was optimistic: at f&sup2; = 0.15 with ten covariates it reported .805 for a design giving .719 |
+| Safeguard branch for within-subject designs now uses the paired variance | up to 1.4.6 &rarr; 1.5.0 onward | **Substantially smaller N** in the paired and repeated-measures families when the safeguard branch is used. The old route applied the two-independent-groups variance to n/2 per "group", inflating the standard error about twofold: at d&#8338; = 0.40 from 30 pairs it asked for 980 pairs where 138 are needed |
 
 ### The clustered change, quantified
 

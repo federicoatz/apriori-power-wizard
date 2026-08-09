@@ -80,6 +80,105 @@ safeguard_shrink <- function(estimate, se, conf_level = 0.80,
 #'   original safeguard-power proposal), FALSE = two-sided interval
 #' @return list(se, lower, upper, d_published)
 #' @export
+#' Plain-language disclosure for families whose safeguard interval routes
+#' through a conversion that is exact only in a special case
+#'
+#' The safeguard interval is built on the sampling variance of Cohen's d.
+#' Families whose effect metric is f, or a log odds ratio, reach that scale
+#' through a conversion (f = d/2; Chinn's log-OR/1.81) which is EXACT only
+#' for two groups or a single binary predictor, and approximate otherwise.
+#' Saying so is the alternative to either restricting the branch or
+#' pretending the approximation is an identity -- and it is the same
+#' disclosure discipline the rest of the application already applies to
+#' the Schoenfeld and Rao-Scott approximations.
+#'
+#' @param metric one of "f" (ANOVA-family) or "logor" (logistic)
+#' @return character(1)
+#' @export
+safeguard_conversion_note <- function(metric = c("f", "logor")) {
+  metric <- match.arg(metric)
+  common <- paste(
+    "The safeguard interval is constructed on Cohen's d, whose sampling",
+    "variance is the one this correction is defined for.")
+  if (identical(metric, "f")) {
+    paste(common,
+      "Your effect is entered as f, which reaches that scale through",
+      "f = d/2 -- an identity for two groups or two measurements, and an",
+      "approximation for more than that. The correction is therefore",
+      "indicative rather than exact for this family, and the more levels",
+      "the focal factor has, the looser it is. If the design has a small",
+      "number of levels the approximation is close; if you need an exact",
+      "bound, prefer the smallest-effect-of-interest branch, which depends",
+      "on no prior estimate at all.")
+  } else {
+    paste(common,
+      "Your effect is entered as a log odds ratio, which reaches that",
+      "scale through Chinn's (2000) constant 1.81. That conversion assumes",
+      "an underlying logistic latent variable; it is standard in",
+      "meta-analysis but it is a conversion, not an identity. The",
+      "correction is therefore indicative rather than exact here.")
+  }
+}
+
+#' Safeguard interval for a WITHIN-SUBJECT (paired) standardized effect
+#'
+#' The paired counterpart to [safeguard_ci_d()], and a separate function
+#' because using the two-independent-groups variance on a paired design is
+#' not a small approximation. With n pairs,
+#'   Var(d_z) = 1/n + d_z^2 / (2n)
+#' (Becker, 1988; the same first-order form Hedges & Olkin give, with the
+#' paired design's single sample of n difference scores in place of two
+#' independent groups). The two-group expression evaluated at n1 = n2 = n/2
+#' -- which is what this family did until v1.5.0, since it had only
+#' safeguard_ci_d() to call -- yields a leading term of 4/n instead of 1/n,
+#' so the standard error comes out roughly twice too large and the interval
+#' shrinks the published effect far more than the evidence warrants. At
+#' d_z = 0.40 from 30 pairs it recommended 980 pairs where this returns 138.
+#'
+#' The error was conservative, not dangerous: it asked for too many
+#' participants rather than too few. It nevertheless made the safeguard
+#' branch unusable for exactly the designs -- repeated measures, pre/post --
+#' where a published estimate is most often the only thing available.
+#'
+#' @param d_published numeric, the published paired effect (Cohen's d_z)
+#' @param n_pairs integer, number of PAIRS in the original study (for a
+#'   within-subject design this is the number of participants)
+#' @param conf_level,one_sided as in [safeguard_ci_d()]
+#' @return list with d_published, se, lower, upper, conf_level, one_sided,
+#'   and d_safeguard (always the edge toward the null, whatever the sign)
+#' @export
+safeguard_ci_dz <- function(d_published, n_pairs, conf_level = 0.80,
+                            one_sided = TRUE) {
+  stopifnot(n_pairs > 1, conf_level > 0, conf_level < 1)
+
+  se <- sqrt(1 / n_pairs + d_published^2 / (2 * n_pairs))
+
+  if (one_sided) {
+    z <- stats::qnorm(conf_level)
+    lower <- d_published - z * se
+    upper <- Inf
+  } else {
+    z <- stats::qnorm(1 - (1 - conf_level) / 2)
+    lower <- d_published - z * se
+    upper <- d_published + z * se
+  }
+
+  list(
+    d_published = d_published, se = se,
+    # Raw endpoints, as in safeguard_ci_d(): `lower` is below the estimate
+    # whatever its sign, so for a negative effect it is the edge AWAY from
+    # the null. Use d_safeguard.
+    lower = lower, upper = upper,
+    conf_level = conf_level, one_sided = one_sided,
+    # Delegated rather than reimplemented. safeguard_shrink() already owns
+    # the sign discipline AND the floor that keeps a collapsed interval
+    # from returning exactly zero (which would make the downstream solver
+    # diverge); duplicating that logic here reproduced the sign bug the
+    # property tests were written to catch.
+    d_safeguard = safeguard_shrink(d_published, se, conf_level, one_sided)
+  )
+}
+
 safeguard_ci_d <- function(d_published, n1, n2, conf_level = 0.80,
                             one_sided = TRUE) {
   stopifnot(n1 > 0, n2 > 0, conf_level > 0, conf_level < 1)

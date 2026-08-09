@@ -100,7 +100,8 @@ mod_anova_factorial_ui <- function(id) {
               numericInput(ns("sesoi_f"), "Smallest effect size of interest (Cohen's f)", value = 0.15, min = 0.0001, step = 0.01)
             )
           ),
-          safeguard_metric_label = "Published Cohen's f (or partial eta-squared, converted below)"
+          safeguard_metric_label = "Published Cohen's f (or partial eta-squared, converted below)",
+          safeguard_hint = safeguard_conversion_note("f")
         ),
         conditionalPanel(
           condition = sprintf("input['%s'] == 'safeguard'", ns("es_branch")),

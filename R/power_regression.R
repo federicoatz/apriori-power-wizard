@@ -31,7 +31,10 @@ r2_to_f2 <- function(r2_full, r2_reduced = 0) {
 #' @param n_predictors_tested integer, number of predictors in the focal
 #'   test (u); 1 for a single focal predictor's partial effect
 #' @param n_covariates integer, number of OTHER predictors already in the
-#'   model (used only to report total predictors; does not change u)
+#'   model. Does not change u (the tested set is what u counts), but it DOES
+#'   consume residual degrees of freedom: Cohen's denominator df for the
+#'   increment test is v = N - u - n_covariates - 1, so every covariate
+#'   costs one more participant.
 #' @param sig_level,power as usual
 #' @export
 power_regression_n <- function(f2, n_predictors_tested = 1, n_covariates = 0,
@@ -41,8 +44,16 @@ power_regression_n <- function(f2, n_predictors_tested = 1, n_covariates = 0,
 
   fit <- pwr::pwr.f2.test(u = n_predictors_tested, f2 = f2,
                            sig.level = sig_level, power = power)
-  # fit$v = n - u - 1  =>  n = v + u + 1
-  n_total <- round_up_n(fit$v + n_predictors_tested + 1)
+  # pwr returns the required DENOMINATOR df. Converting it back to a sample
+  # size has to subtract every predictor in the model, not only the tested
+  # set: for the increment test of Cohen (1988, ch. 9),
+  #   v = N - u - n_covariates - 1,  so  N = v + u + n_covariates + 1.
+  # Omitting n_covariates here (as this did until v1.5.0) understates N by
+  # exactly the number of covariates and, worse, overstates the power the
+  # returned N delivers -- at f2 = 0.15 with ten covariates it reported
+  # .805 for a design that gives .719. The interface has always collected
+  # the covariate count; only the solver ignored it.
+  n_total <- round_up_n(fit$v + n_predictors_tested + n_covariates + 1)
 
   # Recompute achieved power at the rounded (integer) N -- same pattern used
   # by every other family. fit$power is the power that was ASKED FOR, which
@@ -52,6 +63,7 @@ power_regression_n <- function(f2, n_predictors_tested = 1, n_covariates = 0,
   # actually collect.
   power_achieved <- power_regression_at_n(n_total, f2 = f2,
                                            n_predictors_tested = n_predictors_tested,
+                                           n_covariates = n_covariates,
                                            sig_level = sig_level)
 
   list(
@@ -66,8 +78,8 @@ power_regression_n <- function(f2, n_predictors_tested = 1, n_covariates = 0,
 
 #' @export
 power_regression_at_n <- function(n_total, f2, n_predictors_tested = 1,
-                                   sig_level = 0.05) {
-  v <- n_total - n_predictors_tested - 1
+                                   n_covariates = 0, sig_level = 0.05) {
+  v <- n_total - n_predictors_tested - n_covariates - 1
   if (v <= 0) return(NA_real_)
   pwr::pwr.f2.test(u = n_predictors_tested, v = v, f2 = f2,
                     sig.level = sig_level)$power
@@ -75,8 +87,9 @@ power_regression_at_n <- function(n_total, f2, n_predictors_tested = 1,
 
 #' @export
 power_regression_min_f2 <- function(n_total, n_predictors_tested = 1,
-                                     sig_level = 0.05, power = 0.80) {
-  v <- n_total - n_predictors_tested - 1
+                                     n_covariates = 0, sig_level = 0.05,
+                                     power = 0.80) {
+  v <- n_total - n_predictors_tested - n_covariates - 1
   if (v <= 0) return(NA_real_)
   pwr::pwr.f2.test(u = n_predictors_tested, v = v, sig.level = sig_level,
                     power = power)$f2

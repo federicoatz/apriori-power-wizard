@@ -59,6 +59,17 @@ test_that("safeguard bounds never flip sign and never grow, across the input spa
     expect_identical(sign(ds), sign(d), info = sprintf("d=%.4f n1=%d n2=%d conf=%.3f", d, n1, n2, conf))
     expect_lte(abs(ds), abs(d) + 1e-12)
 
+    # d_z (paired): signed, over n pairs rather than two groups
+    dz <- runif_signed(1, 0.01, 2.5, signed = TRUE)
+    npair <- sample(5:400, 1)
+    dzs <- safeguard_ci_dz(dz, npair, conf, one_sided)$d_safeguard
+    expect_identical(sign(dzs), sign(dz),
+                     info = sprintf("dz=%.4f n=%d conf=%.3f", dz, npair, conf))
+    expect_lte(abs(dzs), abs(dz) + 1e-12)
+    # and it must never shrink more than the two-group misuse it replaced
+    expect_gte(abs(dzs),
+               abs(safeguard_ci_d(dz, npair / 2, npair / 2, conf, one_sided)$d_safeguard) - 1e-12)
+
     # h: signed
     h <- runif_signed(1, 0.01, 2.0, signed = TRUE)
     hs <- safeguard_ci_h(h, n1, n2, conf, one_sided)$h_safeguard
@@ -239,7 +250,10 @@ achieved_checks <- list(
                                         list(r$power_achieved, power_chisq_at_n(r$n_total, 0.3, 3, a)) },
   regression      = function(a, p, k) { r <- power_regression_n(f2 = 0.15, n_predictors_tested = 3,
                                                                  sig_level = a, power = p)
-                                        list(r$power_achieved, power_regression_at_n(r$n_total, 0.15, 3, a)) },
+                                        list(r$power_achieved,
+                                             power_regression_at_n(r$n_total, f2 = 0.15,
+                                                                    n_predictors_tested = 3,
+                                                                    sig_level = a)) },
   ancova          = function(a, p, k) { r <- power_ancova_n(k = 3, f_target = 0.3, r_cov = 0.4,
                                                              sig_level = a, power = p)
                                         list(r$power_achieved, power_ancova_at_n(r$n_per_group, 3, 0.3, 0.4, a)) },

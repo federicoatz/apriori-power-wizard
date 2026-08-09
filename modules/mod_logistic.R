@@ -78,7 +78,8 @@ mod_logistic_ui <- function(id) {
           safeguard_hint = paste(
             "An odds ratio below 1 (a protective effect) is entered exactly as published:",
             "the safeguard bound moves it toward 1 on the log-odds scale from whichever",
-            "side it starts on, never past it.")
+            "side it starts on, never past it.",
+            safeguard_conversion_note("logor"))
         ),
         wizard_nav_ui(ns, "effect_size", next_label = "Compute")
       ),

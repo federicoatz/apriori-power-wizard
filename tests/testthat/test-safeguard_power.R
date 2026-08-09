@@ -203,3 +203,32 @@ test_that("published Table 3 safeguard values are unchanged by the sign fix", {
   expect_equal(safeguard_ci_h(1.049984, 152, 155)$h_safeguard, 0.954, tolerance = 1e-3)
   expect_equal(safeguard_ci_d(1.344628, 72, 72)$d_safeguard, 1.189, tolerance = 1e-3)
 })
+
+test_that("the paired safeguard interval uses the paired variance, not two groups", {
+  for (n in c(30, 50, 100)) {
+    dz <- 0.40
+    paired <- safeguard_ci_dz(dz, n_pairs = n)
+    expect_equal(paired$se, sqrt(1 / n + dz^2 / (2 * n)), tolerance = 1e-12)
+    misused <- safeguard_ci_d(dz, n1 = n / 2, n2 = n / 2)
+    expect_gt(misused$se, paired$se)
+    expect_gt(paired$d_safeguard, misused$d_safeguard)
+  }
+})
+
+test_that("the paired safeguard bound preserves sign and moves toward the null", {
+  for (dz in c(0.6, -0.6, 0.15, -0.15)) {
+    for (one_sided in c(TRUE, FALSE)) {
+      g <- safeguard_ci_dz(dz, n_pairs = 40, one_sided = one_sided)
+      expect_identical(sign(g$d_safeguard), sign(dz))
+      expect_lte(abs(g$d_safeguard), abs(dz) + 1e-12)
+    }
+  }
+})
+
+test_that("the paired correction is materially smaller than the two-group misuse", {
+  dz <- 0.40; n <- 30
+  ok  <- power_paired_t_n(d = safeguard_ci_dz(dz, n_pairs = n)$d_safeguard)$n_pairs
+  bad <- power_paired_t_n(d = safeguard_ci_d(dz, n1 = n / 2, n2 = n / 2)$d_safeguard)$n_pairs
+  expect_lt(ok, 200)
+  expect_gt(bad, 900)
+})
