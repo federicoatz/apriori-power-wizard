@@ -797,3 +797,8 @@ and by Zenodo).
 A working paper describing the design and validation behind the tool is
 available on SSRN:
 [papers.ssrn.com/sol3/papers.cfm?abstract_id=7247658](https://papers.ssrn.com/sol3/papers.cfm?abstract_id=7247658).
+
+## Support
+
+If you find this tool useful for your research, consider supporting its development ☕️
+[![Buy Me a Coffee](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)](https://www.buymeacoffee.com/federicoatzori)
