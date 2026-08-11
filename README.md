@@ -448,7 +448,8 @@ apriori-power-wizard/
 │   ├── testthat.R
 │   └── testthat/              # One test file per R/ calculation module, plus test-decision_helper.R
 ├── validation/                # Evidence beyond unit tests -- see VALIDATION.md
-│   ├── monte_carlo_validation.R    # Seeded Monte Carlo checks for formulas with no pwr reference
+│   ├── monte_carlo_validation.R    # Seeded Monte Carlo checks and CSV artifact
+│   ├── monte_carlo_results.csv     # Versioned results of the current Monte Carlo run
 │   ├── scenario_benchmark.csv      # Decision-helper scenarios -> expected family
 │   ├── scenario_validation.R       # Checks recommend_family() against scenario_benchmark.csv
 │   └── accessibility_check.R       # axe-core audit of the exported build

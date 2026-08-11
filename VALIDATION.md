@@ -10,7 +10,8 @@ v1.5.1: pinned regression tests plus property-based invariants,
 run on every push and pull request -- see `.github/workflows/test.yml`),
 `tests/e2e/flow_test.R` (the rendered wizard, driven in a real headless
 browser, checked against the solvers),
-`validation/monte_carlo_validation.R` (formula correctness),
+`validation/monte_carlo_validation.R` and its versioned
+`validation/monte_carlo_results.csv` artifact (formula correctness),
 `validation/scenario_validation.R` (decision-helper correctness), and
 `validation/eq2_audit.R` (the safeguard-markup approximation).
 
@@ -172,6 +173,14 @@ particular the closed-form relation is a **documented approximation** --
 some configurations are expected to disagree by more than pure sampling
 noise would predict, and that is the formula's known behavior, not a bug.
 
+Each run also regenerates `validation/monte_carlo_results.csv`. The committed
+file is the machine-readable report for the current release: one row per
+comparison, recording the reference method, scenario, formula and reference
+power, difference, Monte Carlo margin, replication count, and status. Rows
+labelled `Historical pre-v1.3.0 calculation` are included deliberately as an
+audit of the clustered-design correction; they are evidence about the replaced
+calculation, not a result claimed for the current application.
+
 **Honesty note.** This script is a fresh, independently reproducible
 validation, not a byte-for-byte replay of the original development-time
 Monte Carlo runs described in the source code comments (e.g.
@@ -184,7 +193,7 @@ from scratch rather than take the historical claim on faith.
 
 ### Last verified run
 
-Captured 2026-08-07, app version 1.4.0, R 4.5.3 (re-run to confirm: the
+Captured 2026-08-11, app version 1.5.1, R 4.5.3 (re-run to confirm: the
 seed is fixed, so these exact numbers are reproducible). Every block
 above the clustered one is byte-identical to the snapshot from app
 version 1.0.2 -- none of the releases between the two touched the
@@ -198,7 +207,7 @@ installing R first.
 
 ```
 A Priori Power Analysis Wizard -- Monte Carlo validation
-App version: 1.4.0 | R version: R version 4.5.3 (2026-03-11)
+App version: 1.5.1 | R version: R version 4.5.3 (2026-03-11)
 
 McNemar's test (Connor, 1987)
   [WATCH] McNemar                      n=100 p10=0.25 p01=0.10                formula=0.7241 sim=0.7384 diff=-0.0143 (2*SE=0.0098, reps=8000)
@@ -247,7 +256,8 @@ Clustered design, continuous outcome (Donner & Klar, 2000; cluster-level df)
   [WATCH] Clustered (pre-1.3.0)        m=30 icc=0.02 k=4/arm d=0.50           formula=0.8646 sim=0.7328 diff=+0.1318 (2*SE=0.0062, reps=12000)
 ```
 
-Seven of thirty-two checks landed in the `WATCH` band (McNemar at small
+Seven of the twenty-eight current-calculation checks landed in the `WATCH`
+band (McNemar at small
 n, Wilcoxon at one configuration, and four of the six parent-shape
 checks). All are small (1-3 percentage points), and -- the part that
 matters -- every one of them has the simulated power *above* the formula's
