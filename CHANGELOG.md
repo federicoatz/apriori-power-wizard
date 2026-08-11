@@ -10,6 +10,30 @@ minor = new feature/family, major reserved for a future breaking redesign).
 > notes in `CITATION.cff`). Every entry below corresponds to a real tagged
 > release on the current history; nothing has been renumbered or backdated.
 
+## [1.5.1] - 2026-08-11
+
+- **Safeguard results now make the comparison visible and interpretable.**
+  Selecting “From a previous study” shows the naive required sample size,
+  calculated from the published point estimate, next to the safeguard sample
+  size, calculated from the confidence-bound estimate toward the null. A short
+  note below the cards explains that this is a correction for sampling
+  uncertainty, not for publication bias.
+
+- **Safeguard assumptions are explicit at the point of use.** The interface and
+  generated report state that a two-group original study entered only as total
+  $N$ is assumed balanced. The report and help text also distinguish sampling
+  uncertainty from publication bias and selection mechanisms.
+
+- **Study-plan and decision-helper boundaries are now visible in the
+  interface.** The plan warns that partial sample overlap is not modeled, and
+  the helper names mixed-effects/multilevel models, structural equation models,
+  and Bayesian design analysis as outside its scope.
+
+- **Boundary coverage is documented and strengthened.** A direct
+  property-based test now exercises safeguard bounds at the
+  $|t| = z_{\gamma}$ transition, and VALIDATION.md records how to repeat the
+  wider sweep.
+
 ## [1.5.0] - 2026-08-09
 
 Acts on an external methodological review of the manuscript. Two of its

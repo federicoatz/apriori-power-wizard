@@ -437,10 +437,30 @@ wire_results_server <- function(input, output, session, family,
                 showcase = icon("bolt"),
                 theme = if (res$power_achieved >= res$power_target) "success" else "warning")
     )
-    do.call(layout_column_wrap, c(list(
+    value_box_row <- do.call(layout_column_wrap, c(list(
       width = if (has_safeguard_pair) 1 / 3 else 1 / 2,
       class = "value-box-row"
     ), boxes))
+
+    if (!has_safeguard_pair) return(value_box_row)
+
+    tagList(
+      value_box_row,
+      div(
+        class = "well well-info safeguard-comparison-note",
+        icon("circle-info"), " ",
+        strong("How to read these figures. "),
+        paste0(
+          "Naive ", n_label,
+          " uses the published point estimate. Safeguard ", n_label,
+          " uses the confidence-bound estimate closest to the null (",
+          round(details$conf_level * 100), "% ",
+          if (isTRUE(details$one_sided)) "one-sided" else "two-sided",
+          "), so it is the more conservative planning target. ",
+          "This comparison addresses sampling uncertainty, not publication bias."
+        )
+      )
+    )
   })
 
   output$n_summary <- renderUI({

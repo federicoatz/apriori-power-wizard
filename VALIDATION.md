@@ -6,7 +6,7 @@ correct number, and that the decision helper routes a design description
 to the correct family. Real tolerances and reproducible scripts for both
 are below. This complements, and does not replace, the other sources of
 truth in this repository: `tests/testthat/` (2,792 assertions as of
-v1.5.0: pinned regression tests plus property-based invariants,
+v1.5.1: pinned regression tests plus property-based invariants,
 run on every push and pull request -- see `.github/workflows/test.yml`),
 `tests/e2e/flow_test.R` (the rendered wizard, driven in a real headless
 browser, checked against the solvers),
@@ -97,7 +97,7 @@ breaks any of them, or silently drops a family's reachability, fails CI
 on every push, not just when someone remembers to run the standalone
 script.
 
-Last verified: 2026-08-09, app version 1.5.0 -- 17/17 scenarios routed
+Last verified: 2026-08-11, app version 1.5.1 -- 17/17 scenarios routed
 to the expected family.
 
 ## Two validation methods, by family
