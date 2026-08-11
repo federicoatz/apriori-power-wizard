@@ -315,6 +315,8 @@ effect_size_step_ui <- function(ns, cohen_ui, sesoi_ui,
                    help_tip("Original study's total N", "The total sample size (both groups combined, if applicable) of the study the published effect came from -- check its Methods section."),
                    value = NA, min = 4))
         ),
+        div(class = "field-hint", icon("circle-info"),
+            " For safeguards based on a two-group published effect, entering only total N assumes equally sized original arms (n1 = n2 = N/2)."),
         if (!is.null(safeguard_hint)) div(class = "field-hint", icon("circle-info"), " ", safeguard_hint),
         fluidRow(
           column(6, sliderInput(ns("sg_conf_level"),

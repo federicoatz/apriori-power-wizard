@@ -400,21 +400,45 @@ wire_results_server <- function(input, output, session, family,
     n_display <- display_n(res) %||% n_solution_r()
     if (is.na(n_display)) n_display <- n_solution_r()
 
-    layout_column_wrap(
-      width = 1 / 2, class = "value-box-row",
-      value_box(
-        title = n_label,
-        value = format(n_display, big.mark = ","),
-        showcase = icon("users"),
-        theme = "primary"
-      ),
-      value_box(
-        title = "Achieved power",
-        value = sprintf("%.1f%%", res$power_achieved * 100),
-        showcase = icon("bolt"),
-        theme = if (res$power_achieved >= res$power_target) "success" else "warning"
-      )
+    spec <- tryCatch(report_spec_r(), error = function(e) NULL)
+    details <- if (!is.null(spec)) spec$effect_branch_details else NULL
+    has_safeguard_pair <- identical(input$es_branch %||% "sesoi", "safeguard") &&
+      !is.null(details) && !is.null(details$n_naive) && !is.null(details$n_safeguard) &&
+      is.finite(details$n_naive) && is.finite(details$n_safeguard)
+
+    # Individual family modules keep the naive/safeguard comparison in their
+    # native total-N solver units. Convert both values to the same display
+    # unit as the headline box (per cell for factorial ANOVA, per group for
+    # ANCOVA, total elsewhere) before putting them side by side.
+    display_scale <- if (has_safeguard_pair && details$n_safeguard > 0) {
+      n_display / details$n_safeguard
+    } else 1
+    naive_display <- round(details$n_naive * display_scale)
+    safeguard_display <- round(details$n_safeguard * display_scale)
+
+    boxes <- if (has_safeguard_pair) list(
+      value_box(title = paste("Naive", n_label),
+                value = format(naive_display, big.mark = ","),
+                showcase = icon("flask"), theme = "secondary"),
+      value_box(title = paste("Safeguard", n_label),
+                value = format(safeguard_display, big.mark = ","),
+                showcase = icon("shield-halved"), theme = "primary"),
+      value_box(title = "Achieved power",
+                value = sprintf("%.1f%%", res$power_achieved * 100),
+                showcase = icon("bolt"),
+                theme = if (res$power_achieved >= res$power_target) "success" else "warning")
+    ) else list(
+      value_box(title = n_label, value = format(n_display, big.mark = ","),
+                showcase = icon("users"), theme = "primary"),
+      value_box(title = "Achieved power",
+                value = sprintf("%.1f%%", res$power_achieved * 100),
+                showcase = icon("bolt"),
+                theme = if (res$power_achieved >= res$power_target) "success" else "warning")
     )
+    do.call(layout_column_wrap, c(list(
+      width = if (has_safeguard_pair) 1 / 3 else 1 / 2,
+      class = "value-box-row"
+    ), boxes))
   })
 
   output$n_summary <- renderUI({

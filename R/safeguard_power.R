@@ -454,12 +454,11 @@ safeguard_power_citation <- function() {
 safeguard_power_explainer <- function() {
   paste(
     "Effect sizes drawn from a single published study are noisy point",
-    "estimates, and published effects tend to be inflated by publication",
-    "bias and the 'winner's curse' (a result had to be large enough,",
-    "often by chance, to clear the significance threshold in order to be",
-    "published at all). Powering a new study on the published point",
-    "estimate therefore systematically under-powers it. Safeguard power",
+    "estimates. Powering a new study on the published point estimate can",
+    "therefore under-power it. Safeguard power",
     "uses the lower bound of a one-sided confidence interval around the",
-    "published effect as a more conservative, defensible input."
+    "published effect as a more conservative, defensible input. It accounts",
+    "for sampling uncertainty in that estimate; it does not itself correct",
+    "publication bias or other selection mechanisms."
   )
 }

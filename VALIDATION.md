@@ -332,6 +332,18 @@ correlation-sign defect in roughly 50% -- either would have failed on the
 first CI run. The seed is fixed so a failure is reproducible; raising `REPS`
 in that file searches harder before a release.
 
+The safeguard tests also target the collapse boundary directly. For confidence
+levels .80, .90, .95, and .99, they construct balanced two-group effects with
+the original-study statistic immediately below and above the relevant
+`z_gamma` threshold. On both sides the corrected effect must retain its sign
+and never grow; below the threshold it must reduce to the explicit near-null
+floor rather than cross it. Before a release, the same property suite is run
+with a wider seeded search, for example:
+
+```bash
+PROPERTY_REPS=300 PROPERTY_SOLVER_DRAWS=60 Rscript --vanilla tests/testthat.R
+```
+
 ## Safeguard-markup relationship (the manuscript's Equation 2)
 
 The accompanying working paper states a closed-form approximation for what

@@ -35,8 +35,8 @@
 ## -----------------------------------------------------------------------
 
 set.seed(20260805)
-REPS <- 60            # draws per safeguard invariant
-SOLVER_DRAWS <- 12    # draws per family for the solver invariants
+REPS <- as.integer(Sys.getenv("PROPERTY_REPS", "60"))
+SOLVER_DRAWS <- as.integer(Sys.getenv("PROPERTY_SOLVER_DRAWS", "12"))
 
 # Draw a value uniformly, optionally allowing negatives, avoiding an exact
 # zero (which is the null itself and not a meaningful published estimate).
@@ -113,6 +113,24 @@ test_that("safeguard shrinkage increases with confidence and decreases with the 
     small <- safeguard_ci_d(d, n, n)$d_safeguard
     large <- safeguard_ci_d(d, n * 4, n * 4)$d_safeguard
     expect_gte(large, small - 1e-12)
+  }
+})
+
+test_that("safeguard bounds behave correctly immediately around the collapse threshold", {
+  # For balanced d, t = d / SE(d). Construct cases just either side of
+  # t = z_gamma, the boundary at which the one-sided bound reaches the null.
+  for (conf in c(0.80, 0.90, 0.95, 0.99)) {
+    z <- stats::qnorm(conf)
+    d <- 0.8
+    for (mult in c(0.99, 1.01)) {
+      n_continuous <- (z * mult)^2 * (2 + d^2 / 4) / d^2
+      n_arm <- if (mult < 1) floor(n_continuous) else ceiling(n_continuous)
+      sg <- safeguard_ci_d(d, n_arm, n_arm, conf_level = conf)$d_safeguard
+      t_actual <- d / sqrt(2 / n_arm + d^2 / (4 * n_arm))
+      expect_gt(sg, 0, label = sprintf("conf=%.2f multiplier=%.2f", conf, mult))
+      expect_lte(sg, d + 1e-12)
+      if (t_actual <= z) expect_lte(sg, 1.01e-4)
+    }
   }
 })
 
