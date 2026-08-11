@@ -368,6 +368,8 @@ ui <- page_fluid(
         accordion_panel(
           title = tagList(icon("compass"), " Not sure which analysis to choose? Answer a few quick questions"),
           value = "helper",
+          p(class = "field-hint", icon("circle-info"),
+            " Scope: this helper covers the closed-form designs in this Wizard, not mixed-effects/multilevel models, structural equation models, or Bayesian design analysis."),
           fluidRow(
             column(4,
               radioButtons("dh_unit", "1. Do participants act independently, or in groups?",

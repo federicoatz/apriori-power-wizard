@@ -137,7 +137,9 @@ results_panel_ui <- function(ns) {
                         " Repeat this on each analysis that belongs to the study.",
                         " Each family keeps its own inputs, so you can move between",
                         " them and the plan below updates as you go."))
-        )
+        ),
+        p(class = "field-hint", icon("triangle-exclamation"),
+          " This planner handles analyses on exactly the same participants or entirely separate samples. It does not model partial overlap (for example, only some participants completing a second task); treat its total as a lower bound in that case.")
       ),
       div(class = "results-tool-output", uiOutput(ns("study_plan_panel")))
     ),
