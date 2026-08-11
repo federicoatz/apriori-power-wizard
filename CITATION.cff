@@ -6,7 +6,7 @@ authors:
   - family-names: "Atzori"
     given-names: "Federico"
     affiliation: "University of Cagliari"
-version: 1.5.1
+version: 1.5.2
 date-released: 2026-08-11
 license: MIT
 repository-code: "https://github.com/federicoatz/apriori-power-wizard"
@@ -29,7 +29,7 @@ identifiers:
     description: "Concept DOI: always resolves to the latest archived release"
   - type: doi
     value: 10.5281/zenodo.21892003
-    description: "Archived snapshot of version 1.5.1 on Zenodo"
+    description: "Archived snapshot of version 1.5.1 on Zenodo; update to the v1.5.2 archive after release archival"
   - type: doi
     value: 10.5281/zenodo.21844125
     description: "Archived snapshot of version 1.4.3, the version described in the accompanying working paper"

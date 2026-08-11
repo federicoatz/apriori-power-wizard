@@ -10,6 +10,14 @@ minor = new feature/family, major reserved for a future breaking redesign).
 > notes in `CITATION.cff`). Every entry below corresponds to a real tagged
 > release on the current history; nothing has been renumbered or backdated.
 
+## [1.5.2] - 2026-08-11
+
+- Added a versioned, machine-readable record of Monte Carlo validation scenarios,
+  including theoretical power, simulated rejection rates, Monte Carlo margins,
+  and reference methods.
+- Distinguished current-calculation checks from retained historical
+  pre-v1.3.0 clustered-method comparisons in the validation record.
+
 ## [1.5.1] - 2026-08-11
 
 - **Safeguard results now make the comparison visible and interpretable.**

@@ -98,7 +98,7 @@ breaks any of them, or silently drops a family's reachability, fails CI
 on every push, not just when someone remembers to run the standalone
 script.
 
-Last verified: 2026-08-11, app version 1.5.1 -- 17/17 scenarios routed
+Last verified: 2026-08-11, app version 1.5.2 -- 17/17 scenarios routed
 to the expected family.
 
 ## Two validation methods, by family
@@ -193,7 +193,7 @@ from scratch rather than take the historical claim on faith.
 
 ### Last verified run
 
-Captured 2026-08-11, app version 1.5.1, R 4.5.3 (re-run to confirm: the
+Captured 2026-08-11, app version 1.5.2, R 4.5.3 (re-run to confirm: the
 seed is fixed, so these exact numbers are reproducible). Every block
 above the clustered one is byte-identical to the snapshot from app
 version 1.0.2 -- none of the releases between the two touched the
@@ -207,7 +207,7 @@ installing R first.
 
 ```
 A Priori Power Analysis Wizard -- Monte Carlo validation
-App version: 1.5.1 | R version: R version 4.5.3 (2026-03-11)
+App version: 1.5.2 | R version: R version 4.5.3 (2026-03-11)
 
 McNemar's test (Connor, 1987)
   [WATCH] McNemar                      n=100 p10=0.25 p01=0.10                formula=0.7241 sim=0.7384 diff=-0.0143 (2*SE=0.0098, reps=8000)
