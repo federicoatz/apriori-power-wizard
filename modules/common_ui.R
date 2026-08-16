@@ -316,7 +316,7 @@ effect_size_step_ui <- function(ns, cohen_ui, sesoi_ui,
                    value = NA, min = 4))
         ),
         div(class = "field-hint", icon("circle-info"),
-            " For safeguards based on a two-group published effect, entering only total N assumes equally sized original arms (n1 = n2 = N/2)."),
+            " For safeguards based on a two-group published effect, entering only total N assumes equally sized original arms (n1 = n2 = N/2). If the original arms were markedly unequal, enter the effective N implied by the harmonic mean of the actual group sizes instead (2×n1×n2/(n1+n2))."),
         if (!is.null(safeguard_hint)) div(class = "field-hint", icon("circle-info"), " ", safeguard_hint),
         fluidRow(
           column(6, sliderInput(ns("sg_conf_level"),
