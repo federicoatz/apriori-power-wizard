@@ -28,6 +28,9 @@ identifiers:
     value: 10.5281/zenodo.21804595
     description: "Concept DOI: always resolves to the latest archived release"
   - type: doi
+    value: 10.5281/zenodo.21970298
+    description: "Archived snapshot of version 1.5.3 on Zenodo"
+  - type: doi
     value: 10.5281/zenodo.21894025
     description: "Archived snapshot of version 1.5.2 on Zenodo"
   - type: doi
